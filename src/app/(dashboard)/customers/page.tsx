@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Search, Plus, User, Phone, Car, Building2, User as UserIcon } from 'lucide-react'
+import { Search, Plus, User, Phone, Car, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 
@@ -14,12 +14,44 @@ export default async function CustomersPage({
 
   let query = supabase
     .from('customers')
-    .select('*, vehicles(count)')
+    .select('*, vehicles(id, plate_number)')
     .order('created_at', { ascending: false })
 
   if (q) {
-    // Search by all possible name fields or mobile or tin
-    query = query.or(`name.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,contact_person.ilike.%${q}%,contact_first_name.ilike.%${q}%,contact_last_name.ilike.%${q}%,mobile.ilike.%${q}%,tin.ilike.%${q}%`)
+    const cleanQ = q.replace(/[\s-]/g, '').toLowerCase()
+    let matchingCustomerIds = new Set<string>()
+
+    // 1. Search text fields in customers
+    const { data: textMatches } = await supabase
+      .from('customers')
+      .select('id')
+      .or(`name.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,contact_person.ilike.%${q}%,contact_first_name.ilike.%${q}%,contact_last_name.ilike.%${q}%,mobile.ilike.%${q}%,tin.ilike.%${q}%`)
+
+    if (textMatches) {
+      textMatches.forEach(m => matchingCustomerIds.add(m.id))
+    }
+
+    // 2. Search all vehicles to allow normalized forgiving match (ignoring spaces/hyphens)
+    const { data: allVehicles } = await supabase
+      .from('vehicles')
+      .select('customer_id, plate_number')
+      
+    if (allVehicles) {
+      allVehicles.forEach(v => {
+        const normPlate = (v.plate_number || '').replace(/[\s-]/g, '').toLowerCase()
+        if (normPlate.includes(cleanQ)) {
+          if (v.customer_id) matchingCustomerIds.add(v.customer_id)
+        }
+      })
+    }
+
+    // 3. Apply the filter to the main query
+    if (matchingCustomerIds.size > 0) {
+      query = query.in('id', Array.from(matchingCustomerIds))
+    } else {
+      // Force empty result if search had no matches
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000') 
+    }
   }
 
   const { data: customers, error } = await query
@@ -45,7 +77,7 @@ export default async function CustomersPage({
               type="text" 
               name="q"
               defaultValue={q}
-              placeholder="Search customer, company name, contact person, mobile..."
+              placeholder="Search customer, company, mobile, or plate number..."
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </form>
@@ -60,7 +92,7 @@ export default async function CustomersPage({
             <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
               <tr>
                 <th className="px-6 py-3">Customer / Company</th>
-                <th className="px-6 py-3">Type</th>
+                <th className="px-6 py-3">Plate Number</th>
                 <th className="px-6 py-3">Contact</th>
                 <th className="px-6 py-3">Vehicles</th>
                 <th className="px-6 py-3">Added</th>
@@ -78,6 +110,12 @@ export default async function CustomersPage({
                   const displayName = formatCustomerName(customer)
                   const displayContactPerson = formatContactPerson(customer)
                   
+                  // Sort vehicles for consistent display
+                  const vehicles = customer.vehicles || []
+                  const vehicleCount = vehicles.length
+                  const displayVehicles = vehicles.slice(0, 2)
+                  const hiddenCount = vehicleCount > 2 ? vehicleCount - 2 : 0
+
                   return (
                     <tr key={customer.id} className="hover:bg-slate-50 transition">
                       <td className="px-6 py-4">
@@ -91,11 +129,30 @@ export default async function CustomersPage({
                         </Link>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wider
-                          ${customer.customer_type === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}
-                        >
-                          {customer.customer_type}
-                        </span>
+                        {vehicleCount === 0 ? (
+                          <span className="text-slate-400 italic">No vehicle</span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1.5 max-w-[200px]">
+                            {displayVehicles.map((v: any, idx: number) => (
+                              <Link 
+                                key={v.id} 
+                                href={`/vehicles/${v.id}`}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition border border-slate-200"
+                              >
+                                {v.plate_number}
+                              </Link>
+                            ))}
+                            {hiddenCount > 0 && (
+                              <Link
+                                href={`/customers/${customer.id}`}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-50 text-slate-500 hover:text-slate-700 border border-slate-200 border-dashed"
+                                title={`View all ${vehicleCount} vehicles`}
+                              >
+                                +{hiddenCount} more
+                              </Link>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
@@ -115,7 +172,7 @@ export default async function CustomersPage({
                       <td className="px-6 py-4">
                         <span className="flex items-center gap-1.5 text-slate-700 font-medium">
                           <Car size={16} className="text-slate-400" />
-                          {customer.vehicles[0]?.count || 0}
+                          {vehicleCount}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-500">
