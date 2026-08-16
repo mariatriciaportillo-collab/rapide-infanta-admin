@@ -12,7 +12,12 @@ export default async function EditReferenceRatePage({
 
   const { data: rate, error } = await supabase
     .from('labor_lookup_rates')
-    .select(`*`)
+    .select(`
+      *,
+      vehicle_makes(name),
+      vehicle_models(name),
+      labor_services(name)
+    `)
     .eq('id', id)
     .single()
 
@@ -20,25 +25,7 @@ export default async function EditReferenceRatePage({
     notFound()
   }
 
-  const { data: makes } = await supabase.from('vehicle_makes').select('*').order('name')
-  const { data: models } = await supabase.from('vehicle_models').select('*').order('name')
-  
-  const { data: services } = await supabase
-    .from('labor_services')
-    .select(`
-      *,
-      labor_groups (*),
-      labor_categories (*)
-    `)
-    .eq('is_active', true)
-    .order('name')
-
   return (
-    <EditLaborLookupClient 
-      rate={rate}
-      makes={makes || []}
-      models={models || []}
-      services={services || []}
-    />
+    <EditLaborLookupClient rate={rate} />
   )
 }

@@ -3,16 +3,27 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { ChevronDown, Plus, X } from 'lucide-react'
+import { AddLaborModal } from './AddLaborModal'
 
-export type LaborService = { id: string; name: string; category: string | null }
+export type LaborService = { 
+  id: string
+  name: string
+  group_id: string | null
+  category_id: string | null
+  standard_hours: number | null
+  rate: number | null
+  labor_groups?: { name: string }
+  labor_categories?: { name: string }
+}
 
 type Props = {
   selectedServiceId: string
   setSelectedServiceId: (val: string) => void
   disabled?: boolean
+  onServiceSelect?: (service: LaborService) => void
 }
 
-export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disabled }: Props) {
+export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disabled, onServiceSelect }: Props) {
   const supabase = createClient()
   
   // Data
@@ -25,10 +36,7 @@ export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disab
   
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [newServiceName, setNewServiceName] = useState('')
-  const [newServiceCategory, setNewServiceCategory] = useState('')
-  const [modalError, setModalError] = useState<string | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
+  const [newSearchQuery, setNewSearchQuery] = useState('')
 
   // Fetch initial Services
   useEffect(() => {
@@ -38,14 +46,24 @@ export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disab
   // Handle outside clicks
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) setIsOpen(false)
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false)
+      }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
   const fetchServices = async () => {
-    const { data } = await supabase.from('labor_services').select('*').eq('is_active', true).order('name')
+    const { data } = await supabase
+      .from('labor_services')
+      .select(`
+        *,
+        labor_groups(name),
+        labor_categories(name)
+      `)
+      .eq('is_active', true)
+      .order('name')
     if (data) setServices(data)
   }
 
@@ -53,55 +71,38 @@ export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disab
     setSelectedServiceId(serviceId)
     setSearch('')
     setIsOpen(false)
-  }
-
-  const saveNewService = async () => {
-    setModalError(null)
-    const cleanName = newServiceName.trim()
-    if (!cleanName) return
     
-    // Client-side duplicate check
-    if (services.some(s => s.name.toLowerCase() === cleanName.toLowerCase())) {
-      setModalError('This Service already exists.')
-      return
-    }
-
-    setIsSaving(true)
-    const { data, error } = await supabase.from('labor_services').insert({ 
-      name: cleanName,
-      category: newServiceCategory.trim() || null
-    }).select().single()
-    
-    setIsSaving(false)
-
-    if (error) {
-      if (error.code === '23505') setModalError('This Service already exists.')
-      else setModalError(error.message)
-      return
-    }
-
-    if (data) {
-      setServices([...services, data].sort((a, b) => a.name.localeCompare(b.name)))
-      handleSelect(data.id)
-      setIsModalOpen(false)
-      setNewServiceName('')
-      setNewServiceCategory('')
+    if (onServiceSelect) {
+      const service = services.find(s => s.id === serviceId)
+      if (service) onServiceSelect(service)
     }
   }
 
-  const filteredServices = services.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+  const handleModalSuccess = (newService: LaborService) => {
+    setServices([...services, newService].sort((a, b) => a.name.localeCompare(b.name)))
+    setSelectedServiceId(newService.id)
+    if (onServiceSelect) onServiceSelect(newService)
+    setIsModalOpen(false)
+  }
+
+  const filteredServices = services.filter(s => 
+    s.name.toLowerCase().includes(search.toLowerCase()) || 
+    (s.labor_categories?.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (s.labor_groups?.name || '').toLowerCase().includes(search.toLowerCase())
+  )
+
   const selectedService = services.find(s => s.id === selectedServiceId)
 
   return (
     <>
       <div className="relative" ref={containerRef}>
-        <label className="block text-sm font-medium text-slate-700 mb-1">Service *</label>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Labor / Service *</label>
         <div 
           className={`w-full border rounded-md p-2 flex justify-between items-center cursor-pointer bg-white ${disabled ? 'bg-slate-50 cursor-not-allowed opacity-70 border-slate-200' : 'border-slate-300'}`}
           onClick={() => !disabled && setIsOpen(!isOpen)}
         >
-          <span className={selectedService ? 'text-slate-900 font-medium' : 'text-slate-400'}>
-            {selectedService?.name || 'Type or select a service...'}
+          <span className={selectedServiceId ? 'text-blue-700 font-medium' : 'text-slate-400'}>
+            {selectedService ? selectedService.name : 'Search or choose service...'}
           </span>
           <ChevronDown size={16} className="text-slate-400" />
         </div>
@@ -119,7 +120,7 @@ export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disab
                 onClick={e => e.stopPropagation()}
               />
             </div>
-            <div className="max-h-48 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto">
               {filteredServices.length === 0 ? (
                 <div className="p-3 text-sm text-slate-500 text-center">No matching services found.</div>
               ) : (
@@ -129,65 +130,32 @@ export function ServiceSelector({ selectedServiceId, setSelectedServiceId, disab
                     onClick={() => handleSelect(s.id)}
                     className={`p-2 px-3 text-sm cursor-pointer hover:bg-blue-50 transition ${selectedServiceId === s.id ? 'bg-blue-50 font-semibold text-blue-700' : 'text-slate-700'}`}
                   >
-                    <div>{s.name}</div>
-                    {s.category && <div className="text-xs text-slate-400">{s.category}</div>}
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-xs text-slate-400 mt-0.5 flex gap-2">
+                      <span>{s.labor_groups?.name || 'No Group'}</span>
+                      <span>&bull;</span>
+                      <span>{s.labor_categories?.name || 'No Category'}</span>
+                    </div>
                   </div>
                 ))
               )}
             </div>
             <div 
               className="p-2 bg-slate-100 border-t border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-200 cursor-pointer flex items-center gap-1 transition"
-              onClick={() => { setIsOpen(false); setIsModalOpen(true); setModalError(null); setNewServiceName(search) }}
+              onClick={() => { setIsOpen(false); setIsModalOpen(true); setNewSearchQuery(search) }}
             >
-              <Plus size={16} /> Add New Service
+              <Plus size={16} /> Add New Labor
             </div>
           </div>
         )}
       </div>
 
-      {/* NEW SERVICE MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">Add New Service</h3>
-              <button type="button" onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={20}/></button>
-            </div>
-            <div className="p-6">
-              {modalError && <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded border border-red-200">{modalError}</div>}
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Service Name *</label>
-                <input 
-                  type="text" 
-                  value={newServiceName} 
-                  onChange={e => setNewServiceName(e.target.value)} 
-                  className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:border-blue-500 font-medium"
-                  placeholder="e.g. Wheel Alignment"
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Category (Optional)</label>
-                <input 
-                  type="text" 
-                  value={newServiceCategory} 
-                  onChange={e => setNewServiceCategory(e.target.value)} 
-                  className="w-full border border-slate-300 rounded p-2 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g. Maintenance, Repair..."
-                />
-              </div>
-            </div>
-            <div className="p-4 bg-slate-50 flex justify-end gap-2 border-t border-slate-100">
-              <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded transition">Cancel</button>
-              <button type="button" onClick={saveNewService} disabled={isSaving || !newServiceName.trim()} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded transition">
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddLaborModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        initialName={newSearchQuery}
+      />
     </>
   )
 }

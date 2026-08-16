@@ -5,50 +5,31 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Info } from 'lucide-react'
+import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
+import { ServiceSelector, LaborService } from '@/components/labor/ServiceSelector'
 
-type Make = { id: string; name: string }
-type Model = { id: string; make_id: string; name: string }
-type Group = { id: string; name: string }
-type Category = { id: string; group_id: string; name: string }
-type Service = {
-  id: string
-  name: string
-  group_id: string | null
-  category_id: string | null
-  standard_hours: number | null
-  rate: number | null
-  labor_groups?: Group
-  labor_categories?: Category
-}
-
-type Props = {
-  makes: Make[]
-  models: Model[]
-  services: Service[]
-}
-
-export function AddReferenceRateClient({ makes, models, services }: Props) {
+export function AddReferenceRateClient() {
   const router = useRouter()
   const supabase = createClient()
 
   // Form State
   const [makeId, setMakeId] = useState('')
+  const [makeName, setMakeName] = useState('')
   const [modelId, setModelId] = useState('')
+  const [modelName, setModelName] = useState('')
+  
   const [yearFrom, setYearFrom] = useState('')
   const [yearTo, setYearTo] = useState('')
+  
   const [serviceId, setServiceId] = useState('')
+  const [selectedService, setSelectedService] = useState<LaborService | null>(null)
+  
   const [charge, setCharge] = useState('')
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Derived Options
-  const availableModels = useMemo(() => {
-    if (!makeId) return []
-    return models.filter(m => m.make_id === makeId)
-  }, [models, makeId])
 
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear() + 1
@@ -57,9 +38,13 @@ export function AddReferenceRateClient({ makes, models, services }: Props) {
     return years
   }, [])
 
-  const selectedService = useMemo(() => {
-    return services.find(s => s.id === serviceId)
-  }, [services, serviceId])
+  const handleServiceSelect = (service: LaborService) => {
+    setServiceId(service.id)
+    setSelectedService(service)
+    if (!charge && service.rate !== null) {
+      setCharge(service.rate.toString())
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,30 +139,19 @@ export function AddReferenceRateClient({ makes, models, services }: Props) {
           <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
              Vehicle Information
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Make *</label>
-              <select
-                value={makeId}
-                onChange={e => { setMakeId(e.target.value); setModelId('') }}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="">Select Make...</option>
-                {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Model *</label>
-              <select
-                value={modelId}
-                onChange={e => setModelId(e.target.value)}
-                disabled={!makeId}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-400"
-              >
-                <option value="">Select Model...</option>
-                {availableModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
+          
+          <div className="mb-6">
+            <MakeModelSelector
+              selectedMake={makeName}
+              setSelectedMake={setMakeName}
+              selectedModel={modelName}
+              setSelectedModel={setModelName}
+              onMakeSelect={(id) => setMakeId(id)}
+              onModelSelect={(id) => setModelId(id)}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Year From *</label>
               <select
@@ -213,17 +187,12 @@ export function AddReferenceRateClient({ makes, models, services }: Props) {
              Labor & Pricing
           </h3>
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Labor / Service *</label>
-              <select
-                value={serviceId}
-                onChange={e => setServiceId(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white font-medium text-blue-700"
-              >
-                <option value="">Search or choose service...</option>
-                {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
+            
+            <ServiceSelector
+              selectedServiceId={serviceId}
+              setSelectedServiceId={setServiceId}
+              onServiceSelect={handleServiceSelect}
+            />
 
             {selectedService && (
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-md flex gap-4 text-sm">
@@ -247,7 +216,7 @@ export function AddReferenceRateClient({ makes, models, services }: Props) {
                   placeholder="0.00"
                 />
               </div>
-              {selectedService?.rate && (
+              {selectedService?.rate !== undefined && selectedService?.rate !== null && (
                 <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
                   <Info size={14}/> General Base Rate for this service is ₱{selectedService.rate.toLocaleString()}
                 </div>

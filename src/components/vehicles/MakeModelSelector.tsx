@@ -12,10 +12,12 @@ type Props = {
   setSelectedMake: (val: string) => void
   selectedModel: string
   setSelectedModel: (val: string) => void
+  onMakeSelect?: (id: string, name: string) => void
+  onModelSelect?: (id: string, name: string) => void
   disabled?: boolean
 }
 
-export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel, setSelectedModel, disabled }: Props) {
+export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel, setSelectedModel, onMakeSelect, onModelSelect, disabled }: Props) {
   const supabase = createClient()
   
   // Data
@@ -84,6 +86,14 @@ export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel
       setSelectedMake(makeName)
       setSelectedModel('') // Reset model if make changes
       setModelSearch('')
+
+      const makeObj = makes.find(m => m.name === makeName)
+      if (onMakeSelect && makeObj) {
+        onMakeSelect(makeObj.id, makeObj.name)
+      }
+      if (onModelSelect) {
+        onModelSelect('', '')
+      }
     }
     setMakeSearch('')
     setIsMakeOpen(false)
@@ -93,6 +103,11 @@ export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel
     setSelectedModel(modelName)
     setModelSearch('')
     setIsModelOpen(false)
+    
+    const modelObj = models.find(m => m.name === modelName)
+    if (onModelSelect && modelObj) {
+      onModelSelect(modelObj.id, modelObj.name)
+    }
   }
 
   const saveNewMake = async () => {
@@ -118,7 +133,11 @@ export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel
 
     if (data) {
       setMakes([...makes, data].sort((a, b) => a.name.localeCompare(b.name)))
-      handleMakeSelect(data.name)
+      setSelectedMake(data.name)
+      setSelectedModel('')
+      setModelSearch('')
+      if (onMakeSelect) onMakeSelect(data.id, data.name)
+      if (onModelSelect) onModelSelect('', '')
       setIsMakeModalOpen(false)
       setNewMakeName('')
     }
@@ -155,7 +174,8 @@ export function MakeModelSelector({ selectedMake, setSelectedMake, selectedModel
 
     if (data) {
       setModels([...models, data].sort((a, b) => a.name.localeCompare(b.name)))
-      handleModelSelect(data.name)
+      setSelectedModel(data.name)
+      if (onModelSelect) onModelSelect(data.id, data.name)
       setIsModelModalOpen(false)
       setNewModelName('')
     }
