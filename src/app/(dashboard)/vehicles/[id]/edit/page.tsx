@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Search, User, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
+import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 
 export default function EditVehiclePage({
   params,
@@ -87,6 +88,12 @@ export default function EditVehiclePage({
 
     if (!plate.trim()) {
       setError("Plate Number is required.")
+      setIsSubmitting(false)
+      return
+    }
+
+    if (!make.trim() || !model.trim()) {
+      setError("Make and Model are required.")
       setIsSubmitting(false)
       return
     }
@@ -216,14 +223,13 @@ export default function EditVehiclePage({
             <input required type="text" value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC 1234" />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
-            <input type="text" value={make} onChange={e => setMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
-            <input type="text" value={model} onChange={e => setModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Hilux" />
+          <div className="col-span-1 md:col-span-2">
+            <MakeModelSelector 
+              selectedMake={make} 
+              setSelectedMake={setMake} 
+              selectedModel={model} 
+              setSelectedModel={setModel} 
+            />
           </div>
           
           <div>

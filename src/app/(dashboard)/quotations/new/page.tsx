@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'lucide-react'
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson } from '@/utils/customer'
+import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 
 type LineItem = {
   id: string
@@ -589,13 +590,14 @@ export default function NewQuotationPage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
               <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase font-bold" placeholder="ABC 1234" disabled={!!selectedVehicleId} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
-              <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" disabled={!!selectedVehicleId} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
-              <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" disabled={!!selectedVehicleId} />
+            <div className="col-span-2">
+              <MakeModelSelector 
+                selectedMake={vehicleMake} 
+                setSelectedMake={setVehicleMake} 
+                selectedModel={vehicleModel} 
+                setSelectedModel={setVehicleModel}
+                disabled={!!selectedVehicleId}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
