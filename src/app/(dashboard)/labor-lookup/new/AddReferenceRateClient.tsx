@@ -19,8 +19,8 @@ export function AddReferenceRateClient() {
   const [modelId, setModelId] = useState(searchParams.get('model_id') || '')
   const [modelName, setModelName] = useState('')
   
-  const [yearFrom, setYearFrom] = useState(searchParams.get('year') || '')
-  const [yearTo, setYearTo] = useState(searchParams.get('year') || '')
+  const [yearFrom, setYearFrom] = useState(searchParams.get('year') || '1980')
+  const [yearTo, setYearTo] = useState(searchParams.get('year') || '2027')
   
   const [serviceId, setServiceId] = useState(searchParams.get('service_id') || '')
   const [selectedService, setSelectedService] = useState<LaborService | null>(null)
@@ -165,8 +165,8 @@ export function AddReferenceRateClient() {
           </div>
 
           {/* Hidden Fields for Year */}
-          <input type="hidden" name="year_from" value={yearFrom || "1980"} />
-          <input type="hidden" name="year_to" value={yearTo || "2027"} />
+          <input type="hidden" name="year_from" value={yearFrom} />
+          <input type="hidden" name="year_to" value={yearTo} />
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
