@@ -1,11 +1,12 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { notFound, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
-export default function PrintQuotationPage({ params }: { params: { id: string } }) {
+export default function PrintQuotationPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const supabase = createClient()
   const router = useRouter()
   const [quote, setQuote] = useState<any>(null)
@@ -17,7 +18,7 @@ export default function PrintQuotationPage({ params }: { params: { id: string } 
       const { data: q, error: qErr } = await supabase
         .from('quotations')
         .select('*')
-        .eq('id', params.id)
+        .eq('id', id)
         .single()
       
       if (qErr || !q) {
@@ -28,7 +29,7 @@ export default function PrintQuotationPage({ params }: { params: { id: string } 
       const { data: itms } = await supabase
         .from('quotation_items')
         .select('*')
-        .eq('quotation_id', params.id)
+        .eq('quotation_id', id)
         .order('sort_order', { ascending: true })
 
       setQuote(q)
@@ -42,7 +43,7 @@ export default function PrintQuotationPage({ params }: { params: { id: string } 
     }
     
     loadData()
-  }, [params.id, supabase])
+  }, [id, supabase])
 
   if (loading) return <div className="p-12 text-center text-slate-500">Loading quotation for printing...</div>
   if (!quote) return notFound()

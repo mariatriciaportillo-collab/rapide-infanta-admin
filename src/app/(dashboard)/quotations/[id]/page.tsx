@@ -4,14 +4,15 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 
-export default async function ViewQuotationPage({ params }: { params: { id: string } }) {
+export default async function ViewQuotationPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient()
+  const { id } = await params
 
   // Fetch Quotation
   const { data: quote, error: quoteError } = await supabase
     .from('quotations')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single()
 
   if (quoteError || !quote) {
