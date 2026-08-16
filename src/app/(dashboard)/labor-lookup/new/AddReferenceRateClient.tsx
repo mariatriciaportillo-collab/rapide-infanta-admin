@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Info } from 'lucide-react'
@@ -10,21 +10,23 @@ import { ServiceSelector, LaborService } from '@/components/labor/ServiceSelecto
 
 export function AddReferenceRateClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   // Form State
-  const [makeId, setMakeId] = useState('')
+  const [makeId, setMakeId] = useState(searchParams.get('make_id') || '')
   const [makeName, setMakeName] = useState('')
-  const [modelId, setModelId] = useState('')
+  const [modelId, setModelId] = useState(searchParams.get('model_id') || '')
   const [modelName, setModelName] = useState('')
   
-  const [yearFrom, setYearFrom] = useState('')
-  const [yearTo, setYearTo] = useState('')
+  const [yearFrom, setYearFrom] = useState(searchParams.get('year') || '')
+  const [yearTo, setYearTo] = useState(searchParams.get('year') || '')
   
-  const [serviceId, setServiceId] = useState('')
+  const [serviceId, setServiceId] = useState(searchParams.get('service_id') || '')
   const [selectedService, setSelectedService] = useState<LaborService | null>(null)
   
-  const [charge, setCharge] = useState('')
+  const [laborManual, setLaborManual] = useState('')
+  const [laborAutomatic, setLaborAutomatic] = useState('')
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
 
@@ -41,8 +43,9 @@ export function AddReferenceRateClient() {
   const handleServiceSelect = (service: LaborService) => {
     setServiceId(service.id)
     setSelectedService(service)
-    if (!charge && service.rate !== null) {
-      setCharge(service.rate.toString())
+    if (!laborManual && !laborAutomatic && service.rate !== null) {
+      setLaborManual(service.rate.toString())
+      setLaborAutomatic(service.rate.toString())
     }
   }
 
@@ -66,8 +69,17 @@ export function AddReferenceRateClient() {
       return
     }
 
-    if (!charge || isNaN(parseFloat(charge))) {
-      setError("Please enter a valid Reference Charge.")
+    if (!laborManual && !laborAutomatic) {
+      setError("Please enter at least one Labor Charge (Manual or Automatic).")
+      setIsSubmitting(false)
+      return
+    }
+
+    const lm = laborManual ? parseFloat(laborManual) : null
+    const la = laborAutomatic ? parseFloat(laborAutomatic) : null
+
+    if ((laborManual && isNaN(lm!)) || (laborAutomatic && isNaN(la!))) {
+      setError("Please enter valid numeric Labor Charges.")
       setIsSubmitting(false)
       return
     }
@@ -104,7 +116,8 @@ export function AddReferenceRateClient() {
       vehicle_model_id: modelId,
       year_from: yF,
       year_to: yT,
-      reference_charge: parseFloat(charge),
+      labor_manual: lm,
+      labor_automatic: la,
       notes: notes.trim() || null,
       is_active: isActive
     })
@@ -151,35 +164,9 @@ export function AddReferenceRateClient() {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year From *</label>
-              <select
-                value={yearFrom}
-                onChange={e => {
-                  setYearFrom(e.target.value)
-                  if (!yearTo || parseInt(e.target.value) > parseInt(yearTo)) {
-                    setYearTo(e.target.value)
-                  }
-                }}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="">Select...</option>
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year To *</label>
-              <select
-                value={yearTo}
-                onChange={e => setYearTo(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="">Select...</option>
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-          </div>
+          {/* Hidden Fields for Year */}
+          <input type="hidden" name="year_from" value={yearFrom || "1980"} />
+          <input type="hidden" name="year_to" value={yearTo || "2027"} />
         </div>
 
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
@@ -202,22 +189,42 @@ export function AddReferenceRateClient() {
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Reference Charge *</label>
-              <div className="relative md:w-1/2">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₱</span>
-                <input 
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={charge}
-                  onChange={e => setCharge(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md p-2 pl-8 focus:outline-none focus:border-blue-500 font-bold text-lg text-blue-700"
-                  placeholder="0.00"
-                />
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                Reference Labor Charges
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Manual Labor Charge (₱)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={laborManual}
+                    onChange={e => setLaborManual(e.target.value)}
+                    className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
+                    placeholder="e.g. 1500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Automatic Labor Charge (₱)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={laborAutomatic}
+                    onChange={e => setLaborAutomatic(e.target.value)}
+                    className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
+                    placeholder="e.g. 1800"
+                  />
+                </div>
               </div>
               {selectedService?.rate !== undefined && selectedService?.rate !== null && (
-                <div className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+                <div className="mt-4 text-xs text-slate-500 flex items-center gap-1">
                   <Info size={14}/> General Base Rate for this service is ₱{selectedService.rate.toLocaleString()}
                 </div>
               )}

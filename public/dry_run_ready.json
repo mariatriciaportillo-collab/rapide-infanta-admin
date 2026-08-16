@@ -1,0 +1,704 @@
+[
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SUSPENSION REPLACEMENT L/R",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "STABLINK REPLACEMENT L/R",
+    "labor_manual": null,
+    "labor_automatic": 1100
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK AND PINION REPLACEMENT",
+    "labor_manual": 3500,
+    "labor_automatic": 4500
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DIFFERENTIAL BUSHING REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 8000
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRIVE BELT & STEERING BELT REPLACEMENT",
+    "labor_manual": 2500,
+    "labor_automatic": null
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "UPPER SUSPENSION REPLACEMENT",
+    "labor_manual": 1800,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK END & TIE ROD REPLACEMENT",
+    "labor_manual": 1600,
+    "labor_automatic": 2400
+  },
+  {
+    "make": "NISSAN",
+    "model": "NAVARA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER BALL JOINT REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 1600
+  },
+  {
+    "make": "HONDA",
+    "model": "CITY",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "PULL DOWN TRANSMISSION",
+    "labor_manual": null,
+    "labor_automatic": 7500
+  },
+  {
+    "make": "HONDA",
+    "model": "CITY",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER & SHOCK MOUNTING REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK AND PINION REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 2500
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "VALVE COVER GASKET REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 1200
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "PRESS IN / PRESS OUT & REPLACEMENT OF WHEEL BEARING",
+    "labor_manual": 900,
+    "labor_automatic": 1200
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "CALIPER PISTON REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 900
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "CALIPER KIT REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 900
+  },
+  {
+    "make": "MITSUBISHI",
+    "model": "MIRAGE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "BRAKE BLEEDING",
+    "labor_manual": null,
+    "labor_automatic": 450
+  },
+  {
+    "make": "TOYOTA",
+    "model": "AVANZA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "ROTOR REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 1200
+  },
+  {
+    "make": "TOYOTA",
+    "model": "AVANZA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "REFACE BRAKE DRUM",
+    "labor_manual": null,
+    "labor_automatic": 2000
+  },
+  {
+    "make": "TOYOTA",
+    "model": "AVANZA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "PRESS IN/OUT WHEEL BEARING",
+    "labor_manual": null,
+    "labor_automatic": 1600
+  },
+  {
+    "make": "TOYOTA",
+    "model": "AVANZA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER ARM SUSPENSION REPLACEMENT",
+    "labor_manual": 2200,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "AVANZA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "STABLINK REPLACEMENT",
+    "labor_manual": 600,
+    "labor_automatic": null
+  },
+  {
+    "make": "HONDA",
+    "model": "MOBILIO",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER & SHOCK MOUNTING REPLACEMENT L/R",
+    "labor_manual": null,
+    "labor_automatic": 1200
+  },
+  {
+    "make": "TOYOTA",
+    "model": "COROLLA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK END & TIE ROD REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "TOYOTA",
+    "model": "COROLLA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "STABLINK REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 700
+  },
+  {
+    "make": "TOYOTA",
+    "model": "FORTUNER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "MUDGUARD & DOOR VISORS INSTALLATION",
+    "labor_manual": null,
+    "labor_automatic": 1200
+  },
+  {
+    "make": "TOYOTA",
+    "model": "FORTUNER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "BUMPER INSTALLATION",
+    "labor_manual": null,
+    "labor_automatic": 2500
+  },
+  {
+    "make": "TOYOTA",
+    "model": "FORTUNER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RE-PAINTING",
+    "labor_manual": null,
+    "labor_automatic": 5000
+  },
+  {
+    "make": "TOYOTA",
+    "model": "FORTUNER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 1000
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SPARK PLUG LABOR",
+    "labor_manual": null,
+    "labor_automatic": 550
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "CLEANING THROTTLE BODY",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "IGNITION COIL & SPARK PLUG REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 700
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRIVE SHAFT REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "TIE ROD REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 300
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER REPLACEMENT",
+    "labor_manual": 600,
+    "labor_automatic": 750
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "VALVE COVER GASKET REPLACEMENT",
+    "labor_manual": 1200,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "CRANK SHAFT OIL SEAL REPLACEMENT",
+    "labor_manual": 550,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "THERMOSTAT REPLACEMENT",
+    "labor_manual": 600,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRIVE BELT REPLACEMENT",
+    "labor_manual": 350,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "VIOS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "OXYGEN SENSOR REPLACEMENT",
+    "labor_manual": 800,
+    "labor_automatic": null
+  },
+  {
+    "make": "NISSAN",
+    "model": "XTRAIL",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "WHEEL HUB BEARING REPLACEMENT L/R",
+    "labor_manual": null,
+    "labor_automatic": 2400
+  },
+  {
+    "make": "NISSAN",
+    "model": "XTRAIL",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER SUSPENSION REPLACEMENT L/R",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "TOYOTA",
+    "model": "HILUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK END & TIE ROD REPLACEMENT L/R",
+    "labor_manual": 2200,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "HILUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SUSPENSION REPLACEMENT L/R",
+    "labor_manual": 1800,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "HILUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "BALL JOINT REPLACEMENT L/R",
+    "labor_manual": 1600,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "HILUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "STABLINK REPLACEMENT L/R",
+    "labor_manual": 300,
+    "labor_automatic": null
+  },
+  {
+    "make": "HYUNDAI",
+    "model": "ACCENT",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER ARM SUSPENSION LABOR",
+    "labor_manual": null,
+    "labor_automatic": 1500
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "BALL JOINT REPLACEMENT UPPER L/R",
+    "labor_manual": 1500,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "BALL JOINT REPLACEMEN LOWER L/R",
+    "labor_manual": 1500,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK END & TIE ROD REPLACEMENT L/R",
+    "labor_manual": 1200,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER FRONT ASSEMBLY",
+    "labor_manual": 2200,
+    "labor_automatic": 2400
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRIVE BELT REPLACE",
+    "labor_manual": 1000,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRIVE BELT AND ALTERNATOR REPLACEMENT",
+    "labor_manual": 2800,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "ALTERNATOR REPLACEMENT",
+    "labor_manual": 1800,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "VALVE COVER GASKET REPLACEMENT",
+    "labor_manual": 2200,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "PRESS IN / PRESS OUT OF WHEEL BEARING",
+    "labor_manual": 1500,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHOCK ABSORBER REPLACEMENT",
+    "labor_manual": 900,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "INNOVA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "EGR CLEANING",
+    "labor_manual": 4500,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "CAMRY",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "AXLE REPLACEMENT",
+    "labor_manual": 2600,
+    "labor_automatic": null
+  },
+  {
+    "make": "TOYOTA",
+    "model": "YARIS",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "CLEANING THROTTLE BODY",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "SUZUKI",
+    "model": "ERTIGA",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK AND PINION REPLACEMENT",
+    "labor_manual": 2500,
+    "labor_automatic": null
+  },
+  {
+    "make": "FORD",
+    "model": "RANGER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "UPPER SUSPENSION REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "FORD",
+    "model": "RANGER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "UPPER ARM LABOR",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "FORD",
+    "model": "RANGER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER ARM LABOR",
+    "labor_manual": null,
+    "labor_automatic": 2200
+  },
+  {
+    "make": "ISUZU",
+    "model": "HI-LANDER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "DRAG LINK, RACK END & TIE ROD REPLACEMENT",
+    "labor_manual": 2200,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "HI-LANDER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "WHEEL BEARING REPLACEMENT",
+    "labor_manual": 2400,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "HI-LANDER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "AXLE OIL SEAL REPLACEMENT",
+    "labor_manual": 1800,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "HI-LANDER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "TRANSMISSION SUPPORT REPLACEMENT",
+    "labor_manual": 550,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "HI-LANDER",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "AIRCON BELT & ALTERNATOR BELT",
+    "labor_manual": 800,
+    "labor_automatic": null
+  },
+  {
+    "make": "FORD",
+    "model": "ESCAPE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "THROTTLE BODY CLEANING",
+    "labor_manual": null,
+    "labor_automatic": 1800
+  },
+  {
+    "make": "FORD",
+    "model": "ESCAPE",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "SHIFTER BUSHING REPLACEMENT",
+    "labor_manual": null,
+    "labor_automatic": 800
+  },
+  {
+    "make": "NISSAN",
+    "model": "URVAN",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER BALL JOINT REPLACEMENT",
+    "labor_manual": 1600,
+    "labor_automatic": null
+  },
+  {
+    "make": "NISSAN",
+    "model": "URVAN",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "UPPER SUSPENSION REPLACEMENT",
+    "labor_manual": 1400,
+    "labor_automatic": null
+  },
+  {
+    "make": "NISSAN",
+    "model": "URVAN",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "RACK END & TIE ROD REPLACEMENT",
+    "labor_manual": 1200,
+    "labor_automatic": null
+  },
+  {
+    "make": "NISSAN",
+    "model": "URVAN",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "WHEEL BEARING REPLACEMENT",
+    "labor_manual": 1200,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "MUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "WHEEL BEARING REPLACEMENT",
+    "labor_manual": 700,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "MUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "UPPER BALL JOINT REPLACEMENT",
+    "labor_manual": 600,
+    "labor_automatic": null
+  },
+  {
+    "make": "ISUZU",
+    "model": "MUX",
+    "year_from": 1980,
+    "year_to": 2027,
+    "service": "LOWER BALL JOINT REPLACEMENT",
+    "labor_manual": 600,
+    "labor_automatic": null
+  }
+]

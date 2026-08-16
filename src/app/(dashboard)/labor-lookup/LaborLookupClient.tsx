@@ -26,7 +26,8 @@ type LookupRate = {
   vehicle_model_id: string
   year_from: number
   year_to: number
-  reference_charge: number
+  labor_manual: number | null
+  labor_automatic: number | null
   notes: string | null
   is_active: boolean
   labor_services: Service
@@ -45,46 +46,128 @@ type Props = {
 
 export function LaborLookupClient({ makes, models, services, groups, categories, lookupRates }: Props) {
   // === QUICK LOOKUP STATE ===
-  const [qlMakeId, setQlMakeId] = useState('')
-  const [qlModelId, setQlModelId] = useState('')
-  const [qlYear, setQlYear] = useState('')
+  const [qlVehicleId, setQlVehicleId] = useState('') // This will hold "makeId_modelId"
   const [qlServiceId, setQlServiceId] = useState('')
 
-  // Derived available dropdown options
-  const qlAvailableModels = useMemo(() => {
-    if (!qlMakeId) return []
-    return models.filter(m => m.make_id === qlMakeId)
-  }, [models, qlMakeId])
-
-  const availableYears = useMemo(() => {
-    const currentYear = new Date().getFullYear() + 1 // allow up to next year
-    const years = []
-    for (let y = currentYear; y >= 1980; y--) years.push(y)
-    return years
-  }, [])
+  // Create flattened vehicles list for the single dropdown
+  const combinedVehicles = useMemo(() => {
+    const list: { id: string, makeId: string, modelId: string, name: string }[] = []
+    models.forEach(model => {
+      const make = makes.find(m => m.id === model.make_id)
+      if (make) {
+        list.push({
+          id: `${make.id}_${model.id}`,
+          makeId: make.id,
+          modelId: model.id,
+          name: `${make.name} ${model.name}`
+        })
+      }
+    })
+    return list.sort((a, b) => a.name.localeCompare(b.name))
+  }, [makes, models])
 
   // Quick Lookup Result Calculation
-  const quickLookupResult = useMemo(() => {
-    if (!qlMakeId || !qlModelId || !qlYear || !qlServiceId) return null
+  const activeRate = useMemo(() => {
+    if (!qlVehicleId || !qlServiceId) return null
     
-    const yearInt = parseInt(qlYear)
-    if (isNaN(yearInt)) return null
-
-    const service = services.find(s => s.id === qlServiceId)
-    if (!service) return null
+    const [makeId, modelId] = qlVehicleId.split('_')
 
     // Find the specific rate matching the criteria
-    const rate = lookupRates.find(r => 
-      r.vehicle_make_id === qlMakeId &&
-      r.vehicle_model_id === qlModelId &&
+    // Since Year is removed from UI, we just grab the first matching active rate.
+    // In the future, if Year becomes important, we handle it as an exception.
+    return lookupRates.find(r => 
+      r.vehicle_make_id === makeId &&
+      r.vehicle_model_id === modelId &&
       r.labor_service_id === qlServiceId &&
-      r.is_active === true &&
-      yearInt >= r.year_from && 
-      yearInt <= r.year_to
+      r.is_active === true
     )
+  }, [qlVehicleId, qlServiceId, lookupRates])
 
-    return { service, rate }
-  }, [qlMakeId, qlModelId, qlYear, qlServiceId, lookupRates, services])
+  const selectedService = useMemo(() => {
+    if (!qlServiceId) return null
+    return services.find(s => s.id === qlServiceId) || null
+  }, [qlServiceId, services])
+
+  const renderQuickLookupResult = () => {
+    if (!qlVehicleId) {
+      return <div className="text-center text-slate-500 py-6 italic">Select a vehicle.</div>
+    }
+    if (!qlServiceId) {
+      return <div className="text-center text-slate-500 py-6 italic">Select a Labor / Service to view the reference charge.</div>
+    }
+
+    const selectedVehicle = combinedVehicles.find(v => v.id === qlVehicleId)
+    const [makeId, modelId] = qlVehicleId.split('_')
+
+    if (activeRate) {
+      return (
+        <div className="border border-slate-300 rounded-lg p-6 shadow-sm">
+          <div className="text-sm uppercase tracking-wide font-bold text-slate-500 mb-4">REFERENCE LABOR CHARGE</div>
+          <div className="mb-6 border-b border-slate-100 pb-4">
+            <div className="text-xl font-bold text-slate-800">{selectedService?.name}</div>
+            <div className="text-slate-600 font-medium uppercase mt-1">{selectedVehicle?.name}</div>
+          </div>
+          
+          <div className="flex flex-wrap gap-8 mb-6">
+            <div className="min-w-[150px]">
+              <div className="text-xs font-bold text-slate-400 tracking-wider mb-1">LABOR M</div>
+              <div className="text-3xl font-black text-slate-800">
+                {activeRate.labor_manual ? formatCurrency(activeRate.labor_manual) : <span className="text-slate-300 font-medium">—</span>}
+              </div>
+            </div>
+            <div className="min-w-[150px]">
+              <div className="text-xs font-bold text-slate-400 tracking-wider mb-1">LABOR AT</div>
+              <div className="text-3xl font-black text-slate-800">
+                {activeRate.labor_automatic ? formatCurrency(activeRate.labor_automatic) : <span className="text-slate-300 font-medium">—</span>}
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-sm text-slate-600 flex flex-wrap gap-x-6 gap-y-2 bg-slate-50 p-4 rounded-md">
+            <div><span className="font-medium text-slate-800">Group:</span> {selectedService?.labor_groups?.name || '-'}</div>
+            <div><span className="font-medium text-slate-800">Category:</span> {selectedService?.labor_categories?.name || '-'}</div>
+            <div><span className="font-medium text-slate-800">Standard Hour:</span> {selectedService?.standard_hours ? `${selectedService.standard_hours} hrs` : '-'}</div>
+          </div>
+          {activeRate.notes && (
+            <div className="mt-4 text-sm italic text-slate-500 flex items-start gap-1">
+              <Info size={14} className="mt-0.5 shrink-0"/> {activeRate.notes}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    if (selectedService?.rate) {
+      return (
+        <div className="border border-amber-200 bg-amber-50 rounded-lg p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm uppercase tracking-wide font-bold text-amber-700 mb-4">
+            <AlertCircle size={16} /> NO VEHICLE-SPECIFIC RATE FOUND
+          </div>
+          <div className="text-slate-800 mb-6">
+            No vehicle-specific reference rate has been configured for <br/>
+            <strong>{selectedVehicle?.name}</strong>.
+          </div>
+          <div className="bg-white border border-amber-100 p-4 rounded-md inline-block">
+            <div className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-1">General Labor Rate</div>
+            <div className="text-2xl font-bold text-slate-700">{formatCurrency(selectedService.rate)}</div>
+          </div>
+        </div>
+      )
+    }
+
+    return (
+      <div className="border border-slate-300 bg-slate-50 rounded-lg p-8 shadow-sm text-center">
+        <div className="text-slate-600 mb-6 font-medium text-lg">No labor charge configured.</div>
+        <Link 
+          href={`/labor-lookup/new?make_id=${makeId}&model_id=${modelId}&service_id=${qlServiceId}`}
+          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-md font-medium transition"
+        >
+          <Plus size={18} />
+          Add Reference Rate
+        </Link>
+      </div>
+    )
+  }
 
   // === MANAGEMENT TABLE STATE ===
   const [search, setSearch] = useState('')
@@ -140,47 +223,25 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
           QUICK LABOR LOOKUP
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Make</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
               <select
-                value={qlMakeId}
-                onChange={e => { setQlMakeId(e.target.value); setQlModelId('') }}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
+                value={qlVehicleId}
+                onChange={e => setQlVehicleId(e.target.value)}
+                className="w-full border border-slate-300 rounded-md p-3 focus:outline-none focus:border-blue-500 bg-white font-medium shadow-sm"
               >
-                <option value="">Select Make...</option>
-                {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                <option value="">Select or search vehicle...</option>
+                {combinedVehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
               </select>
             </div>
+            
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Model</label>
-              <select
-                value={qlModelId}
-                onChange={e => setQlModelId(e.target.value)}
-                disabled={!qlMakeId}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white disabled:bg-slate-50 disabled:text-slate-400"
-              >
-                <option value="">Select Model...</option>
-                {qlAvailableModels.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year Model</label>
-              <select
-                value={qlYear}
-                onChange={e => setQlYear(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="">Select Year...</option>
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Labor / Service</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Maintenance / Service</label>
               <select
                 value={qlServiceId}
                 onChange={e => setQlServiceId(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white font-medium text-blue-700"
+                className="w-full border border-slate-300 rounded-md p-3 focus:outline-none focus:border-blue-500 bg-white font-medium text-blue-700 shadow-sm"
               >
                 <option value="">Search or choose service...</option>
                 {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -189,55 +250,9 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
           </div>
 
           {/* Quick Lookup Result Panel */}
-          {quickLookupResult && (
-            <div className="mt-6 border-t border-slate-200 pt-6">
-              {quickLookupResult.rate ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">{quickLookupResult.service.name}</h3>
-                    <div className="text-sm text-slate-600 space-y-1">
-                      <div><span className="font-medium">Vehicle:</span> {makes.find(m=>m.id === qlMakeId)?.name} {models.find(m=>m.id === qlModelId)?.name} ({qlYear})</div>
-                      <div><span className="font-medium">Group:</span> {quickLookupResult.service.labor_groups?.name || 'Unassigned'}</div>
-                      <div><span className="font-medium">Category:</span> {quickLookupResult.service.labor_categories?.name || 'Unassigned'}</div>
-                      <div><span className="font-medium">Standard Hour:</span> {quickLookupResult.service.standard_hours || '-'} hrs</div>
-                    </div>
-                    {quickLookupResult.rate.notes && (
-                      <div className="mt-3 text-sm italic text-slate-500 flex items-start gap-1">
-                        <Info size={14} className="mt-0.5 shrink-0"/> {quickLookupResult.rate.notes}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-center bg-white p-6 rounded-lg shadow-sm border border-slate-200 min-w-[200px]">
-                    <div className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2">Reference Labor Charge</div>
-                    <div className="text-4xl font-black text-blue-600">{formatCurrency(quickLookupResult.rate.reference_charge)}</div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div>
-                    <div className="flex items-center gap-2 text-amber-700 font-bold mb-2">
-                      <AlertCircle size={20} /> NO VEHICLE-SPECIFIC RATE
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">{quickLookupResult.service.name}</h3>
-                    <div className="text-sm text-slate-600 space-y-1">
-                      <div><span className="font-medium">Vehicle:</span> {makes.find(m=>m.id === qlMakeId)?.name} {models.find(m=>m.id === qlModelId)?.name} ({qlYear})</div>
-                      <div className="mt-2 text-amber-700">No vehicle-specific labor charge is configured for this exact vehicle and year.</div>
-                    </div>
-                  </div>
-                  {quickLookupResult.service.rate ? (
-                    <div className="text-center bg-white p-6 rounded-lg shadow-sm border border-slate-200 min-w-[200px]">
-                      <div className="text-xs uppercase font-bold text-slate-400 tracking-wider mb-2">General Labor Rate</div>
-                      <div className="text-3xl font-bold text-slate-700">{formatCurrency(quickLookupResult.service.rate)}</div>
-                    </div>
-                  ) : (
-                    <div className="text-center bg-white p-6 rounded-lg shadow-sm border border-slate-200 min-w-[200px] text-slate-400 font-medium">
-                      No Base Rate Available
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+          <div className="mt-6 border-t border-slate-200 pt-6">
+            {renderQuickLookupResult()}
+          </div>
         </div>
       </div>
 
@@ -345,22 +360,21 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-600 text-xs uppercase font-bold tracking-wider">
               <tr>
-                <th className="px-4 py-3">Make</th>
-                <th className="px-4 py-3">Model</th>
-                <th className="px-4 py-3 text-center">Years</th>
+                <th className="px-4 py-3">Vehicle</th>
                 <th className="px-4 py-3">Labor / Service</th>
                 <th className="px-4 py-3">Group & Category</th>
-                <th className="px-4 py-3 text-right">Ref. Charge</th>
+                <th className="px-4 py-3 text-right">LABOR M</th>
+                <th className="px-4 py-3 text-right">LABOR AT</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredRates.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                     <AlertCircle size={24} className="mx-auto text-slate-300 mb-2" />
                     No reference rates found matching your criteria.<br/>
                   </td>
@@ -368,11 +382,7 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
               ) : (
                 filteredRates.map(rate => (
                   <tr key={rate.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-3 font-medium text-slate-800">{rate.vehicle_makes.name}</td>
-                    <td className="px-4 py-3 text-slate-800">{rate.vehicle_models.name}</td>
-                    <td className="px-4 py-3 text-center font-medium text-slate-500">
-                      {rate.year_from === rate.year_to ? rate.year_from : `${rate.year_from}–${rate.year_to}`}
-                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{rate.vehicle_makes.name} {rate.vehicle_models.name}</td>
                     <td className="px-4 py-3">
                       <div className="font-bold text-slate-800">{rate.labor_services.name}</div>
                       {rate.notes && (
@@ -383,8 +393,11 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
                       <div><span className="font-semibold text-slate-600">G:</span> {rate.labor_services.labor_groups?.name || '-'}</div>
                       <div><span className="font-semibold text-slate-600">C:</span> {rate.labor_services.labor_categories?.name || '-'}</div>
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-blue-600 text-base">
-                      {formatCurrency(rate.reference_charge)}
+                    <td className="px-4 py-3 text-right font-black text-slate-700 text-sm">
+                      {rate.labor_manual ? formatCurrency(rate.labor_manual) : <span className="text-slate-300 font-normal">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right font-black text-slate-700 text-sm">
+                      {rate.labor_automatic ? formatCurrency(rate.labor_automatic) : <span className="text-slate-300 font-normal">—</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link 
