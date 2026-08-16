@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import { EditLaborChargeClient } from './EditLaborChargeClient'
 
-export default async function EditLaborChargePage({
+export default async function EditLaborPage({
   params,
 }: {
   params: Promise<{ id: string }>
@@ -10,22 +10,19 @@ export default async function EditLaborChargePage({
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: charge, error } = await supabase
-    .from('labor_charges')
+  const { data: service, error } = await supabase
+    .from('labor_services')
     .select(`
       *,
-      labor_services (*),
-      vehicle_models (
-        *,
-        vehicle_makes (*)
-      )
+      labor_groups (*),
+      labor_categories (*)
     `)
     .eq('id', id)
     .single()
 
-  if (error || !charge) {
+  if (error || !service) {
     notFound()
   }
 
-  return <EditLaborChargeClient charge={charge} />
+  return <EditLaborChargeClient service={service} />
 }

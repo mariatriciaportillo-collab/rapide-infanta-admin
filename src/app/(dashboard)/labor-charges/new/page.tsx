@@ -4,22 +4,22 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Save } from 'lucide-react'
-import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
-import { ServiceSelector } from '@/components/labor/ServiceSelector'
+import { ArrowLeft, Save, Info } from 'lucide-react'
+import { GroupCategorySelector } from '@/components/labor/GroupCategorySelector'
 
-export default function AddLaborChargePage() {
+export default function AddLaborPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [selectedMake, setSelectedMake] = useState('')
-  const [selectedModel, setSelectedModel] = useState('')
-  const [selectedServiceId, setSelectedServiceId] = useState('')
+  // Form State
+  const [serviceName, setServiceName] = useState('')
+  const [selectedGroupId, setSelectedGroupId] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState('')
   
-  const [laborM, setLaborM] = useState('')
-  const [laborAT, setLaborAT] = useState('')
-  const [repairCharge, setRepairCharge] = useState('')
+  const [standardHours, setStandardHours] = useState('')
+  const [rate, setRate] = useState('')
   const [notes, setNotes] = useState('')
+  const [isActive, setIsActive] = useState(true)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,42 +29,43 @@ export default function AddLaborChargePage() {
     setIsSubmitting(true)
     setError(null)
 
-    if (!selectedServiceId) {
-      setError("Please select a Service.")
+    if (!serviceName.trim()) {
+      setError("Please enter a Labor / Service name.")
       setIsSubmitting(false)
       return
     }
 
-    // We allow generic charges without a specific vehicle. If a make is selected but not a model, we force them to select a model.
-    if (selectedMake && !selectedModel) {
-      setError("Please select the specific Model for this Make, or clear the Make to create a generic charge.")
+    if (!selectedGroupId) {
+      setError("Please select a Group.")
       setIsSubmitting(false)
       return
     }
 
-    let vehicle_model_id = null
-    if (selectedMake && selectedModel) {
-      const { data: makeData } = await supabase.from('vehicle_makes').select('id').eq('name', selectedMake).single()
-      if (makeData) {
-        const { data: modelData } = await supabase.from('vehicle_models').select('id').eq('make_id', makeData.id).eq('name', selectedModel).single()
-        if (modelData) {
-          vehicle_model_id = modelData.id
-        }
-      }
+    if (!selectedCategoryId) {
+      setError("Please select a Category.")
+      setIsSubmitting(false)
+      return
     }
 
-    const { error: insertError } = await supabase.from('labor_charges').insert({
-      service_id: selectedServiceId,
-      vehicle_model_id: vehicle_model_id || null,
-      labor_m: laborM ? parseFloat(laborM) : null,
-      labor_at: laborAT ? parseFloat(laborAT) : null,
-      repair_charge: repairCharge ? parseFloat(repairCharge) : null,
-      notes: notes.trim() || null
+    if (!rate || isNaN(parseFloat(rate))) {
+      setError("Please enter a valid Rate / Price.")
+      setIsSubmitting(false)
+      return
+    }
+
+    const { error: insertError } = await supabase.from('labor_services').insert({
+      name: serviceName.trim(),
+      group_id: selectedGroupId,
+      category_id: selectedCategoryId,
+      standard_hours: standardHours ? parseFloat(standardHours) : null,
+      rate: parseFloat(rate),
+      notes: notes.trim() || null,
+      is_active: isActive
     })
 
     if (insertError) {
       if (insertError.code === '23505') {
-        setError("A charge for this specific Service and Vehicle Model combination already exists.")
+        setError("A service with this name already exists.")
       } else {
         setError(`Failed to save: ${insertError.message}`)
       }
@@ -73,6 +74,7 @@ export default function AddLaborChargePage() {
     }
 
     router.push('/labor-charges')
+    router.refresh()
   }
 
   return (
@@ -81,7 +83,7 @@ export default function AddLaborChargePage() {
         <Link href="/labor-charges" className="p-2 hover:bg-slate-100 rounded-full transition">
           <ArrowLeft className="text-slate-500" size={24} />
         </Link>
-        <h2 className="text-2xl font-bold text-slate-800">Add Labor Charge</h2>
+        <h2 className="text-2xl font-bold text-slate-800">Add Labor / Service</h2>
       </div>
 
       {error && (
@@ -91,80 +93,86 @@ export default function AddLaborChargePage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* VEHICLE SECTION */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Reference Vehicle</h3>
-          <p className="text-sm text-slate-500 mb-4">
-            Select a vehicle to create a vehicle-specific charge. Leave both empty to create a generic charge applicable to all vehicles.
-          </p>
-          <MakeModelSelector 
-            selectedMake={selectedMake}
-            setSelectedMake={setSelectedMake}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-          />
-        </div>
-
-        {/* SERVICE SECTION */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Service</h3>
-          <ServiceSelector 
-            selectedServiceId={selectedServiceId}
-            setSelectedServiceId={setSelectedServiceId}
-          />
-        </div>
-
-        {/* PRICING SECTION */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Charges (₱)</h3>
+          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+             Service Information
+          </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Manual Labor (M)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Labor / Service *</label>
               <input 
-                type="number"
-                min="0"
-                step="0.01"
-                value={laborM}
-                onChange={e => setLaborM(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
-                placeholder="0.00"
+                type="text"
+                value={serviceName}
+                onChange={e => setServiceName(e.target.value)}
+                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 font-medium"
+                placeholder="e.g. Drive Shaft Replacement"
+                autoFocus
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Auto Labor (AT)</label>
-              <input 
-                type="number"
-                min="0"
-                step="0.01"
-                value={laborAT}
-                onChange={e => setLaborAT(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Repair Charge</label>
-              <input 
-                type="number"
-                min="0"
-                step="0.01"
-                value={repairCharge}
-                onChange={e => setRepairCharge(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Notes (Optional)</label>
-            <textarea 
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 min-h-[100px]"
-              placeholder="Any specific conditions or notes for this charge..."
+            <GroupCategorySelector 
+              selectedGroupId={selectedGroupId}
+              setSelectedGroupId={setSelectedGroupId}
+              selectedCategoryId={selectedCategoryId}
+              setSelectedCategoryId={setSelectedCategoryId}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Standard Hour</label>
+                <div className="relative">
+                  <input 
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={standardHours}
+                    onChange={e => setStandardHours(e.target.value)}
+                    className="w-full border border-slate-300 rounded-md p-2 pr-10 focus:outline-none focus:border-blue-500"
+                    placeholder="e.g. 2.0"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">hrs</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Rate / Price of Service *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₱</span>
+                  <input 
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={rate}
+                    onChange={e => setRate(e.target.value)}
+                    className="w-full border border-slate-300 rounded-md p-2 pl-8 focus:outline-none focus:border-blue-500 font-medium"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+              <textarea 
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 min-h-[80px]"
+                placeholder="Optional notes..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
+              <select
+                value={isActive ? 'active' : 'inactive'}
+                onChange={e => setIsActive(e.target.value === 'active')}
+                className="w-full md:w-1/3 border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -181,7 +189,7 @@ export default function AddLaborChargePage() {
             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center gap-2 disabled:bg-blue-400"
           >
             <Save size={18} />
-            {isSubmitting ? 'Saving...' : 'Save Charge'}
+            {isSubmitting ? 'Saving...' : 'Save Labor'}
           </button>
         </div>
       </form>
