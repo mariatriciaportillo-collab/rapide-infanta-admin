@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Search, Edit, Info, AlertCircle, Wrench, Car, Plus } from 'lucide-react'
+import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
 
 // Types based on schema
 type Make = { id: string; name: string }
@@ -128,11 +129,19 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
             <div><span className="font-medium text-slate-800">Category:</span> {selectedService?.labor_categories?.name || '-'}</div>
             <div><span className="font-medium text-slate-800">Standard Hour:</span> {selectedService?.standard_hours ? `${selectedService.standard_hours} hrs` : '-'}</div>
           </div>
-          {activeRate.notes && (
-            <div className="mt-4 text-sm italic text-slate-500 flex items-start gap-1">
-              <Info size={14} className="mt-0.5 shrink-0"/> {activeRate.notes}
-            </div>
-          )}
+          <div className="flex items-center justify-between mt-4">
+            {activeRate.notes ? (
+              <div className="text-sm italic text-slate-500 flex items-start gap-1">
+                <Info size={14} className="mt-0.5 shrink-0"/> {activeRate.notes}
+              </div>
+            ) : <div />}
+            <Link 
+              href={`/labor-lookup/${activeRate.id}/edit`} 
+              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 font-medium text-sm transition px-3 py-1.5 hover:bg-blue-50 rounded-md"
+            >
+              <Edit size={16} /> Edit Rate
+            </Link>
+          </div>
         </div>
       )
     }
@@ -226,26 +235,24 @@ export function LaborLookupClient({ makes, models, services, groups, categories,
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle</label>
-              <select
+              <SearchableCombobox 
+                options={combinedVehicles as ComboboxOption[]}
                 value={qlVehicleId}
-                onChange={e => setQlVehicleId(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-3 focus:outline-none focus:border-blue-500 bg-white font-medium shadow-sm"
-              >
-                <option value="">Select or search vehicle...</option>
-                {combinedVehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-              </select>
+                onChange={setQlVehicleId}
+                placeholder="Select or search vehicle..."
+                searchPlaceholder="Search vehicle..."
+              />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Maintenance / Service</label>
-              <select
+              <SearchableCombobox 
+                options={services.map(s => ({ id: s.id, name: s.name, subtext: s.labor_categories?.name })) as ComboboxOption[]}
                 value={qlServiceId}
-                onChange={e => setQlServiceId(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-3 focus:outline-none focus:border-blue-500 bg-white font-medium text-blue-700 shadow-sm"
-              >
-                <option value="">Search or choose service...</option>
-                {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+                onChange={setQlServiceId}
+                placeholder="Select or search service..."
+                searchPlaceholder="Search service..."
+              />
             </div>
           </div>
 
