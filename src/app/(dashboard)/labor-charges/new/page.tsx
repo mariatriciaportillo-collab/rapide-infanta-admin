@@ -72,13 +72,13 @@ export default function AddLaborChargePage() {
       return
     }
 
-    router.push('/labor')
+    router.push('/labor-charges')
   }
 
   return (
     <div className="max-w-2xl mx-auto pb-24">
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/labor" className="p-2 hover:bg-slate-100 rounded-full transition">
+        <Link href="/labor-charges" className="p-2 hover:bg-slate-100 rounded-full transition">
           <ArrowLeft className="text-slate-500" size={24} />
         </Link>
         <h2 className="text-2xl font-bold text-slate-800">Add Labor Charge</h2>
@@ -170,7 +170,7 @@ export default function AddLaborChargePage() {
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
           <Link 
-            href="/labor"
+            href="/labor-charges"
             className="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-md hover:bg-slate-50 transition"
           >
             Cancel

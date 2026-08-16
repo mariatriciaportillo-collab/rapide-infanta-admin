@@ -27,24 +27,12 @@ type Props = {
   charges: Charge[]
 }
 
-export function LaborLookupClient({ makes, models, services, charges }: Props) {
-  // Global Quick Lookup State
+export function LaborChargesClient({ makes, models, services, charges }: Props) {
   const [quickSearch, setQuickSearch] = useState('')
-  const [selectedMake, setSelectedMake] = useState('')
-  const [selectedModel, setSelectedModel] = useState('')
-
-  // Derived state for the selected vehicle
-  const activeMake = useMemo(() => makes.find(m => m.name === selectedMake), [makes, selectedMake])
-  const activeModel = useMemo(() => models.find(m => m.name === selectedModel && m.make_id === activeMake?.id), [models, selectedModel, activeMake])
 
   // Filter charges for the table
   const filteredCharges = useMemo(() => {
     let result = charges
-
-    // Filter by vehicle if selected
-    if (activeModel) {
-      result = result.filter(c => c.vehicle_model_id === activeModel.id || c.vehicle_model_id === null)
-    }
 
     // Filter by search
     if (quickSearch.trim()) {
@@ -64,13 +52,7 @@ export function LaborLookupClient({ makes, models, services, charges }: Props) {
       if (catA !== catB) return catA.localeCompare(catB)
       return (a.labor_services?.name || '').localeCompare(b.labor_services?.name || '')
     })
-  }, [charges, activeModel, quickSearch])
-
-  // Stats for the selected vehicle
-  const selectedVehicleCharges = useMemo(() => {
-    if (!activeModel) return []
-    return charges.filter(c => c.vehicle_model_id === activeModel.id)
-  }, [charges, activeModel])
+  }, [charges, quickSearch])
 
   const formatCurrency = (val: number | null | undefined) => {
     if (val === null || val === undefined) return '-'
@@ -83,52 +65,19 @@ export function LaborLookupClient({ makes, models, services, charges }: Props) {
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <Search className="text-blue-500" size={20} />
-          <h3 className="font-bold text-slate-800 text-lg">Quick Labor Lookup</h3>
+          <h3 className="font-bold text-slate-800 text-lg">Search Labor Database</h3>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <MakeModelSelector 
-              selectedMake={selectedMake}
-              setSelectedMake={setSelectedMake}
-              selectedModel={selectedModel}
-              setSelectedModel={setSelectedModel}
-            />
-          </div>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Maintenance / Service</label>
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  value={quickSearch}
-                  onChange={(e) => setQuickSearch(e.target.value)}
-                  className="w-full border border-slate-300 rounded-md p-2 pl-9 focus:outline-none focus:border-blue-500"
-                  placeholder="Type to filter services..."
-                />
-              </div>
-            </div>
-          </div>
+        <div className="w-full relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input 
+            type="text" 
+            value={quickSearch}
+            onChange={(e) => setQuickSearch(e.target.value)}
+            className="w-full border border-slate-300 rounded-md p-2 pl-9 focus:outline-none focus:border-blue-500"
+            placeholder="Type to filter by service or vehicle..."
+          />
         </div>
-
-        {activeModel && (
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h4 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-1">Selected Reference Vehicle</h4>
-              <div className="text-xl font-black text-blue-700 flex items-center gap-2">
-                <Car size={24} />
-                {activeMake?.name} {activeModel.name}
-              </div>
-            </div>
-            <div className="flex gap-6 text-sm text-blue-800">
-              <div>
-                <div className="text-blue-600/70 font-medium">Recorded Services</div>
-                <div className="font-bold text-lg">{selectedVehicleCharges.length}</div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* CHARGES TABLE */}
@@ -161,11 +110,6 @@ export function LaborLookupClient({ makes, models, services, charges }: Props) {
                   <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     <AlertCircle size={24} className="mx-auto text-slate-300 mb-2" />
                     No labor charges found matching your criteria.<br/>
-                    {activeModel && (
-                      <Link href="/labor/new" className="text-blue-600 hover:underline mt-2 inline-block">
-                        Add a charge for {activeMake?.name} {activeModel.name}
-                      </Link>
-                    )}
                   </td>
                 </tr>
               ) : (
@@ -205,7 +149,7 @@ export function LaborLookupClient({ makes, models, services, charges }: Props) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link 
-                        href={`/labor/${charge.id}/edit`} 
+                        href={`/labor-charges/${charge.id}/edit`} 
                         className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded inline-flex transition"
                         title="Edit Charge"
                       >

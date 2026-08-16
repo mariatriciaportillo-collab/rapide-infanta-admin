@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Plus, Wrench, Search, Car } from 'lucide-react'
-import { LaborLookupClient } from './LaborLookupClient'
+import { LaborChargesClient } from './LaborChargesClient'
 
 export default async function LaborPage() {
   const supabase = await createClient()
@@ -30,9 +30,9 @@ export default async function LaborPage() {
   return (
     <div className="pb-24">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-slate-800">Labor Charges Reference</h2>
+        <h2 className="text-3xl font-bold text-slate-800">Labor Charges</h2>
         <Link 
-          href="/labor/new" 
+          href="/labor-charges/new" 
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2"
         >
           <Plus size={18} />
@@ -45,7 +45,7 @@ export default async function LaborPage() {
           Error loading labor data: {error.message}. Ensure you have run the `10_labor_schema.sql` script.
         </div>
       ) : (
-        <LaborLookupClient 
+        <LaborChargesClient 
           makes={makes || []} 
           models={models || []} 
           services={services || []} 

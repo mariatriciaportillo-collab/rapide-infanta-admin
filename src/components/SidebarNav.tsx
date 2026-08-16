@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, Settings, Calculator, ShoppingCart, Receipt, CreditCard, LayoutDashboard, Briefcase, Users, User, Car, Wrench, Package, Box } from 'lucide-react'
+import { ChevronDown, ChevronRight, Settings, Calculator, ShoppingCart, Receipt, CreditCard, LayoutDashboard, Briefcase, Users, User, Car, Wrench, Package, Box, Search } from 'lucide-react'
 
 export function SidebarNav() {
   const pathname = usePathname()
@@ -11,7 +11,7 @@ export function SidebarNav() {
   // Active states for parent menus
   const isOperationsActive = ['/quotations', '/estimate', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
   const isCustomerAccountsActive = ['/customers', '/vehicles'].some(route => pathname?.startsWith(route))
-  const isProductsActive = ['/labor', '/parts', '/packages'].some(route => pathname?.startsWith(route))
+  const isProductsActive = ['/labor-lookup', '/labor-charges', '/parts', '/packages'].some(route => pathname?.startsWith(route))
   
   const [operationsOpen, setOperationsOpen] = useState(isOperationsActive)
   const [customersOpen, setCustomersOpen] = useState(isCustomerAccountsActive)
@@ -148,12 +148,20 @@ export function SidebarNav() {
         {productsOpen && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link 
-              href="/labor" 
+              href="/labor-lookup" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/labor') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                ${pathname?.startsWith('/labor-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Search size={16} />
+              Labor Lookup
+            </Link>
+            <Link 
+              href="/labor-charges" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/labor-charges') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
             >
               <Wrench size={16} />
-              Labor
+              Labor Charges
             </Link>
             <Link 
               href="/parts" 
