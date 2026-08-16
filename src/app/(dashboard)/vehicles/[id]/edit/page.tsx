@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Search, User, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
+import { YearSelector } from '@/components/vehicles/YearSelector'
 
 export default function EditVehiclePage({
   params,
@@ -233,8 +234,7 @@ export default function EditVehiclePage({
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-            <input type="number" value={year} onChange={e => setYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2023" />
+            <YearSelector selectedYear={year} setSelectedYear={setYear} />
           </div>
           
           <div>

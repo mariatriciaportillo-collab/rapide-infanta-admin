@@ -7,6 +7,7 @@ import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'luc
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
+import { YearSelector } from '@/components/vehicles/YearSelector'
 
 type LineItem = {
   id: string
@@ -600,8 +601,7 @@ export default function NewQuotationPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-              <input type="number" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2018" disabled={!!selectedVehicleId} />
+              <YearSelector selectedYear={vehicleYear} setSelectedYear={setVehicleYear} disabled={!!selectedVehicleId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
