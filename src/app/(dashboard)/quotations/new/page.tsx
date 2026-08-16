@@ -8,6 +8,8 @@ import Link from 'next/link'
 import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 import { YearSelector } from '@/components/vehicles/YearSelector'
+import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
+import { NewLaborModal } from '@/components/quotations/NewLaborModal'
 
 type LineItem = {
   id: string
@@ -15,6 +17,14 @@ type LineItem = {
   quantity: number | ''
   unit_price: number | ''
   is_section_header: boolean
+  
+  labor_service_id?: string | null
+  group_id?: string | null
+  category_id?: string | null
+  group_name_snapshot?: string | null
+  category_name_snapshot?: string | null
+  standard_hour_snapshot?: number | null
+  is_manual_labor?: boolean
 }
 
 export default function NewQuotationPage() {
@@ -69,10 +79,31 @@ export default function NewQuotationPage() {
     { id: '1', description: '', quantity: 1, unit_price: '', is_section_header: false }
   ])
 
+  // Labor Services for Combobox
+  const [laborServices, setLaborServices] = useState<any[]>([])
+  
+  // Modal State
+  const [isNewLaborModalOpen, setIsNewLaborModalOpen] = useState(false)
+  const [newLaborSearchQuery, setNewLaborSearchQuery] = useState('')
+  const [activeItemIndexForModal, setActiveItemIndexForModal] = useState<string | null>(null)
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const searchRef = useRef<HTMLDivElement>(null)
+
+  // Fetch labor services on mount
+  useEffect(() => {
+    const fetchLabor = async () => {
+      const { data } = await supabase
+        .from('labor_services')
+        .select('*, labor_groups(*), labor_categories(*)')
+        .eq('is_active', true)
+        .order('name')
+      setLaborServices(data || [])
+    }
+    fetchLabor()
+  }, [supabase])
 
   // Handle outside click for dropdown
   useEffect(() => {
@@ -337,7 +368,7 @@ export default function NewQuotationPage() {
 
       // 3. Insert Line Items
       const itemsToInsert = items
-        .filter(i => i.description.trim() !== '')
+        .filter(i => i.description.trim() !== '' || i.labor_service_id)
         .map((item, index) => ({
           quotation_id: quote.id,
           sort_order: index,
@@ -345,7 +376,13 @@ export default function NewQuotationPage() {
           quantity: item.is_section_header ? null : (Number(item.quantity) || 1),
           unit_price: item.is_section_header ? null : (Number(item.unit_price) || 0),
           total_price: item.is_section_header ? 0 : ((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)),
-          is_section_header: item.is_section_header
+          is_section_header: item.is_section_header,
+          labor_service_id: item.labor_service_id || null,
+          group_id: item.group_id || null,
+          category_id: item.category_id || null,
+          group_name_snapshot: item.group_name_snapshot || null,
+          category_name_snapshot: item.category_name_snapshot || null,
+          standard_hour_snapshot: item.standard_hour_snapshot || null
         }))
 
       if (itemsToInsert.length > 0) {
@@ -637,14 +674,71 @@ export default function NewQuotationPage() {
           {items.map((item, index) => (
             <div key={item.id} className={`flex gap-3 items-start ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : ''}`}>
               <div className="flex-1">
-                <input 
-                  type="text" 
-                  value={item.description}
-                  onChange={e => updateItem(item.id, 'description', e.target.value)}
-                  placeholder={item.is_section_header ? "e.g. LABOR CHARGES" : "Item description..."}
-                  className={`w-full border border-slate-300 rounded-md p-2 ${item.is_section_header ? 'font-bold bg-transparent' : ''}`}
-                  required={!item.is_section_header}
-                />
+                {item.is_section_header || item.is_manual_labor ? (
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      value={item.description}
+                      onChange={e => updateItem(item.id, 'description', e.target.value)}
+                      placeholder={item.is_section_header ? "e.g. LABOR CHARGES" : "Manual item description..."}
+                      className={`w-full border border-slate-300 rounded-md p-2 ${item.is_section_header ? 'font-bold bg-transparent' : ''}`}
+                      required={!item.is_section_header}
+                    />
+                    {!item.is_section_header && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          updateItem(item.id, 'is_manual_labor', false)
+                          updateItem(item.id, 'description', '')
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-500 hover:underline"
+                      >
+                        Cancel Manual
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <SearchableCombobox 
+                    options={laborServices.map(s => ({
+                      id: s.id,
+                      name: s.name,
+                      subtext: `${s.labor_groups?.name || 'No Group'} • ${s.labor_categories?.name || 'No Category'}`
+                    }))}
+                    value={item.labor_service_id || ''}
+                    onChange={(laborId) => {
+                      const service = laborServices.find(s => s.id === laborId)
+                      if (service) {
+                        updateItem(item.id, 'labor_service_id', service.id)
+                        updateItem(item.id, 'description', service.name)
+                        updateItem(item.id, 'unit_price', service.rate)
+                        updateItem(item.id, 'group_id', service.group_id)
+                        updateItem(item.id, 'category_id', service.category_id)
+                        updateItem(item.id, 'group_name_snapshot', service.labor_groups?.name)
+                        updateItem(item.id, 'category_name_snapshot', service.labor_categories?.name)
+                        updateItem(item.id, 'standard_hour_snapshot', service.standard_hours)
+                      }
+                    }}
+                    placeholder="Search labor / service..."
+                    searchPlaceholder="Search by service, group, or category..."
+                    onAddNew={(query) => {
+                      setNewLaborSearchQuery(query)
+                      setActiveItemIndexForModal(item.id)
+                      setIsNewLaborModalOpen(true)
+                    }}
+                    addNewLabel="+ Add New Labor"
+                  />
+                )}
+                {!item.is_section_header && !item.is_manual_labor && !item.labor_service_id && (
+                  <div className="mt-1">
+                    <button 
+                      type="button" 
+                      onClick={() => updateItem(item.id, 'is_manual_labor', true)}
+                      className="text-xs text-slate-500 hover:text-slate-700 underline"
+                    >
+                      Add Manual Labor Instead
+                    </button>
+                  </div>
+                )}
               </div>
               
               {!item.is_section_header && (
@@ -747,6 +841,27 @@ export default function NewQuotationPage() {
           </div>
         </div>
       </div>
+      <NewLaborModal 
+        isOpen={isNewLaborModalOpen} 
+        onClose={() => setIsNewLaborModalOpen(false)}
+        initialName={newLaborSearchQuery}
+        onSuccess={(newLabor) => {
+          setIsNewLaborModalOpen(false)
+          setLaborServices([...laborServices, newLabor].sort((a, b) => a.name.localeCompare(b.name)))
+          
+          if (activeItemIndexForModal) {
+            updateItem(activeItemIndexForModal, 'labor_service_id', newLabor.id)
+            updateItem(activeItemIndexForModal, 'description', newLabor.name)
+            updateItem(activeItemIndexForModal, 'unit_price', newLabor.rate)
+            updateItem(activeItemIndexForModal, 'group_id', newLabor.group_id)
+            updateItem(activeItemIndexForModal, 'category_id', newLabor.category_id)
+            updateItem(activeItemIndexForModal, 'group_name_snapshot', newLabor.labor_groups?.name)
+            updateItem(activeItemIndexForModal, 'category_name_snapshot', newLabor.labor_categories?.name)
+            updateItem(activeItemIndexForModal, 'standard_hour_snapshot', newLabor.standard_hours)
+            setActiveItemIndexForModal(null)
+          }
+        }}
+      />
     </form>
   )
 }

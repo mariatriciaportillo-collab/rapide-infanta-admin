@@ -16,6 +16,8 @@ type Props = {
   placeholder?: string
   searchPlaceholder?: string
   className?: string
+  onAddNew?: (searchQuery: string) => void
+  addNewLabel?: string
 }
 
 export function SearchableCombobox({
@@ -24,7 +26,9 @@ export function SearchableCombobox({
   onChange,
   placeholder = "Select an option...",
   searchPlaceholder = "Search...",
-  className = ""
+  className = "",
+  onAddNew,
+  addNewLabel = "+ Add New"
 }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -108,6 +112,22 @@ export function SearchableCombobox({
                   {value === option.id && <Check className="h-4 w-4 shrink-0 text-blue-600" />}
                 </button>
               ))
+            )}
+            
+            {onAddNew && (
+              <div className="p-1 border-t border-slate-100 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddNew(searchQuery)
+                    setIsOpen(false)
+                    setSearchQuery('')
+                  }}
+                  className="w-full text-left p-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-md font-medium transition flex items-center justify-center gap-1"
+                >
+                  {addNewLabel}
+                </button>
+              </div>
             )}
           </div>
         </div>
