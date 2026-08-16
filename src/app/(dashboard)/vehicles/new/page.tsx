@@ -65,7 +65,7 @@ function NewVehicleForm() {
     setError(null)
 
     if (!selectedCustomerId) {
-      setError("Please select an owner for this vehicle.")
+      setError("Please select a customer for this vehicle.")
       setIsSubmitting(false)
       return
     }
@@ -147,7 +147,7 @@ function NewVehicleForm() {
 
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Owner (Customer or Company) *</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Customer / Company *</label>
           
           {selectedCustomerId ? (
             <div className="flex justify-between items-center p-3 border border-slate-200 rounded-md bg-slate-50">

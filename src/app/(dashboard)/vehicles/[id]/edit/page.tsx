@@ -82,7 +82,7 @@ export default function EditVehiclePage({
     setError(null)
 
     if (!selectedCustomerId) {
-      setError("Please select an owner for this vehicle.")
+      setError("Please select a customer for this vehicle.")
       setIsSubmitting(false)
       return
     }
@@ -153,7 +153,7 @@ export default function EditVehiclePage({
 
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Owner (Customer or Company) *</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Customer / Company *</label>
           
           {selectedCustomerId ? (
             <div className="flex justify-between items-center p-3 border border-slate-200 rounded-md bg-slate-50">
@@ -169,7 +169,7 @@ export default function EditVehiclePage({
                 }} 
                 className="text-sm text-red-500 hover:underline"
               >
-                Reassign Owner
+                Reassign Customer
               </button>
             </div>
           ) : (
@@ -178,14 +178,14 @@ export default function EditVehiclePage({
                 <AlertTriangle size={20} className="mt-0.5 shrink-0" />
                 <p className="text-sm font-medium">
                   <strong>Warning:</strong> Reassigning a vehicle will move it to a different customer profile.
-                  Old quotations will remain untouched and preserve their original owner.
+                  Old quotations will remain untouched and preserve their original customer link.
                 </p>
               </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search new owner by name, company, or mobile..."
+                  placeholder="Search new customer by name, company, or mobile..."
                   value={customerSearch}
                   onChange={(e) => {
                     setCustomerSearch(e.target.value)

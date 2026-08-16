@@ -60,7 +60,7 @@ export default async function VehiclesPage({
               <tr>
                 <th className="px-6 py-3">Plate No</th>
                 <th className="px-6 py-3">Vehicle Details</th>
-                <th className="px-6 py-3">Owner</th>
+                <th className="px-6 py-3">Customer</th>
                 <th className="px-6 py-3">Added</th>
               </tr>
             </thead>
@@ -106,7 +106,7 @@ export default async function VehiclesPage({
                           </div>
                         </div>
                       ) : (
-                        <span className="text-slate-400 italic">No owner linked</span>
+                        <span className="text-slate-400 italic">No customer linked</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-slate-500">
