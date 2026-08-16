@@ -16,8 +16,19 @@ export default function EditCustomerPage({
   const { id } = use(params)
   
   const [customerType, setCustomerType] = useState<'individual' | 'company'>('individual')
+  
+  // Legacy / Company Name
   const [name, setName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
+  const [legacyContactPerson, setLegacyContactPerson] = useState('')
+  
+  // Individual fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  
+  // Company fields
+  const [contactFirstName, setContactFirstName] = useState('')
+  const [contactLastName, setContactLastName] = useState('')
+
   const [mobile, setMobile] = useState('')
   const [telephone, setTelephone] = useState('')
   const [email, setEmail] = useState('')
@@ -39,8 +50,16 @@ export default function EditCustomerPage({
       }
       
       setCustomerType(data.customer_type as 'individual' | 'company' || 'individual')
+      
       setName(data.name || '')
-      setContactPerson(data.contact_person || '')
+      setLegacyContactPerson(data.contact_person || '')
+      
+      setFirstName(data.first_name || '')
+      setLastName(data.last_name || '')
+      
+      setContactFirstName(data.contact_first_name || '')
+      setContactLastName(data.contact_last_name || '')
+      
       setMobile(data.mobile || '')
       setTelephone(data.telephone || '')
       setEmail(data.email || '')
@@ -57,10 +76,24 @@ export default function EditCustomerPage({
     setIsSubmitting(true)
     setError(null)
 
-    if (!name.trim()) {
-      setError(customerType === 'individual' ? "Full Name is required." : "Company Name is required.")
-      setIsSubmitting(false)
-      return
+    const cleanFirstName = firstName.trim()
+    const cleanLastName = lastName.trim()
+    const cleanName = name.trim() // used as company name
+    const cleanContactFirst = contactFirstName.trim()
+    const cleanContactLast = contactLastName.trim()
+
+    if (customerType === 'individual') {
+      if (!cleanFirstName || !cleanLastName) {
+        setError("First Name and Last Name are required.")
+        setIsSubmitting(false)
+        return
+      }
+    } else {
+      if (!cleanName) {
+        setError("Company Name is required.")
+        setIsSubmitting(false)
+        return
+      }
     }
 
     try {
@@ -68,14 +101,17 @@ export default function EditCustomerPage({
         .from('customers')
         .update({
           customer_type: customerType,
-          name: name,
-          contact_person: customerType === 'company' ? contactPerson : null,
-          mobile: mobile,
-          telephone: customerType === 'company' ? telephone : null,
-          email: email,
-          address: address,
-          tin: customerType === 'company' ? tin : null,
-          notes: notes,
+          name: customerType === 'company' ? cleanName : name, // Leave legacy individual name untouched if they had one, just in case
+          first_name: customerType === 'individual' ? cleanFirstName : null,
+          last_name: customerType === 'individual' ? cleanLastName : null,
+          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
+          contact_last_name: customerType === 'company' ? cleanContactLast : null,
+          mobile: mobile.trim(),
+          telephone: customerType === 'company' ? telephone.trim() : null,
+          email: email.trim(),
+          address: address.trim(),
+          tin: customerType === 'company' ? tin.trim() : null,
+          notes: notes.trim(),
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
@@ -139,19 +175,52 @@ export default function EditCustomerPage({
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="col-span-1 md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              {customerType === 'individual' ? 'Full Name *' : 'Company Name *'}
-            </label>
-            <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder={customerType === 'individual' ? 'Juan Dela Cruz' : 'ABC Construction Corporation'} />
+        {customerType === 'individual' && name && !firstName && !lastName && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+            <strong>Legacy Record:</strong> This customer currently has the combined name <strong>"{name}"</strong>. 
+            Please split it into First Name and Last Name below to properly update their record.
           </div>
+        )}
+        
+        {customerType === 'company' && legacyContactPerson && !contactFirstName && !contactLastName && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800">
+            <strong>Legacy Record:</strong> This company currently has the combined contact person <strong>"{legacyContactPerson}"</strong>. 
+            Please split it into Contact First Name and Contact Last Name below to properly update their record.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
-          {customerType === 'company' && (
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-              <input type="text" value={contactPerson} onChange={e => setContactPerson(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria Santos" />
-            </div>
+          {customerType === 'individual' ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+                <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Construction Corporation" />
+              </div>
+              
+              <div className="col-span-1 md:col-span-2 mb-2">
+                <h4 className="font-semibold text-slate-800 text-sm border-b pb-2">Contact Person</h4>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
+                <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
+                <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Santos" />
+              </div>
+            </>
           )}
 
           <div>

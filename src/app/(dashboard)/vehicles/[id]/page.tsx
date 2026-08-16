@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Car, FileText, User as UserIcon, Building2, Edit } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatCustomerName } from '@/utils/customer'
 
 export default async function VehicleDetailPage({
   params,
@@ -94,7 +95,7 @@ export default async function VehicleDetailPage({
             <div className="p-4">
               {owner ? (
                 <div>
-                  <div className="font-bold text-slate-800">{owner.name}</div>
+                  <div className="font-bold text-slate-800">{formatCustomerName(owner)}</div>
                   <div className="text-sm text-slate-500 mt-1 capitalize">{owner.customer_type}</div>
                   <Link href={`/customers/${owner.id}`} className="mt-4 block text-sm text-blue-600 hover:underline">
                     View full profile &rarr;

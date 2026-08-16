@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Search, Plus, User, Phone, Car, Building2, User as UserIcon } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 
 export default async function CustomersPage({
   searchParams,
@@ -17,8 +18,8 @@ export default async function CustomersPage({
     .order('created_at', { ascending: false })
 
   if (q) {
-    // Search by name, mobile, contact_person, or tin
-    query = query.or(`name.ilike.%${q}%,mobile.ilike.%${q}%,contact_person.ilike.%${q}%,tin.ilike.%${q}%`)
+    // Search by all possible name fields or mobile or tin
+    query = query.or(`name.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%,contact_person.ilike.%${q}%,contact_first_name.ilike.%${q}%,contact_last_name.ilike.%${q}%,mobile.ilike.%${q}%,tin.ilike.%${q}%`)
   }
 
   const { data: customers, error } = await query
@@ -73,51 +74,56 @@ export default async function CustomersPage({
                   </td>
                 </tr>
               ) : (
-                customers?.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-slate-50 transition">
-                    <td className="px-6 py-4">
-                      <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
-                        {customer.customer_type === 'company' ? (
-                          <Building2 size={16} className="text-slate-400" />
-                        ) : (
-                          <User size={16} className="text-slate-400" />
-                        )}
-                        {customer.name}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wider
-                        ${customer.customer_type === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}
-                      >
-                        {customer.customer_type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        {customer.customer_type === 'company' && customer.contact_person && (
-                          <span className="text-slate-700 font-medium text-xs">Attn: {customer.contact_person}</span>
-                        )}
-                        {customer.mobile ? (
-                          <span className="flex items-center gap-1.5 text-slate-700">
-                            <Phone size={14} className="text-slate-400" />
-                            {customer.mobile}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 italic text-xs">No mobile</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                        <Car size={16} className="text-slate-400" />
-                        {customer.vehicles[0]?.count || 0}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500">
-                      {format(new Date(customer.created_at), 'MMM d, yyyy')}
-                    </td>
-                  </tr>
-                ))
+                customers?.map((customer) => {
+                  const displayName = formatCustomerName(customer)
+                  const displayContactPerson = formatContactPerson(customer)
+                  
+                  return (
+                    <tr key={customer.id} className="hover:bg-slate-50 transition">
+                      <td className="px-6 py-4">
+                        <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
+                          {customer.customer_type === 'company' ? (
+                            <Building2 size={16} className="text-slate-400" />
+                          ) : (
+                            <User size={16} className="text-slate-400" />
+                          )}
+                          {displayName}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium uppercase tracking-wider
+                          ${customer.customer_type === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-emerald-100 text-emerald-700'}`}
+                        >
+                          {customer.customer_type}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          {customer.customer_type === 'company' && displayContactPerson && (
+                            <span className="text-slate-700 font-medium text-xs">Attn: {displayContactPerson}</span>
+                          )}
+                          {customer.mobile ? (
+                            <span className="flex items-center gap-1.5 text-slate-700">
+                              <Phone size={14} className="text-slate-400" />
+                              {customer.mobile}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 italic text-xs">No mobile</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                          <Car size={16} className="text-slate-400" />
+                          {customer.vehicles[0]?.count || 0}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500">
+                        {format(new Date(customer.created_at), 'MMM d, yyyy')}
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>

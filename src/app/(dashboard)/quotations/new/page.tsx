@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'lucide-react'
 import Link from 'next/link'
+import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 
 type LineItem = {
   id: string
@@ -28,8 +29,20 @@ export default function NewQuotationPage() {
   
   // Customer State
   const [customerType, setCustomerType] = useState<'individual' | 'company'>('individual')
-  const [customerName, setCustomerName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
+  
+  // Individual fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  
+  // Company fields
+  const [companyName, setCompanyName] = useState('')
+  const [contactFirstName, setContactFirstName] = useState('')
+  const [contactLastName, setContactLastName] = useState('')
+  
+  // Computed legacy fields (for display of selected customer)
+  const [displayCustomerName, setDisplayCustomerName] = useState('')
+  const [displayContactPerson, setDisplayContactPerson] = useState('')
+
   const [customerMobile, setCustomerMobile] = useState('')
   const [customerTelephone, setCustomerTelephone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
@@ -81,7 +94,7 @@ export default function NewQuotationPage() {
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .or(`name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%,contact_person.ilike.%${customerSearch}%`)
+        .or(`name.ilike.%${customerSearch}%,first_name.ilike.%${customerSearch}%,last_name.ilike.%${customerSearch}%,contact_person.ilike.%${customerSearch}%,contact_first_name.ilike.%${customerSearch}%,contact_last_name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%`)
         .limit(5)
         
       setSearchResults(data || [])
@@ -95,8 +108,17 @@ export default function NewQuotationPage() {
   const handleSelectCustomer = async (customer: any) => {
     setSelectedCustomerId(customer.id)
     setCustomerType(customer.customer_type as 'individual' | 'company' || 'individual')
-    setCustomerName(customer.name)
-    setContactPerson(customer.contact_person || '')
+    
+    setDisplayCustomerName(formatCustomerName(customer))
+    setDisplayContactPerson(formatContactPerson(customer))
+    
+    // Fill the actual raw fields in case they want to see them (though inputs are disabled)
+    setFirstName(customer.first_name || '')
+    setLastName(customer.last_name || '')
+    setCompanyName(customer.name || '')
+    setContactFirstName(customer.contact_first_name || '')
+    setContactLastName(customer.contact_last_name || '')
+    
     setCustomerMobile(customer.mobile || '')
     setCustomerTelephone(customer.telephone || '')
     setCustomerEmail(customer.email || '')
@@ -141,8 +163,15 @@ export default function NewQuotationPage() {
     setSelectedVehicleId(null)
     setCustomerVehicles([])
     setCustomerType('individual')
-    setCustomerName('')
-    setContactPerson('')
+    
+    setFirstName('')
+    setLastName('')
+    setCompanyName('')
+    setContactFirstName('')
+    setContactLastName('')
+    setDisplayCustomerName('')
+    setDisplayContactPerson('')
+    
     setCustomerMobile('')
     setCustomerTelephone('')
     setCustomerEmail('')
@@ -192,11 +221,28 @@ export default function NewQuotationPage() {
     setIsSubmitting(true)
     setError(null)
 
-    if (!customerName.trim()) {
-      setError(customerType === 'individual' ? "Customer Name is required." : "Company Name is required.")
-      setIsSubmitting(false)
-      return
+    const cleanFirstName = firstName.trim()
+    const cleanLastName = lastName.trim()
+    const cleanCompanyName = companyName.trim()
+    const cleanContactFirst = contactFirstName.trim()
+    const cleanContactLast = contactLastName.trim()
+
+    if (!selectedCustomerId) {
+      if (customerType === 'individual') {
+        if (!cleanFirstName || !cleanLastName) {
+          setError("First Name and Last Name are required.")
+          setIsSubmitting(false)
+          return
+        }
+      } else {
+        if (!cleanCompanyName) {
+          setError("Company Name is required.")
+          setIsSubmitting(false)
+          return
+        }
+      }
     }
+
     if (!vehiclePlate.trim()) {
       setError("Vehicle Plate Number is required.")
       setIsSubmitting(false)
@@ -205,13 +251,18 @@ export default function NewQuotationPage() {
 
     try {
       let finalCustomerId = selectedCustomerId
+      let finalDisplayName = displayCustomerName
+      let finalContactPerson = displayContactPerson
       
       // Auto-create customer if none selected
       if (!finalCustomerId) {
         const { data: newCust, error: custErr } = await supabase.from('customers').insert({
           customer_type: customerType,
-          name: customerName,
-          contact_person: customerType === 'company' ? contactPerson : null,
+          name: customerType === 'company' ? cleanCompanyName : null,
+          first_name: customerType === 'individual' ? cleanFirstName : null,
+          last_name: customerType === 'individual' ? cleanLastName : null,
+          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
+          contact_last_name: customerType === 'company' ? cleanContactLast : null,
           mobile: customerMobile,
           telephone: customerType === 'company' ? customerTelephone : null,
           email: customerEmail,
@@ -220,7 +271,11 @@ export default function NewQuotationPage() {
         }).select().single()
         
         if (custErr) throw custErr
-        if (newCust) finalCustomerId = newCust.id
+        if (newCust) {
+          finalCustomerId = newCust.id
+          finalDisplayName = formatCustomerName(newCust)
+          finalContactPerson = formatContactPerson(newCust)
+        }
       }
       
       let finalVehicleId = selectedVehicleId
@@ -252,10 +307,10 @@ export default function NewQuotationPage() {
           quote_number: quoteNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
-          // Snapshots
+          // Snapshots (combined formatted names to keep quotation table simple)
           customer_type: customerType,
-          customer_name: customerName, 
-          contact_person: customerType === 'company' ? contactPerson : null,
+          customer_name: finalDisplayName, 
+          contact_person: customerType === 'company' ? finalContactPerson : null,
           customer_email: customerEmail,
           customer_telephone: customerType === 'company' ? customerTelephone : null,
           customer_tin: customerType === 'company' ? customerTin : null,
@@ -354,20 +409,23 @@ export default function NewQuotationPage() {
           
           {showDropdown && searchResults.length > 0 && (
             <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-              {searchResults.map((cust) => (
-                <button
-                  key={cust.id}
-                  type="button"
-                  onClick={() => handleSelectCustomer(cust)}
-                  className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex justify-between items-center"
-                >
-                  <div>
-                    <div className="font-semibold text-slate-900">{cust.name}</div>
-                    <div className="text-sm text-slate-500 capitalize">{cust.customer_type} • {cust.mobile || cust.telephone || 'No contact number'}</div>
-                  </div>
-                  {cust.customer_type === 'company' ? <Building2 size={18} className="text-slate-400" /> : <User size={18} className="text-slate-400" />}
-                </button>
-              ))}
+              {searchResults.map((cust) => {
+                const searchDisplayName = formatCustomerName(cust)
+                return (
+                  <button
+                    key={cust.id}
+                    type="button"
+                    onClick={() => handleSelectCustomer(cust)}
+                    className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="font-semibold text-slate-900">{searchDisplayName}</div>
+                      <div className="text-sm text-slate-500 capitalize">{cust.customer_type} • {cust.mobile || cust.telephone || 'No contact number'}</div>
+                    </div>
+                    {cust.customer_type === 'company' ? <Building2 size={18} className="text-slate-400" /> : <User size={18} className="text-slate-400" />}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -396,16 +454,52 @@ export default function NewQuotationPage() {
           )}
           
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{customerType === 'company' ? 'Company Name *' : 'Full Name *'}</label>
-              <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder={customerType === 'company' ? 'ABC Construction Corp' : 'Juan Dela Cruz'} disabled={!!selectedCustomerId} />
-            </div>
             
-            {customerType === 'company' && (
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-                <input type="text" value={contactPerson} onChange={e => setContactPerson(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria Santos" disabled={!!selectedCustomerId} />
-              </div>
+            {selectedCustomerId ? (
+              // READONLY MODE FOR SELECTED CUSTOMER
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{customerType === 'company' ? 'Company Name' : 'Full Name'}</label>
+                  <input type="text" value={displayCustomerName} className="w-full border border-slate-300 rounded-md p-2 font-medium bg-slate-50" disabled />
+                </div>
+                {customerType === 'company' && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
+                    <input type="text" value={displayContactPerson} className="w-full border border-slate-300 rounded-md p-2 bg-slate-50" disabled />
+                  </div>
+                )}
+              </>
+            ) : (
+              // NEW CUSTOMER INPUT MODE
+              customerType === 'individual' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                    <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="Juan" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                    <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="Dela Cruz" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+                    <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="ABC Construction Corp" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
+                      <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
+                      <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Santos" />
+                    </div>
+                  </div>
+                </>
+              )
             )}
             
             <div className="grid grid-cols-2 gap-4">

@@ -11,8 +11,17 @@ export default function NewCustomerPage() {
   const supabase = createClient()
   
   const [customerType, setCustomerType] = useState<'individual' | 'company'>('individual')
-  const [name, setName] = useState('')
-  const [contactPerson, setContactPerson] = useState('')
+  
+  // Individual fields
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  
+  // Company fields
+  const [companyName, setCompanyName] = useState('')
+  const [contactFirstName, setContactFirstName] = useState('')
+  const [contactLastName, setContactLastName] = useState('')
+
+  // Shared fields
   const [mobile, setMobile] = useState('')
   const [telephone, setTelephone] = useState('')
   const [email, setEmail] = useState('')
@@ -28,10 +37,24 @@ export default function NewCustomerPage() {
     setIsSubmitting(true)
     setError(null)
 
-    if (!name.trim()) {
-      setError(customerType === 'individual' ? "Full Name is required." : "Company Name is required.")
-      setIsSubmitting(false)
-      return
+    const cleanFirstName = firstName.trim()
+    const cleanLastName = lastName.trim()
+    const cleanCompanyName = companyName.trim()
+    const cleanContactFirst = contactFirstName.trim()
+    const cleanContactLast = contactLastName.trim()
+
+    if (customerType === 'individual') {
+      if (!cleanFirstName || !cleanLastName) {
+        setError("First Name and Last Name are required.")
+        setIsSubmitting(false)
+        return
+      }
+    } else {
+      if (!cleanCompanyName) {
+        setError("Company Name is required.")
+        setIsSubmitting(false)
+        return
+      }
     }
 
     try {
@@ -39,14 +62,18 @@ export default function NewCustomerPage() {
         .from('customers')
         .insert({
           customer_type: customerType,
-          name: name,
-          contact_person: customerType === 'company' ? contactPerson : null,
-          mobile: mobile,
-          telephone: customerType === 'company' ? telephone : null,
-          email: email,
-          address: address,
-          tin: customerType === 'company' ? tin : null,
-          notes: notes
+          // If individual, name can be null (since we use first_name + last_name)
+          name: customerType === 'company' ? cleanCompanyName : null,
+          first_name: customerType === 'individual' ? cleanFirstName : null,
+          last_name: customerType === 'individual' ? cleanLastName : null,
+          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
+          contact_last_name: customerType === 'company' ? cleanContactLast : null,
+          mobile: mobile.trim(),
+          telephone: customerType === 'company' ? telephone.trim() : null,
+          email: email.trim(),
+          address: address.trim(),
+          tin: customerType === 'company' ? tin.trim() : null,
+          notes: notes.trim()
         })
         .select()
         .single()
@@ -109,18 +136,37 @@ export default function NewCustomerPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="col-span-1 md:col-span-2">
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              {customerType === 'individual' ? 'Full Name *' : 'Company Name *'}
-            </label>
-            <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder={customerType === 'individual' ? 'Juan Dela Cruz' : 'ABC Construction Corporation'} />
-          </div>
           
-          {customerType === 'company' && (
-            <div className="col-span-1 md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-              <input type="text" value={contactPerson} onChange={e => setContactPerson(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria Santos" />
-            </div>
+          {customerType === 'individual' ? (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+                <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Construction Corporation" />
+              </div>
+              
+              <div className="col-span-1 md:col-span-2 mb-2">
+                <h4 className="font-semibold text-slate-800 text-sm border-b pb-2">Contact Person</h4>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
+                <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
+                <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Santos" />
+              </div>
+            </>
           )}
 
           <div>

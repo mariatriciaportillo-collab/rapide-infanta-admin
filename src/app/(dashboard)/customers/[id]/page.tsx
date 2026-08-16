@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Building2, User as UserIcon, Edit, Plus, FileSignature } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatCustomerName, formatContactPerson } from '@/utils/customer'
 
 export default async function CustomerDetailPage({
   params,
@@ -38,6 +39,8 @@ export default async function CustomerDetailPage({
     .order('created_at', { ascending: false })
 
   const isCompany = customer.customer_type === 'company'
+  const displayName = formatCustomerName(customer)
+  const displayContactPerson = formatContactPerson(customer)
 
   return (
     <div className="pb-24">
@@ -65,11 +68,11 @@ export default async function CustomerDetailPage({
               </span>
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 mb-1 pr-24">{customer.name}</h3>
+            <h3 className="text-xl font-bold text-slate-900 mb-1 pr-24">{displayName}</h3>
             
-            {isCompany && customer.contact_person && (
+            {isCompany && displayContactPerson && (
               <div className="text-sm font-medium text-slate-500 mb-4">
-                Contact: {customer.contact_person}
+                Contact: {displayContactPerson}
               </div>
             )}
             

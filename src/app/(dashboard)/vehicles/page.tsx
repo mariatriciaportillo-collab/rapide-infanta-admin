@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { Search, Plus, Car, User, Building2 } from 'lucide-react'
 import { format } from 'date-fns'
+import { formatCustomerName } from '@/utils/customer'
 
 export default async function VehiclesPage({
   searchParams,
@@ -13,12 +14,11 @@ export default async function VehiclesPage({
 
   let query = supabase
     .from('vehicles')
-    .select('*, customers(name, id, customer_type)')
+    .select('*, customers(*)')
     .order('created_at', { ascending: false })
 
   if (q) {
     query = query.or(`plate_number.ilike.%${q}%,make.ilike.%${q}%,model.ilike.%${q}%`)
-    // Note: Supabase doesn't easily support ORing across joined tables in a single `.or()` without a custom RPC or view for basic setup, so we search the vehicle fields.
   }
 
   const { data: vehicles, error } = await query
@@ -99,7 +99,7 @@ export default async function VehiclesPage({
                             ) : (
                               <User size={16} className="text-slate-400" />
                             )}
-                            {vehicle.customers.name}
+                            {formatCustomerName(vehicle.customers)}
                           </Link>
                           <div className="text-xs text-slate-400 mt-1 ml-6 capitalize">
                             {vehicle.customers.customer_type}
