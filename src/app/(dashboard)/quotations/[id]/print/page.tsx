@@ -1,204 +1,236 @@
 'use client'
 
+import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { use, useEffect, useState } from 'react'
-import { notFound, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 
-export default function PrintQuotationPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function QuotationPrintPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = React.use(params)
   const supabase = createClient()
-  const router = useRouter()
+  
   const [quote, setQuote] = useState<any>(null)
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function loadData() {
-      const { data: q, error: qErr } = await supabase
+    async function loadQuote() {
+      const { data, error } = await supabase
         .from('quotations')
-        .select('*')
+        .select(`
+          *,
+          quotation_items(*)
+        `)
         .eq('id', id)
         .single()
-      
-      if (qErr || !q) {
-        setLoading(false)
-        return
+        
+      if (data) {
+        setQuote(data)
+        setItems(data.quotation_items.sort((a: any, b: any) => a.sort_order - b.sort_order))
       }
-
-      const { data: itms } = await supabase
-        .from('quotation_items')
-        .select('*')
-        .eq('quotation_id', id)
-        .order('sort_order', { ascending: true })
-
-      setQuote(q)
-      setItems(itms || [])
       setLoading(false)
+    }
+    
+    loadQuote()
+  }, [id, supabase])
 
-      // Automatically trigger print when data loads
+  useEffect(() => {
+    if (!loading && quote) {
       setTimeout(() => {
         window.print()
       }, 500)
     }
-    
-    loadData()
-  }, [id, supabase])
+  }, [loading, quote])
 
-  if (loading) return <div className="p-12 text-center text-slate-500">Loading quotation for printing...</div>
-  if (!quote) return notFound()
+  if (loading) return <div className="p-8 text-center">Loading document...</div>
+  if (!quote) return <div className="p-8 text-center text-red-500">Document not found</div>
+
+  const isCompany = quote.customer_type === 'company'
 
   return (
-    <div className="bg-white text-black min-h-screen">
-      {/* Non-printable back button */}
-      <div className="print:hidden p-4 bg-slate-100 border-b flex justify-between items-center mb-8">
-        <p className="text-slate-600 text-sm font-medium">Use Cmd+P or Ctrl+P to print if the dialog didn't open.</p>
-        <button 
-          onClick={() => router.back()}
-          className="bg-slate-800 text-white px-4 py-2 rounded-md hover:bg-slate-900 transition font-medium text-sm"
-        >
-          Back to Quotation
-        </button>
+    <div className="bg-white text-black min-h-screen w-full max-w-[210mm] mx-auto print:w-full print:max-w-none print:m-0 font-sans text-sm pb-10">
+      
+      {/* Header */}
+      <div className="flex justify-between items-start pt-8 px-8 pb-6 border-b-2 border-slate-800">
+        <div>
+          <h1 className="text-4xl font-black text-blue-900 tracking-tighter mb-1">RAPIDÉ</h1>
+          <p className="text-xs font-bold text-slate-500 tracking-widest uppercase">Auto Service Experts</p>
+          <div className="mt-3 text-xs text-slate-600 space-y-0.5">
+            <p>Infanta Branch</p>
+            <p>123 Main Highway, Infanta, Quezon</p>
+            <p>042-123-4567 / 0917-123-4567</p>
+          </div>
+        </div>
+        
+        <div className="text-right">
+          <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-widest mb-4">Quotation</h2>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+            <div className="text-slate-500 font-medium">Quote No:</div>
+            <div className="font-bold text-slate-900">{quote.quote_number}</div>
+            <div className="text-slate-500 font-medium">Date:</div>
+            <div className="font-bold text-slate-900">{format(new Date(quote.created_at), 'MMM d, yyyy')}</div>
+            <div className="text-slate-500 font-medium">Valid Until:</div>
+            <div className="font-bold text-slate-900">
+              {format(new Date(new Date(quote.created_at).getTime() + 7 * 24 * 60 * 60 * 1000), 'MMM d, yyyy')}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* A4 Print Container */}
-      <div className="max-w-[210mm] mx-auto bg-white p-8 print:p-0">
+      {/* Two-column info */}
+      <div className="flex border-b border-slate-300">
         
-        {/* Header */}
-        <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-8">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-              RAPIDÉ <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block -translate-y-3"></span>
-            </h1>
-            <p className="font-semibold uppercase tracking-widest text-slate-500 mt-1">Infanta Branch</p>
-            <div className="mt-4 text-sm text-slate-600 space-y-1">
-              <p>National Highway, Brgy. Comon</p>
-              <p>Infanta, Quezon 4336</p>
-              <p>Mobile: +63 917 123 4567</p>
-            </div>
+        {/* Bill To */}
+        <div className="flex-1 p-6 border-r border-slate-300">
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Quoted To</h3>
+          <div className="space-y-0.5 text-slate-800 text-sm">
+            <div className="font-bold text-base">{quote.customer_name}</div>
+            
+            {isCompany && quote.contact_person && (
+              <div>Attn: {quote.contact_person}</div>
+            )}
+            
+            {(quote.customer_mobile || quote.customer_telephone) && (
+              <div>
+                {quote.customer_mobile} {quote.customer_mobile && quote.customer_telephone ? '/' : ''} {quote.customer_telephone}
+              </div>
+            )}
+            
+            {quote.customer_email && <div>{quote.customer_email}</div>}
+            {quote.customer_address && <div>{quote.customer_address}</div>}
+            
+            {isCompany && quote.customer_tin && (
+              <div className="pt-1 font-medium">TIN: {quote.customer_tin}</div>
+            )}
           </div>
-          <div className="text-right">
-            <h2 className="text-3xl font-light text-slate-400 uppercase tracking-widest mb-4">Quotation</h2>
-            <div className="text-sm space-y-1">
-              <p><span className="font-semibold text-slate-700">Quote No:</span> {quote.quote_number}</p>
-              <p><span className="font-semibold text-slate-700">Date:</span> {format(new Date(quote.created_at), 'MMM d, yyyy')}</p>
-              <p><span className="font-semibold text-slate-700">Status:</span> {quote.status}</p>
+        </div>
+        
+        {/* Vehicle */}
+        <div className="w-1/3 p-6">
+          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Vehicle Details</h3>
+          <div className="space-y-1 text-slate-800 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Plate:</span>
+              <span className="font-bold uppercase">{quote.vehicle_plate}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Model:</span>
+              <span className="font-medium">{quote.vehicle_make} {quote.vehicle_model}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Year:</span>
+              <span className="font-medium">{quote.vehicle_year || '-'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Mileage:</span>
+              <span className="font-medium">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : '-'}</span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 gap-8 mb-8 text-sm">
-          <div>
-            <h3 className="font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">Billed To</h3>
-            <p className="font-semibold text-slate-900 text-base">{quote.customer_name}</p>
-            {quote.customer_address && <p className="text-slate-600 mt-1">{quote.customer_address}</p>}
-            {quote.customer_email && <p className="text-slate-600 mt-1">{quote.customer_email}</p>}
-          </div>
-          
-          <div>
-            <h3 className="font-bold text-slate-800 uppercase border-b border-slate-300 pb-1 mb-2">Vehicle Details</h3>
-            <table className="w-full text-slate-700">
-              <tbody>
-                <tr>
-                  <td className="py-1 font-medium w-24">Plate No:</td>
-                  <td className="py-1 uppercase font-bold">{quote.vehicle_plate}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 font-medium">Make/Model:</td>
-                  <td className="py-1">{quote.vehicle_make} {quote.vehicle_model} {quote.vehicle_year}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 font-medium">Mileage:</td>
-                  <td className="py-1">{quote.mileage_km ? `${quote.mileage_km} km` : '-'}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Line Items Table */}
-        <table className="w-full text-left text-sm text-slate-700 mb-8 border-collapse">
-          <thead className="border-y-2 border-slate-900">
+      {/* Items Table */}
+      <div className="p-6">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b-2 border-slate-800 text-slate-800 uppercase font-bold text-xs">
             <tr>
-              <th className="py-3 px-2 font-bold uppercase w-12 text-center">Qty</th>
-              <th className="py-3 px-2 font-bold uppercase">Description</th>
-              <th className="py-3 px-2 font-bold uppercase text-right w-32">Unit Price</th>
-              <th className="py-3 px-2 font-bold uppercase text-right w-32">Amount</th>
+              <th className="py-2 w-3/5">Description</th>
+              <th className="py-2 text-center w-1/12">Qty</th>
+              <th className="py-2 text-right w-1/6">Unit Price</th>
+              <th className="py-2 text-right w-1/6">Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {items.map((item) => (
-              item.is_section_header ? (
-                <tr key={item.id} className="bg-slate-50 border-y border-slate-300">
-                  <td colSpan={4} className="py-2 px-2 font-bold text-slate-900 uppercase">
-                    {item.description}
+            {items.map((item: any) => {
+              if (item.is_section_header) {
+                return (
+                  <tr key={item.id} className="bg-slate-50">
+                    <td colSpan={4} className="py-2 px-1 font-bold text-slate-800 uppercase tracking-wider text-xs">
+                      {item.description}
+                    </td>
+                  </tr>
+                )
+              }
+              
+              return (
+                <tr key={item.id}>
+                  <td className="py-2 pr-4 text-slate-800">{item.description}</td>
+                  <td className="py-2 text-center text-slate-600">{item.quantity}</td>
+                  <td className="py-2 text-right text-slate-600">
+                    {Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                  </td>
+                  <td className="py-2 text-right font-medium text-slate-800">
+                    {Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}
                   </td>
                 </tr>
-              ) : (
-                <tr key={item.id}>
-                  <td className="py-2 px-2 text-center align-top">{item.quantity}</td>
-                  <td className="py-2 px-2 align-top">{item.description}</td>
-                  <td className="py-2 px-2 text-right align-top">₱{Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                  <td className="py-2 px-2 text-right align-top font-medium text-slate-900">₱{Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
               )
-            ))}
+            })}
           </tbody>
         </table>
-
-        {/* Totals & Notes */}
-        <div className="grid grid-cols-2 gap-8">
-          <div className="text-sm">
-            {quote.notes && (
-              <div className="mb-4">
-                <h3 className="font-bold text-slate-800 uppercase pb-1 mb-1">Notes</h3>
-                <p className="text-slate-600 whitespace-pre-wrap">{quote.notes}</p>
-              </div>
-            )}
-            {quote.warranty_terms && (
-              <div>
-                <h3 className="font-bold text-slate-800 uppercase pb-1 mb-1">Warranty</h3>
-                <p className="text-slate-600 whitespace-pre-wrap">{quote.warranty_terms}</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="bg-slate-50 p-6 border border-slate-200 rounded-md">
-            <table className="w-full text-right text-sm">
-              <tbody>
-                <tr>
-                  <td className="py-1 text-slate-600 font-medium">Subtotal:</td>
-                  <td className="py-1 font-medium text-slate-900">₱{Number(quote.subtotal).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-                <tr>
-                  <td className="py-1 text-slate-600 font-medium pb-4">Discount:</td>
-                  <td className="py-1 font-medium text-red-600 pb-4">- ₱{Number(quote.discount_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-                <tr className="border-t-2 border-slate-900">
-                  <td className="py-4 text-base font-bold text-slate-900 uppercase">Grand Total:</td>
-                  <td className="py-4 text-xl font-bold text-slate-900">₱{Number(quote.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Signatures */}
-        <div className="grid grid-cols-2 gap-16 mt-20 text-sm">
-          <div className="text-center">
-            <div className="border-b border-slate-400 mb-2 w-full pt-8"></div>
-            <p className="font-bold text-slate-800 uppercase">{quote.prepared_by || 'Prepared By'}</p>
-            <p className="text-slate-500 text-xs mt-1">Authorized Representative</p>
-          </div>
-          <div className="text-center">
-            <div className="border-b border-slate-400 mb-2 w-full pt-8"></div>
-            <p className="font-bold text-slate-800 uppercase">{quote.customer_name}</p>
-            <p className="text-slate-500 text-xs mt-1">Customer Signature over Printed Name</p>
-          </div>
-        </div>
-
       </div>
+
+      {/* Totals */}
+      <div className="px-6 flex justify-end">
+        <div className="w-1/2 min-w-[250px]">
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-slate-600 text-sm">
+              <span>Subtotal</span>
+              <span>₱{Number(quote.subtotal).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            </div>
+            
+            {Number(quote.discount_amount) > 0 && (
+              <div className="flex justify-between text-slate-600 text-sm">
+                <span>Discount</span>
+                <span>- ₱{Number(quote.discount_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+            )}
+            
+            <div className="h-0.5 bg-slate-800 my-1"></div>
+            
+            <div className="flex justify-between text-slate-900 font-bold text-lg">
+              <span>Grand Total</span>
+              <span>₱{Number(quote.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-8 px-6 pt-6 border-t-2 border-slate-800 flex justify-between gap-8 page-break-inside-avoid">
+        <div className="flex-1 space-y-4">
+          <div>
+            <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Notes / Remarks</h4>
+            <p className="text-slate-600 text-xs whitespace-pre-wrap">{quote.notes || 'None'}</p>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Warranty Terms</h4>
+            <p className="text-slate-600 text-xs">{quote.warranty_terms}</p>
+          </div>
+        </div>
+        
+        <div className="w-48 text-center pt-8">
+          <div className="border-b border-slate-800 mb-1"></div>
+          <p className="font-bold text-slate-800 text-xs">{quote.prepared_by}</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider">Prepared By</p>
+        </div>
+      </div>
+
+      {/* Disclaimer / Signature */}
+      <div className="mt-12 px-6 flex justify-between items-end page-break-inside-avoid">
+        <div className="w-1/2 text-[10px] text-slate-500 text-justify pr-8">
+          This quotation is valid for 7 days. Prices may change without prior notice. 
+          The final invoice amount may vary depending on actual labor time and parts used during repair.
+        </div>
+        <div className="w-48 text-center">
+          <div className="border-b border-slate-800 mb-1"></div>
+          <p className="font-bold text-slate-800 text-xs">Customer Signature</p>
+          <p className="text-slate-500 text-[10px] uppercase tracking-wider">Conforme</p>
+        </div>
+      </div>
+
     </div>
   )
 }

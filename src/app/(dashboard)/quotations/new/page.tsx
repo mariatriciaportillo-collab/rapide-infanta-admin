@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Trash2, ArrowLeft, Save, Search, User, Car } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'lucide-react'
 import Link from 'next/link'
 
 type LineItem = {
@@ -27,10 +27,14 @@ export default function NewQuotationPage() {
   const [customerVehicles, setCustomerVehicles] = useState<any[]>([])
   
   // Customer State
+  const [customerType, setCustomerType] = useState<'individual' | 'company'>('individual')
   const [customerName, setCustomerName] = useState('')
+  const [contactPerson, setContactPerson] = useState('')
   const [customerMobile, setCustomerMobile] = useState('')
+  const [customerTelephone, setCustomerTelephone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
+  const [customerTin, setCustomerTin] = useState('')
   
   // Vehicle State
   const [vehiclePlate, setVehiclePlate] = useState('')
@@ -77,7 +81,7 @@ export default function NewQuotationPage() {
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .or(`name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%`)
+        .or(`name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%,contact_person.ilike.%${customerSearch}%`)
         .limit(5)
         
       setSearchResults(data || [])
@@ -90,10 +94,15 @@ export default function NewQuotationPage() {
   // Select Customer
   const handleSelectCustomer = async (customer: any) => {
     setSelectedCustomerId(customer.id)
+    setCustomerType(customer.customer_type as 'individual' | 'company' || 'individual')
     setCustomerName(customer.name)
+    setContactPerson(customer.contact_person || '')
     setCustomerMobile(customer.mobile || '')
+    setCustomerTelephone(customer.telephone || '')
     setCustomerEmail(customer.email || '')
     setCustomerAddress(customer.address || '')
+    setCustomerTin(customer.tin || '')
+    
     setCustomerSearch('')
     setShowDropdown(false)
 
@@ -131,10 +140,15 @@ export default function NewQuotationPage() {
     setSelectedCustomerId(null)
     setSelectedVehicleId(null)
     setCustomerVehicles([])
+    setCustomerType('individual')
     setCustomerName('')
+    setContactPerson('')
     setCustomerMobile('')
+    setCustomerTelephone('')
     setCustomerEmail('')
     setCustomerAddress('')
+    setCustomerTin('')
+    
     setVehiclePlate('')
     setVehicleMake('')
     setVehicleModel('')
@@ -179,7 +193,7 @@ export default function NewQuotationPage() {
     setError(null)
 
     if (!customerName.trim()) {
-      setError("Customer Name is required.")
+      setError(customerType === 'individual' ? "Customer Name is required." : "Company Name is required.")
       setIsSubmitting(false)
       return
     }
@@ -195,10 +209,14 @@ export default function NewQuotationPage() {
       // Auto-create customer if none selected
       if (!finalCustomerId) {
         const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+          customer_type: customerType,
           name: customerName,
+          contact_person: customerType === 'company' ? contactPerson : null,
           mobile: customerMobile,
+          telephone: customerType === 'company' ? customerTelephone : null,
           email: customerEmail,
-          address: customerAddress
+          address: customerAddress,
+          tin: customerType === 'company' ? customerTin : null
         }).select().single()
         
         if (custErr) throw custErr
@@ -222,7 +240,7 @@ export default function NewQuotationPage() {
         if (newVeh) finalVehicleId = newVeh.id
       }
 
-      // 1. Generate Quote Number (e.g. INFANTA-YYYYMMDD-XXXX)
+      // 1. Generate Quote Number
       const datePart = new Date().toISOString().split('T')[0].replace(/-/g, '')
       const randomPart = Math.floor(1000 + Math.random() * 9000)
       const quoteNumber = `INFANTA-${datePart}-${randomPart}`
@@ -234,10 +252,15 @@ export default function NewQuotationPage() {
           quote_number: quoteNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
-          customer_name: customerName, // Snapshot
+          // Snapshots
+          customer_type: customerType,
+          customer_name: customerName, 
+          contact_person: customerType === 'company' ? contactPerson : null,
           customer_email: customerEmail,
+          customer_telephone: customerType === 'company' ? customerTelephone : null,
+          customer_tin: customerType === 'company' ? customerTin : null,
           customer_address: customerAddress,
-          vehicle_plate: vehiclePlate.toUpperCase(), // Snapshot
+          vehicle_plate: vehiclePlate.toUpperCase(), 
           vehicle_make: vehicleMake,
           vehicle_model: vehicleModel,
           vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
@@ -311,14 +334,14 @@ export default function NewQuotationPage() {
         </div>
       )}
 
-      {/* SEARCH BAR (New) */}
+      {/* SEARCH BAR */}
       {!selectedCustomerId && (
         <div className="mb-6 relative" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
               type="text"
-              placeholder="Search existing customer by name or mobile..."
+              placeholder="Search existing customer or company..."
               value={customerSearch}
               onChange={(e) => {
                 setCustomerSearch(e.target.value)
@@ -340,9 +363,9 @@ export default function NewQuotationPage() {
                 >
                   <div>
                     <div className="font-semibold text-slate-900">{cust.name}</div>
-                    <div className="text-sm text-slate-500">{cust.mobile || 'No mobile'}</div>
+                    <div className="text-sm text-slate-500 capitalize">{cust.customer_type} • {cust.mobile || cust.telephone || 'No contact number'}</div>
                   </div>
-                  <User size={18} className="text-slate-400" />
+                  {cust.customer_type === 'company' ? <Building2 size={18} className="text-slate-400" /> : <User size={18} className="text-slate-400" />}
                 </button>
               ))}
             </div>
@@ -354,7 +377,10 @@ export default function NewQuotationPage() {
         {/* Customer Details */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h3 className="text-lg font-semibold text-slate-800">Customer Information</h3>
+            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
+              {customerType === 'company' ? 'Company' : 'Customer'} Information
+            </h3>
             {selectedCustomerId && (
               <button type="button" onClick={handleClearCustomer} className="text-xs text-red-500 hover:underline">
                 Clear & Enter New
@@ -362,21 +388,58 @@ export default function NewQuotationPage() {
             )}
           </div>
           
+          {!selectedCustomerId && (
+            <div className="mb-4 flex gap-2">
+              <button type="button" onClick={() => setCustomerType('individual')} className={`px-3 py-1 rounded text-sm font-medium ${customerType === 'individual' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>Individual</button>
+              <button type="button" onClick={() => setCustomerType('company')} className={`px-3 py-1 rounded text-sm font-medium ${customerType === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>Company</button>
+            </div>
+          )}
+          
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
-              <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan Dela Cruz" disabled={!!selectedCustomerId} />
+              <label className="block text-sm font-medium text-slate-700 mb-1">{customerType === 'company' ? 'Company Name *' : 'Full Name *'}</label>
+              <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder={customerType === 'company' ? 'ABC Construction Corp' : 'Juan Dela Cruz'} disabled={!!selectedCustomerId} />
             </div>
+            
+            {customerType === 'company' && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
+                <input type="text" value={contactPerson} onChange={e => setContactPerson(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria Santos" disabled={!!selectedCustomerId} />
+              </div>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
                 <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" disabled={!!selectedCustomerId} />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" disabled={!!selectedCustomerId} />
-              </div>
+              
+              {customerType === 'company' ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Telephone</label>
+                  <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" disabled={!!selectedCustomerId} />
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" disabled={!!selectedCustomerId} />
+                </div>
+              )}
             </div>
+
+            {customerType === 'company' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@abccorp.com" disabled={!!selectedCustomerId} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">TIN</label>
+                  <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" disabled={!!selectedCustomerId} />
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
               <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123 Main St, Infanta" disabled={!!selectedCustomerId} />
@@ -396,16 +459,16 @@ export default function NewQuotationPage() {
                 setVehicleModel('')
                 setVehicleYear('')
                 setVehicleTransmission('')
-              }} className="text-xs text-blue-500 hover:underline">
-                + Add New Vehicle
+              }} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
+                <Plus size={14} /> Add New
               </button>
             )}
           </div>
 
           {!selectedVehicleId && customerVehicles.length > 0 && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Select Saved Vehicle</label>
-              <div className="grid grid-cols-1 gap-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Select from Fleet</label>
+              <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2">
                 {customerVehicles.map(v => (
                   <button 
                     key={v.id} 
@@ -421,14 +484,16 @@ export default function NewQuotationPage() {
                   </button>
                 ))}
               </div>
-              <div className="my-4 text-center text-sm text-slate-400">--- OR ENTER NEW ---</div>
+              <div className="my-4 text-center text-sm font-medium text-slate-400 uppercase tracking-widest border-b border-slate-200 leading-[0.1em]">
+                <span className="bg-white px-3">OR ENTER NEW</span>
+              </div>
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-              <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC 1234" disabled={!!selectedVehicleId} />
+              <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase font-bold" placeholder="ABC 1234" disabled={!!selectedVehicleId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
