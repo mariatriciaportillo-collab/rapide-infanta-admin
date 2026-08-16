@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Trash2, ArrowLeft, Save } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Search, User, Car } from 'lucide-react'
 import Link from 'next/link'
 
 type LineItem = {
@@ -18,17 +18,29 @@ export default function NewQuotationPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  // Form State
+  // Master Data Selection
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [customerVehicles, setCustomerVehicles] = useState<any[]>([])
+  
+  // Customer State
   const [customerName, setCustomerName] = useState('')
+  const [customerMobile, setCustomerMobile] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerAddress, setCustomerAddress] = useState('')
   
+  // Vehicle State
   const [vehiclePlate, setVehiclePlate] = useState('')
   const [vehicleMake, setVehicleMake] = useState('')
   const [vehicleModel, setVehicleModel] = useState('')
   const [vehicleYear, setVehicleYear] = useState('')
+  const [vehicleTransmission, setVehicleTransmission] = useState('')
   const [mileage, setMileage] = useState('')
 
+  // Quote State
   const [notes, setNotes] = useState('')
   const [warranty, setWarranty] = useState('3 Months / 5,000km (Whichever comes first)')
   const [preparedBy, setPreparedBy] = useState('Rapide Infanta Admin')
@@ -40,6 +52,95 @@ export default function NewQuotationPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  // Handle outside click for dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  // Search Customers
+  useEffect(() => {
+    const search = async () => {
+      if (customerSearch.trim().length < 2) {
+        setSearchResults([])
+        return
+      }
+      
+      const { data } = await supabase
+        .from('customers')
+        .select('*')
+        .or(`name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%`)
+        .limit(5)
+        
+      setSearchResults(data || [])
+    }
+    
+    const timeout = setTimeout(search, 300)
+    return () => clearTimeout(timeout)
+  }, [customerSearch, supabase])
+
+  // Select Customer
+  const handleSelectCustomer = async (customer: any) => {
+    setSelectedCustomerId(customer.id)
+    setCustomerName(customer.name)
+    setCustomerMobile(customer.mobile || '')
+    setCustomerEmail(customer.email || '')
+    setCustomerAddress(customer.address || '')
+    setCustomerSearch('')
+    setShowDropdown(false)
+
+    // Fetch their vehicles
+    const { data: v } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('customer_id', customer.id)
+    
+    setCustomerVehicles(v || [])
+    if (v && v.length === 1) {
+      handleSelectVehicle(v[0])
+    } else {
+      setSelectedVehicleId(null)
+      setVehiclePlate('')
+      setVehicleMake('')
+      setVehicleModel('')
+      setVehicleYear('')
+      setVehicleTransmission('')
+    }
+  }
+
+  // Select Vehicle
+  const handleSelectVehicle = (vehicle: any) => {
+    setSelectedVehicleId(vehicle.id)
+    setVehiclePlate(vehicle.plate_number)
+    setVehicleMake(vehicle.make || '')
+    setVehicleModel(vehicle.model || '')
+    setVehicleYear(vehicle.year ? vehicle.year.toString() : '')
+    setVehicleTransmission(vehicle.transmission || '')
+  }
+
+  // Clear Customer
+  const handleClearCustomer = () => {
+    setSelectedCustomerId(null)
+    setSelectedVehicleId(null)
+    setCustomerVehicles([])
+    setCustomerName('')
+    setCustomerMobile('')
+    setCustomerEmail('')
+    setCustomerAddress('')
+    setVehiclePlate('')
+    setVehicleMake('')
+    setVehicleModel('')
+    setVehicleYear('')
+    setVehicleTransmission('')
+  }
 
   // Computed Totals
   const subtotal = items.reduce((sum, item) => {
@@ -77,7 +178,50 @@ export default function NewQuotationPage() {
     setIsSubmitting(true)
     setError(null)
 
+    if (!customerName.trim()) {
+      setError("Customer Name is required.")
+      setIsSubmitting(false)
+      return
+    }
+    if (!vehiclePlate.trim()) {
+      setError("Vehicle Plate Number is required.")
+      setIsSubmitting(false)
+      return
+    }
+
     try {
+      let finalCustomerId = selectedCustomerId
+      
+      // Auto-create customer if none selected
+      if (!finalCustomerId) {
+        const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+          name: customerName,
+          mobile: customerMobile,
+          email: customerEmail,
+          address: customerAddress
+        }).select().single()
+        
+        if (custErr) throw custErr
+        if (newCust) finalCustomerId = newCust.id
+      }
+      
+      let finalVehicleId = selectedVehicleId
+      
+      // Auto-create vehicle if none selected
+      if (!finalVehicleId && finalCustomerId) {
+        const { data: newVeh, error: vehErr } = await supabase.from('vehicles').insert({
+          customer_id: finalCustomerId,
+          plate_number: vehiclePlate.toUpperCase(),
+          make: vehicleMake,
+          model: vehicleModel,
+          year: vehicleYear ? parseInt(vehicleYear) : null,
+          transmission: vehicleTransmission
+        }).select().single()
+        
+        if (vehErr) throw vehErr
+        if (newVeh) finalVehicleId = newVeh.id
+      }
+
       // 1. Generate Quote Number (e.g. INFANTA-YYYYMMDD-XXXX)
       const datePart = new Date().toISOString().split('T')[0].replace(/-/g, '')
       const randomPart = Math.floor(1000 + Math.random() * 9000)
@@ -88,10 +232,12 @@ export default function NewQuotationPage() {
         .from('quotations')
         .insert({
           quote_number: quoteNumber,
-          customer_name: customerName || 'Unknown Customer',
+          customer_id: finalCustomerId,
+          vehicle_id: finalVehicleId,
+          customer_name: customerName, // Snapshot
           customer_email: customerEmail,
           customer_address: customerAddress,
-          vehicle_plate: vehiclePlate || 'Unknown Plate',
+          vehicle_plate: vehiclePlate.toUpperCase(), // Snapshot
           vehicle_make: vehicleMake,
           vehicle_model: vehicleModel,
           vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
@@ -111,7 +257,7 @@ export default function NewQuotationPage() {
 
       // 3. Insert Line Items
       const itemsToInsert = items
-        .filter(i => i.description.trim() !== '') // Skip empty lines
+        .filter(i => i.description.trim() !== '')
         .map((item, index) => ({
           quotation_id: quote.id,
           sort_order: index,
@@ -165,48 +311,147 @@ export default function NewQuotationPage() {
         </div>
       )}
 
+      {/* SEARCH BAR (New) */}
+      {!selectedCustomerId && (
+        <div className="mb-6 relative" ref={searchRef}>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search existing customer by name or mobile..."
+              value={customerSearch}
+              onChange={(e) => {
+                setCustomerSearch(e.target.value)
+                setShowDropdown(true)
+              }}
+              onFocus={() => setShowDropdown(true)}
+              className="w-full pl-12 pr-4 py-4 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+            />
+          </div>
+          
+          {showDropdown && searchResults.length > 0 && (
+            <div className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+              {searchResults.map((cust) => (
+                <button
+                  key={cust.id}
+                  type="button"
+                  onClick={() => handleSelectCustomer(cust)}
+                  className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex justify-between items-center"
+                >
+                  <div>
+                    <div className="font-semibold text-slate-900">{cust.name}</div>
+                    <div className="text-sm text-slate-500">{cust.mobile || 'No mobile'}</div>
+                  </div>
+                  <User size={18} className="text-slate-400" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Customer Details */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Customer Information</h3>
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 className="text-lg font-semibold text-slate-800">Customer Information</h3>
+            {selectedCustomerId && (
+              <button type="button" onClick={handleClearCustomer} className="text-xs text-red-500 hover:underline">
+                Clear & Enter New
+              </button>
+            )}
+          </div>
+          
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Full Name *</label>
-              <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan Dela Cruz" />
+              <input required type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan Dela Cruz" disabled={!!selectedCustomerId} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-              <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
+                <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" disabled={!!selectedCustomerId} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" disabled={!!selectedCustomerId} />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-              <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123 Main St, Infanta" />
+              <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123 Main St, Infanta" disabled={!!selectedCustomerId} />
             </div>
           </div>
         </div>
 
         {/* Vehicle Details */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Vehicle Information</h3>
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h3 className="text-lg font-semibold text-slate-800">Vehicle Information</h3>
+            {selectedVehicleId && (
+              <button type="button" onClick={() => {
+                setSelectedVehicleId(null)
+                setVehiclePlate('')
+                setVehicleMake('')
+                setVehicleModel('')
+                setVehicleYear('')
+                setVehicleTransmission('')
+              }} className="text-xs text-blue-500 hover:underline">
+                + Add New Vehicle
+              </button>
+            )}
+          </div>
+
+          {!selectedVehicleId && customerVehicles.length > 0 && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Select Saved Vehicle</label>
+              <div className="grid grid-cols-1 gap-2">
+                {customerVehicles.map(v => (
+                  <button 
+                    key={v.id} 
+                    type="button" 
+                    onClick={() => handleSelectVehicle(v)}
+                    className="flex justify-between items-center p-3 border border-slate-200 rounded-md hover:bg-blue-50 hover:border-blue-300 transition text-left"
+                  >
+                    <div>
+                      <div className="font-bold text-slate-800">{v.plate_number}</div>
+                      <div className="text-sm text-slate-500">{v.make} {v.model} {v.year}</div>
+                    </div>
+                    <Car size={18} className="text-slate-400" />
+                  </button>
+                ))}
+              </div>
+              <div className="my-4 text-center text-sm text-slate-400">--- OR ENTER NEW ---</div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-              <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC 1234" />
+              <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC 1234" disabled={!!selectedVehicleId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
-              <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
+              <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" disabled={!!selectedVehicleId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
-              <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
+              <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" disabled={!!selectedVehicleId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-              <input type="number" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2018" />
+              <input type="number" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2018" disabled={!!selectedVehicleId} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Mileage (km)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+              <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" disabled={!!selectedVehicleId}>
+                <option value="">Select...</option>
+                <option value="Automatic">Automatic</option>
+                <option value="Manual">Manual</option>
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
               <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="50000" />
             </div>
           </div>
