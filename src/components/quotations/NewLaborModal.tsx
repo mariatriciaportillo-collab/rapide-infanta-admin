@@ -40,8 +40,7 @@ export function NewLaborModal({ isOpen, onClose, onSuccess, initialName = '' }: 
 
   if (!isOpen) return null
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     setIsSubmitting(true)
     setError(null)
 
@@ -107,7 +106,7 @@ export function NewLaborModal({ isOpen, onClose, onSuccess, initialName = '' }: 
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <div className="p-6 space-y-6">
           {error && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
               {error}
@@ -188,15 +187,16 @@ export function NewLaborModal({ isOpen, onClose, onSuccess, initialName = '' }: 
               Cancel
             </button>
             <button 
-              type="submit"
+              type="button"
               disabled={isSubmitting}
+              onClick={handleSubmit}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center gap-2 disabled:bg-blue-400"
             >
               <Save size={18} />
               {isSubmitting ? 'Saving...' : 'Save & Select'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   )

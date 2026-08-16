@@ -246,7 +246,11 @@ export default function NewQuotationPage() {
   }
 
   const updateItem = (id: string, field: keyof LineItem, value: any) => {
-    setItems(items.map(i => i.id === id ? { ...i, [field]: value } : i))
+    setItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i))
+  }
+
+  const updateItemBulk = (id: string, updates: Partial<LineItem>) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -708,14 +712,24 @@ export default function NewQuotationPage() {
                     onChange={(laborId) => {
                       const service = laborServices.find(s => s.id === laborId)
                       if (service) {
-                        updateItem(item.id, 'labor_service_id', service.id)
-                        updateItem(item.id, 'description', service.name)
-                        updateItem(item.id, 'unit_price', service.rate)
-                        updateItem(item.id, 'group_id', service.group_id)
-                        updateItem(item.id, 'category_id', service.category_id)
-                        updateItem(item.id, 'group_name_snapshot', service.labor_groups?.name)
-                        updateItem(item.id, 'category_name_snapshot', service.labor_categories?.name)
-                        updateItem(item.id, 'standard_hour_snapshot', service.standard_hours)
+                        // Check for duplicates
+                        const alreadyAdded = items.some(i => i.labor_service_id === service.id && i.id !== item.id)
+                        if (alreadyAdded) {
+                          setError(`"${service.name}" is already added to this quotation.`)
+                          setTimeout(() => setError(null), 3000)
+                          return
+                        }
+                        updateItemBulk(item.id, {
+                          labor_service_id: service.id,
+                          description: service.name,
+                          unit_price: service.rate,
+                          quantity: 1,
+                          group_id: service.group_id,
+                          category_id: service.category_id,
+                          group_name_snapshot: service.labor_groups?.name,
+                          category_name_snapshot: service.labor_categories?.name,
+                          standard_hour_snapshot: service.standard_hours,
+                        })
                       }
                     }}
                     placeholder="Search labor / service..."
@@ -847,17 +861,20 @@ export default function NewQuotationPage() {
         initialName={newLaborSearchQuery}
         onSuccess={(newLabor) => {
           setIsNewLaborModalOpen(false)
-          setLaborServices([...laborServices, newLabor].sort((a, b) => a.name.localeCompare(b.name)))
+          setLaborServices(prev => [...prev, newLabor].sort((a: any, b: any) => a.name.localeCompare(b.name)))
           
           if (activeItemIndexForModal) {
-            updateItem(activeItemIndexForModal, 'labor_service_id', newLabor.id)
-            updateItem(activeItemIndexForModal, 'description', newLabor.name)
-            updateItem(activeItemIndexForModal, 'unit_price', newLabor.rate)
-            updateItem(activeItemIndexForModal, 'group_id', newLabor.group_id)
-            updateItem(activeItemIndexForModal, 'category_id', newLabor.category_id)
-            updateItem(activeItemIndexForModal, 'group_name_snapshot', newLabor.labor_groups?.name)
-            updateItem(activeItemIndexForModal, 'category_name_snapshot', newLabor.labor_categories?.name)
-            updateItem(activeItemIndexForModal, 'standard_hour_snapshot', newLabor.standard_hours)
+            updateItemBulk(activeItemIndexForModal, {
+              labor_service_id: newLabor.id,
+              description: newLabor.name,
+              unit_price: newLabor.rate,
+              quantity: 1,
+              group_id: newLabor.group_id,
+              category_id: newLabor.category_id,
+              group_name_snapshot: newLabor.labor_groups?.name,
+              category_name_snapshot: newLabor.labor_categories?.name,
+              standard_hour_snapshot: newLabor.standard_hours,
+            })
             setActiveItemIndexForModal(null)
           }
         }}
