@@ -431,12 +431,25 @@ export default function NewQuotationPage() {
       }
 
       // 1. Generate Quote Number
-      const datePart = new Date().toISOString().split('T')[0].replace(/-/g, '')
-      const randomPart = Math.floor(1000 + Math.random() * 9000)
-      const quoteNumber = `INFANTA-${datePart}-${randomPart}`
-
+      let nextNumber = 1;
+      const { data: latestQuote } = await supabase
+        .from('quotations')
+        .select('quote_number')
+        .ilike('quote_number', 'INF-%')
+        .order('quote_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+        
+      if (latestQuote && latestQuote.quote_number) {
+        const match = latestQuote.quote_number.match(/INF-(\d+)/);
+        if (match && match[1]) {
+          nextNumber = parseInt(match[1], 10) + 1;
+        }
+      }
+      const quoteNumber = `INF-${nextNumber.toString().padStart(5, '0')}`;
+      console.log("[QUOTATION SAVE] Step 4: Creating quotation header...");
       const quotePayload = {
-          ref_no: quoteNumber,
+          quote_number: quoteNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
           // Snapshots (combined formatted names to keep quotation table simple)
