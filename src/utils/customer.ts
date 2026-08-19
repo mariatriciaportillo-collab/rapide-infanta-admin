@@ -26,3 +26,20 @@ export function formatContactPerson(customer: any): string {
   
   return ''
 }
+
+/**
+ * Build the legacy `name` column value for backward compatibility.
+ * Individual: "FirstName LastName"
+ * Company: companyName as-is
+ */
+export function buildLegacyName(
+  customerType: 'individual' | 'company',
+  firstName: string,
+  lastName: string,
+  companyName: string
+): string {
+  if (customerType === 'company') {
+    return companyName.trim()
+  }
+  return `${firstName.trim()} ${lastName.trim()}`.trim()
+}

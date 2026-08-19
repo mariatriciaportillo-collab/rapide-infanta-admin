@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'lucide-react'
 import Link from 'next/link'
-import { formatCustomerName, formatContactPerson } from '@/utils/customer'
+import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 import { YearSelector } from '@/components/vehicles/YearSelector'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
@@ -122,13 +122,39 @@ export default function NewQuotationPage() {
         return
       }
       
-      const { data } = await supabase
+      const customerPromise = supabase
         .from('customers')
         .select('*')
         .or(`name.ilike.%${customerSearch}%,first_name.ilike.%${customerSearch}%,last_name.ilike.%${customerSearch}%,contact_person.ilike.%${customerSearch}%,contact_first_name.ilike.%${customerSearch}%,contact_last_name.ilike.%${customerSearch}%,mobile.ilike.%${customerSearch}%`)
         .limit(5)
+
+      const vehiclePromise = supabase
+        .from('vehicles')
+        .select('*, customers(*)')
+        .ilike('plate_number', `%${customerSearch}%`)
+        .limit(5)
+
+      const [custRes, vehRes] = await Promise.all([customerPromise, vehiclePromise])
+      
+      const combined = new Map()
+      if (custRes.data) {
+        custRes.data.forEach(c => combined.set(c.id, c))
+      }
+      
+      if (vehRes.data) {
+        vehRes.data.forEach(v => {
+          if (v.customers) {
+            const existing = combined.get(v.customers.id)
+            if (existing) {
+              combined.set(v.customers.id, { ...existing, matched_vehicle: v })
+            } else {
+              combined.set(v.customers.id, { ...v.customers, matched_vehicle: v })
+            }
+          }
+        })
+      }
         
-      setSearchResults(data || [])
+      setSearchResults(Array.from(combined.values()).slice(0, 6))
     }
     
     const timeout = setTimeout(search, 300)
@@ -166,7 +192,9 @@ export default function NewQuotationPage() {
       .eq('customer_id', customer.id)
     
     setCustomerVehicles(v || [])
-    if (v && v.length === 1) {
+    if (customer.matched_vehicle) {
+      handleSelectVehicle(customer.matched_vehicle)
+    } else if (v && v.length === 1) {
       handleSelectVehicle(v[0])
     } else {
       setSelectedVehicleId(null)
@@ -291,9 +319,24 @@ export default function NewQuotationPage() {
       
       // Auto-create customer if none selected
       if (!finalCustomerId) {
+        // Duplicate check for mobile
+        if (customerMobile.trim()) {
+          const { data: existingCust } = await supabase
+            .from('customers')
+            .select('id, first_name, last_name, name')
+            .eq('mobile', customerMobile.trim())
+            .single()
+            
+          if (existingCust) {
+            setError(`A customer with this mobile number already exists (${existingCust.name || existingCust.first_name + ' ' + existingCust.last_name}). Please search and select them instead.`)
+            setIsSubmitting(false)
+            return
+          }
+        }
+
         const { data: newCust, error: custErr } = await supabase.from('customers').insert({
           customer_type: customerType,
-          name: customerType === 'company' ? cleanCompanyName : null,
+          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
@@ -305,7 +348,9 @@ export default function NewQuotationPage() {
           tin: customerType === 'company' ? customerTin : null
         }).select().single()
         
-        if (custErr) throw custErr
+        if (custErr) {
+          throw new Error('Unable to create customer. Please check the required fields and try again.')
+        }
         if (newCust) {
           finalCustomerId = newCust.id
           finalDisplayName = formatCustomerName(newCust)
@@ -317,6 +362,23 @@ export default function NewQuotationPage() {
       
       // Auto-create vehicle if none selected
       if (!finalVehicleId && finalCustomerId) {
+        const normalizedPlate = vehiclePlate.replace(/[^A-Z0-9]/ig, '').toUpperCase()
+        
+        // Check if plate already exists
+        const { data: existingVeh } = await supabase
+          .from('vehicles')
+          .select('id, plate_number, customers(name, first_name, last_name)')
+          .ilike('plate_number', `%${normalizedPlate}%`)
+          .single()
+          
+        if (existingVeh) {
+          const owner = Array.isArray(existingVeh.customers) ? existingVeh.customers[0] : existingVeh.customers
+          const ownerName = owner?.name || `${owner?.first_name || ''} ${owner?.last_name || ''}`.trim() || 'another customer'
+          setError(`Vehicle with plate ${vehiclePlate} already exists under ${ownerName}. Please search and select it instead.`)
+          setIsSubmitting(false)
+          return
+        }
+
         const { data: newVeh, error: vehErr } = await supabase.from('vehicles').insert({
           customer_id: finalCustomerId,
           plate_number: vehiclePlate.toUpperCase(),
@@ -326,7 +388,9 @@ export default function NewQuotationPage() {
           transmission: vehicleTransmission
         }).select().single()
         
-        if (vehErr) throw vehErr
+        if (vehErr) {
+          throw new Error('Unable to create vehicle. Please check the required fields and try again.')
+        }
         if (newVeh) finalVehicleId = newVeh.id
       }
 
@@ -346,6 +410,7 @@ export default function NewQuotationPage() {
           customer_type: customerType,
           customer_name: finalDisplayName, 
           contact_person: customerType === 'company' ? finalContactPerson : null,
+          customer_mobile: customerMobile,
           customer_email: customerEmail,
           customer_telephone: customerType === 'company' ? customerTelephone : null,
           customer_tin: customerType === 'company' ? customerTin : null,
@@ -462,6 +527,11 @@ export default function NewQuotationPage() {
                     <div>
                       <div className="font-semibold text-slate-900">{searchDisplayName}</div>
                       <div className="text-sm text-slate-500 capitalize">{cust.customer_type} • {cust.mobile || cust.telephone || 'No contact number'}</div>
+                      {cust.matched_vehicle && (
+                        <div className="text-sm text-blue-600 mt-1 flex items-center gap-1">
+                          <Car size={14} /> {cust.matched_vehicle.make} {cust.matched_vehicle.model} • {cust.matched_vehicle.plate_number}
+                        </div>
+                      )}
                     </div>
                     {cust.customer_type === 'company' ? <Building2 size={18} className="text-slate-400" /> : <User size={18} className="text-slate-400" />}
                   </button>

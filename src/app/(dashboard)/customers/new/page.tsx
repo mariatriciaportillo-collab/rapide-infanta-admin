@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Building2, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
+import { buildLegacyName } from '@/utils/customer'
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -62,8 +63,8 @@ export default function NewCustomerPage() {
         .from('customers')
         .insert({
           customer_type: customerType,
-          // If individual, name can be null (since we use first_name + last_name)
-          name: customerType === 'company' ? cleanCompanyName : null,
+          // Generate legacy name column value
+          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,

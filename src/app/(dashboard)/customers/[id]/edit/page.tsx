@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Building2, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
+import { buildLegacyName } from '@/utils/customer'
 
 export default function EditCustomerPage({
   params,
@@ -101,7 +102,7 @@ export default function EditCustomerPage({
         .from('customers')
         .update({
           customer_type: customerType,
-          name: customerType === 'company' ? cleanName : name, // Leave legacy individual name untouched if they had one, just in case
+          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
