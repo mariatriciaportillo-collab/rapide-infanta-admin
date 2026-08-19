@@ -312,6 +312,33 @@ export default function NewQuotationPage() {
       return
     }
 
+    const validItems = items.filter(i => i.description.trim() !== '' || i.labor_service_id)
+    if (validItems.length === 0) {
+      setError("Please add at least one line item.")
+      setIsSubmitting(false)
+      return
+    }
+
+    for (const item of validItems) {
+      if (!item.is_section_header) {
+        if (!item.description.trim() && !item.labor_service_id) {
+          setError("Description is required for all non-header items.")
+          setIsSubmitting(false)
+          return
+        }
+        if (item.unit_price === '' || item.unit_price === null || item.unit_price === undefined) {
+          setError(`Unit Price is required for item: ${item.description || 'Unnamed item'}`)
+          setIsSubmitting(false)
+          return
+        }
+        if (Number(item.quantity) <= 0) {
+          setError(`Quantity must be greater than 0 for item: ${item.description || 'Unnamed item'}`)
+          setIsSubmitting(false)
+          return
+        }
+      }
+    }
+
     try {
       let finalCustomerId = selectedCustomerId
       let finalDisplayName = displayCustomerName
@@ -403,7 +430,7 @@ export default function NewQuotationPage() {
       const { data: quote, error: quoteError } = await supabase
         .from('quotations')
         .insert({
-          quote_number: quoteNumber,
+          ref_no: quoteNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
           // Snapshots (combined formatted names to keep quotation table simple)
@@ -420,7 +447,7 @@ export default function NewQuotationPage() {
           vehicle_model: vehicleModel,
           vehicle_year: vehicleYear ? parseInt(vehicleYear) : null,
           mileage_km: mileage ? parseFloat(mileage) : null,
-          status: 'DRAFT',
+          status: 'draft',
           prepared_by: preparedBy,
           notes: notes,
           warranty_terms: warranty,
@@ -766,7 +793,7 @@ export default function NewQuotationPage() {
                   id: Math.random().toString(36).substr(2, 9),
                   description: service.name,
                   quantity: 1,
-                  unit_price: service.rate,
+                  unit_price: service.rate ?? '',
                   is_section_header: false,
                   labor_service_id: service.id,
                   group_id: service.group_id,
@@ -944,7 +971,7 @@ export default function NewQuotationPage() {
             id: Math.random().toString(36).substr(2, 9),
             description: newLabor.name,
             quantity: 1,
-            unit_price: newLabor.rate,
+            unit_price: newLabor.rate ?? '',
             is_section_header: false,
             labor_service_id: newLabor.id,
             group_id: newLabor.group_id,
