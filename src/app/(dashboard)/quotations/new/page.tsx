@@ -88,6 +88,11 @@ export default function NewQuotationPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Inline Edit State
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false)
+  const [isAddingVehicle, setIsAddingVehicle] = useState(false)
+  const [isEditingVehicle, setIsEditingVehicle] = useState(false)
+
   const searchRef = useRef<HTMLDivElement>(null)
 
   // Fetch labor services on mount
@@ -184,6 +189,7 @@ export default function NewQuotationPage() {
     
     setCustomerSearch('')
     setShowDropdown(false)
+    setIsEditingCustomer(false) // reset state just in case
 
     // Fetch their vehicles
     const { data: v } = await supabase
@@ -203,7 +209,60 @@ export default function NewQuotationPage() {
       setVehicleModel('')
       setVehicleYear('')
       setVehicleTransmission('')
+      setMileage('')
     }
+  }
+
+  const handleSaveCustomerChanges = async () => {
+    if (!selectedCustomerId) return
+    setError(null)
+    
+    const cleanFirstName = firstName.trim()
+    const cleanLastName = lastName.trim()
+    const cleanCompanyName = companyName.trim()
+    
+    if (customerType === 'individual' && (!cleanFirstName || !cleanLastName)) {
+      setError("First Name and Last Name are required.")
+      return
+    }
+    if (customerType === 'company' && !cleanCompanyName) {
+      setError("Company Name is required.")
+      return
+    }
+
+    const payload = {
+      customer_type: customerType,
+      name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
+      first_name: customerType === 'individual' ? cleanFirstName : null,
+      last_name: customerType === 'individual' ? cleanLastName : null,
+      contact_first_name: customerType === 'company' ? contactFirstName.trim() : null,
+      contact_last_name: customerType === 'company' ? contactLastName.trim() : null,
+      mobile: customerMobile,
+      telephone: customerType === 'company' ? customerTelephone : null,
+      email: customerEmail,
+      address: customerAddress,
+      tin: customerType === 'company' ? customerTin : null
+    }
+
+    const { data, error } = await supabase
+      .from('customers')
+      .update(payload)
+      .eq('id', selectedCustomerId)
+      .select()
+      .single()
+      
+    if (error) {
+      setError(`Failed to update customer: ${error.message}`)
+      return
+    }
+    
+    // Update display names without changing quotation items or other state
+    setDisplayCustomerName(formatCustomerName(data))
+    setDisplayContactPerson(formatContactPerson(data))
+    
+    // Also update it in searchResults so Cancel logic works next time
+    setSearchResults(prev => prev.map(c => c.id === data.id ? { ...c, ...data } : c))
+    setIsEditingCustomer(false)
   }
 
   // Select Vehicle
@@ -214,6 +273,60 @@ export default function NewQuotationPage() {
     setVehicleModel(vehicle.model || '')
     setVehicleYear(vehicle.year ? vehicle.year.toString() : '')
     setVehicleTransmission(vehicle.transmission || '')
+  }
+
+  const handleSaveVehicleChanges = async () => {
+    if (!selectedCustomerId) return
+    setError(null)
+
+    const normalizedPlate = vehiclePlate.replace(/[^A-Z0-9]/ig, '').toUpperCase()
+    if (!normalizedPlate) {
+      setError("Plate Number is required.")
+      return
+    }
+
+    // Check duplicate
+    let query = supabase.from('vehicles').select('id, plate_number, customers(name, first_name, last_name)').ilike('plate_number', `%${normalizedPlate}%`)
+    if (isEditingVehicle && selectedVehicleId) {
+      query = query.neq('id', selectedVehicleId)
+    }
+    const { data: existingVeh } = await query.maybeSingle()
+
+    if (existingVeh) {
+      const owner = Array.isArray(existingVeh.customers) ? existingVeh.customers[0] : existingVeh.customers
+      const ownerName = owner?.name || `${owner?.first_name || ''} ${owner?.last_name || ''}`.trim() || 'another customer'
+      setError(`Vehicle with plate ${vehiclePlate} already exists under ${ownerName}.`)
+      return
+    }
+
+    const payload = {
+      customer_id: selectedCustomerId, // Make sure it stays linked
+      plate_number: vehiclePlate.toUpperCase(),
+      make: vehicleMake,
+      model: vehicleModel,
+      year: vehicleYear ? parseInt(vehicleYear) : null,
+      transmission: vehicleTransmission
+    }
+
+    if (isAddingVehicle) {
+      const { data: newVeh, error } = await supabase.from('vehicles').insert(payload).select().single()
+      if (error) {
+        setError(`Failed to add vehicle: ${error.message}`)
+        return
+      }
+      setCustomerVehicles(prev => [...prev, newVeh])
+      handleSelectVehicle(newVeh)
+      setIsAddingVehicle(false)
+    } else if (isEditingVehicle && selectedVehicleId) {
+      const { data: updatedVeh, error } = await supabase.from('vehicles').update(payload).eq('id', selectedVehicleId).select().single()
+      if (error) {
+        setError(`Failed to update vehicle: ${error.message}`)
+        return
+      }
+      setCustomerVehicles(prev => prev.map(v => v.id === updatedVeh.id ? updatedVeh : v))
+      handleSelectVehicle(updatedVeh)
+      setIsEditingVehicle(false)
+    }
   }
 
   // Clear Customer
@@ -279,10 +392,22 @@ export default function NewQuotationPage() {
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i))
   }
 
+  // Submit
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
+
+    if (isEditingCustomer) {
+      setError("Please save or cancel your Customer changes before saving the quotation.")
+      setIsSubmitting(false)
+      return
+    }
+    if (isEditingVehicle || isAddingVehicle) {
+      setError("Please save or cancel your Vehicle changes before saving the quotation.")
+      setIsSubmitting(false)
+      return
+    }
 
     const cleanFirstName = firstName.trim()
     const cleanLastName = lastName.trim()
@@ -606,11 +731,21 @@ export default function NewQuotationPage() {
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
               {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
               {customerType === 'company' ? 'Company' : 'Customer'} Information
+              {selectedCustomerId && !isEditingCustomer && (
+                <span className="ml-2 text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  Existing Customer
+                </span>
+              )}
             </h3>
-            {selectedCustomerId && (
-              <button type="button" onClick={handleClearCustomer} className="text-xs text-red-500 hover:underline">
-                Clear & Enter New
-              </button>
+            {selectedCustomerId && !isEditingCustomer && (
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setIsEditingCustomer(true)} className="text-sm font-medium text-blue-600 hover:underline">
+                  Edit Details
+                </button>
+                <button type="button" onClick={handleClearCustomer} className="text-sm font-medium text-slate-500 hover:text-slate-700 hover:underline">
+                  Change Customer
+                </button>
+              </div>
             )}
           </div>
           
@@ -623,22 +758,22 @@ export default function NewQuotationPage() {
           
           <div className="space-y-4">
             
-            {selectedCustomerId ? (
+            {selectedCustomerId && !isEditingCustomer ? (
               // READONLY MODE FOR SELECTED CUSTOMER
               <>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{customerType === 'company' ? 'Company Name' : 'Full Name'}</label>
-                  <input type="text" value={displayCustomerName} className="w-full border border-slate-300 rounded-md p-2 font-medium bg-slate-50" disabled />
+                  <div className="w-full border border-slate-200 rounded-md p-2 font-medium bg-slate-50 text-slate-900">{displayCustomerName}</div>
                 </div>
-                {customerType === 'company' && (
+                {customerType === 'company' && displayContactPerson && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-                    <input type="text" value={displayContactPerson} className="w-full border border-slate-300 rounded-md p-2 bg-slate-50" disabled />
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{displayContactPerson}</div>
                   </div>
                 )}
               </>
             ) : (
-              // NEW CUSTOMER INPUT MODE
+              // INPUT MODE (NEW OR EDITING)
               customerType === 'individual' ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -673,18 +808,30 @@ export default function NewQuotationPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
-                <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" disabled={!!selectedCustomerId} />
+                {selectedCustomerId && !isEditingCustomer ? (
+                  <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerMobile || <span className="text-slate-400">None</span>}</div>
+                ) : (
+                  <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" />
+                )}
               </div>
               
               {customerType === 'company' ? (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Telephone</label>
-                  <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" disabled={!!selectedCustomerId} />
+                  {selectedCustomerId && !isEditingCustomer ? (
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerTelephone || <span className="text-slate-400">None</span>}</div>
+                  ) : (
+                    <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" />
+                  )}
                 </div>
               ) : (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" disabled={!!selectedCustomerId} />
+                  {selectedCustomerId && !isEditingCustomer ? (
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerEmail || <span className="text-slate-400">None</span>}</div>
+                  ) : (
+                    <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" />
+                  )}
                 </div>
               )}
             </div>
@@ -693,41 +840,92 @@ export default function NewQuotationPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@abccorp.com" disabled={!!selectedCustomerId} />
+                  {selectedCustomerId && !isEditingCustomer ? (
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerEmail || <span className="text-slate-400">None</span>}</div>
+                  ) : (
+                    <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@abccorp.com" />
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">TIN</label>
-                  <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" disabled={!!selectedCustomerId} />
+                  {selectedCustomerId && !isEditingCustomer ? (
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerTin || <span className="text-slate-400">None</span>}</div>
+                  ) : (
+                    <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" />
+                  )}
                 </div>
               </div>
             )}
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-              <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123 Main St, Infanta" disabled={!!selectedCustomerId} />
+              {selectedCustomerId && !isEditingCustomer ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerAddress || <span className="text-slate-400">None</span>}</div>
+              ) : (
+                <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows={2} className="w-full border border-slate-300 rounded-md p-2" placeholder="Complete address..."></textarea>
+              )}
             </div>
+            
+            {isEditingCustomer && (
+              <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-slate-100">
+                <button type="button" onClick={() => {
+                  // Reload original data
+                  handleSelectCustomer(searchResults.find(c => c.id === selectedCustomerId) || { id: selectedCustomerId })
+                  setIsEditingCustomer(false)
+                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveCustomerChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                  Save Customer Changes
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Vehicle Details */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h3 className="text-lg font-semibold text-slate-800">Vehicle Information</h3>
-            {selectedVehicleId && (
-              <button type="button" onClick={() => {
-                setSelectedVehicleId(null)
-                setVehiclePlate('')
-                setVehicleMake('')
-                setVehicleModel('')
-                setVehicleYear('')
-                setVehicleTransmission('')
-              }} className="text-xs text-blue-500 hover:underline flex items-center gap-1">
-                <Plus size={14} /> Add New
-              </button>
+            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <Car size={18} className="text-slate-500"/>
+              Vehicle Information
+              {selectedVehicleId && !isEditingVehicle && (
+                <span className="ml-2 text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                  Existing Vehicle
+                </span>
+              )}
+            </h3>
+            {selectedCustomerId && (
+              <div className="flex items-center gap-3">
+                {selectedVehicleId && !isEditingVehicle && (
+                  <>
+                    <button type="button" onClick={() => setIsEditingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline">
+                      Edit Vehicle
+                    </button>
+                    <button type="button" onClick={() => {
+                      setSelectedVehicleId(null)
+                      setVehiclePlate('')
+                      setVehicleMake('')
+                      setVehicleModel('')
+                      setVehicleYear('')
+                      setVehicleTransmission('')
+                      setMileage('')
+                      setIsAddingVehicle(true)
+                    }} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+                      <Plus size={14} /> Add Vehicle
+                    </button>
+                  </>
+                )}
+                {!selectedVehicleId && customerVehicles.length > 0 && !isAddingVehicle && (
+                   <button type="button" onClick={() => setIsAddingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
+                      <Plus size={14} /> Add Vehicle
+                   </button>
+                )}
+              </div>
             )}
           </div>
 
-          {!selectedVehicleId && customerVehicles.length > 0 && (
+          {!selectedVehicleId && customerVehicles.length > 0 && !isAddingVehicle && (
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-2">Select from Fleet</label>
               <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2">
@@ -746,42 +944,88 @@ export default function NewQuotationPage() {
                   </button>
                 ))}
               </div>
-              <div className="my-4 text-center text-sm font-medium text-slate-400 uppercase tracking-widest border-b border-slate-200 leading-[0.1em]">
-                <span className="bg-white px-3">OR ENTER NEW</span>
-              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-              <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase font-bold" placeholder="ABC 1234" disabled={!!selectedVehicleId} />
+          {(!selectedVehicleId && customerVehicles.length === 0) || isAddingVehicle || isEditingVehicle || selectedVehicleId ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <div className="w-full border border-slate-200 rounded-md p-2 font-bold bg-slate-50 text-slate-900 uppercase">{vehiclePlate}</div>
+                ) : (
+                  <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase font-bold" placeholder="ABC 1234" />
+                )}
+              </div>
+              <div className="col-span-2">
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Make & Model</label>
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">
+                      {vehicleMake} {vehicleModel}
+                    </div>
+                  </>
+                ) : (
+                  <MakeModelSelector 
+                    selectedMake={vehicleMake} 
+                    setSelectedMake={setVehicleMake} 
+                    selectedModel={vehicleModel} 
+                    setSelectedModel={setVehicleModel}
+                    disabled={false}
+                  />
+                )}
+              </div>
+              <div>
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleYear || <span className="text-slate-400">None</span>}</div>
+                  </>
+                ) : (
+                  <YearSelector selectedYear={vehicleYear} setSelectedYear={setVehicleYear} disabled={false} />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleTransmission || <span className="text-slate-400">None</span>}</div>
+                ) : (
+                  <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                    <option value="">Select...</option>
+                    <option value="Automatic">Automatic</option>
+                    <option value="Manual">Manual</option>
+                  </select>
+                )}
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km) <span className="text-xs text-slate-500 font-normal ml-2">(Updates latest vehicle mileage on save)</span></label>
+                <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="50000" />
+              </div>
+
+              {(isEditingVehicle || isAddingVehicle) && (
+                <div className="col-span-2 flex gap-3 justify-end mt-4 pt-4 border-t border-slate-100">
+                  <button type="button" onClick={() => {
+                    if (isAddingVehicle) {
+                      setIsAddingVehicle(false)
+                      // Re-select previous if it existed, or just keep it null
+                      if (customerVehicles.length > 0) {
+                        handleSelectVehicle(customerVehicles[0])
+                      }
+                    } else {
+                      setIsEditingVehicle(false)
+                      const orig = customerVehicles.find(v => v.id === selectedVehicleId)
+                      if (orig) handleSelectVehicle(orig)
+                    }
+                  }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                    {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="col-span-2">
-              <MakeModelSelector 
-                selectedMake={vehicleMake} 
-                setSelectedMake={setVehicleMake} 
-                selectedModel={vehicleModel} 
-                setSelectedModel={setVehicleModel}
-                disabled={!!selectedVehicleId}
-              />
-            </div>
-            <div>
-              <YearSelector selectedYear={vehicleYear} setSelectedYear={setVehicleYear} disabled={!!selectedVehicleId} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-              <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" disabled={!!selectedVehicleId}>
-                <option value="">Select...</option>
-                <option value="Automatic">Automatic</option>
-                <option value="Manual">Manual</option>
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
-              <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="50000" />
-            </div>
-          </div>
+          ) : null}
         </div>
       </div>
 
