@@ -115,10 +115,8 @@ export default async function ViewQuotationPage({
                 <div className="text-sm text-slate-600">Attn: {quote.contact_person}</div>
               )}
               
-              {(quote.customer_phone || quote.customer_telephone) && (
-                <div className="text-sm text-slate-600 pt-1">
-                  {quote.customer_phone} {quote.customer_phone && quote.customer_telephone ? '/' : ''} {quote.customer_telephone}
-                </div>
+              {quote.customer_telephone && (
+                <div className="text-sm text-slate-600 pt-1">{quote.customer_telephone}</div>
               )}
               
               {quote.customer_email && <div className="text-sm text-slate-600">{quote.customer_email}</div>}

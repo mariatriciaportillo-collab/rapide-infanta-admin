@@ -340,6 +340,7 @@ export default function NewQuotationPage() {
     }
 
     try {
+
       let finalCustomerId = selectedCustomerId
       let finalDisplayName = displayCustomerName
       let finalContactPerson = displayContactPerson
@@ -361,7 +362,7 @@ export default function NewQuotationPage() {
           }
         }
 
-        const { data: newCust, error: custErr } = await supabase.from('customers').insert({
+        const customerPayload = {
           customer_type: customerType,
           name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
@@ -373,16 +374,20 @@ export default function NewQuotationPage() {
           email: customerEmail,
           address: customerAddress,
           tin: customerType === 'company' ? customerTin : null
-        }).select().single()
+        };
+
+        const { data: newCust, error: custErr } = await supabase.from('customers').insert(customerPayload).select().single()
         
         if (custErr) {
-          throw new Error('Unable to create customer. Please check the required fields and try again.')
+          console.error("[QUOTATION SAVE] Step 2 FAILED (Customer)", JSON.stringify(custErr, null, 2));
+          throw new Error(`Customer Save Failed: ${custErr.message} (${custErr.code})`);
         }
         if (newCust) {
           finalCustomerId = newCust.id
           finalDisplayName = formatCustomerName(newCust)
           finalContactPerson = formatContactPerson(newCust)
         }
+      } else {
       }
       
       let finalVehicleId = selectedVehicleId
@@ -406,19 +411,23 @@ export default function NewQuotationPage() {
           return
         }
 
-        const { data: newVeh, error: vehErr } = await supabase.from('vehicles').insert({
+        const vehiclePayload = {
           customer_id: finalCustomerId,
           plate_number: vehiclePlate.toUpperCase(),
           make: vehicleMake,
           model: vehicleModel,
           year: vehicleYear ? parseInt(vehicleYear) : null,
           transmission: vehicleTransmission
-        }).select().single()
+        };
+
+        const { data: newVeh, error: vehErr } = await supabase.from('vehicles').insert(vehiclePayload).select().single()
         
         if (vehErr) {
-          throw new Error('Unable to create vehicle. Please check the required fields and try again.')
+          console.error("[QUOTATION SAVE] Step 3 FAILED (Vehicle)", JSON.stringify(vehErr, null, 2));
+          throw new Error(`Vehicle Save Failed: ${vehErr.message} (${vehErr.code})`);
         }
         if (newVeh) finalVehicleId = newVeh.id
+      } else {
       }
 
       // 1. Generate Quote Number
@@ -426,10 +435,7 @@ export default function NewQuotationPage() {
       const randomPart = Math.floor(1000 + Math.random() * 9000)
       const quoteNumber = `INFANTA-${datePart}-${randomPart}`
 
-      // 2. Insert Quotation
-      const { data: quote, error: quoteError } = await supabase
-        .from('quotations')
-        .insert({
+      const quotePayload = {
           ref_no: quoteNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
@@ -437,9 +443,8 @@ export default function NewQuotationPage() {
           customer_type: customerType,
           customer_name: finalDisplayName, 
           contact_person: customerType === 'company' ? finalContactPerson : null,
-          customer_phone: customerMobile,
           customer_email: customerEmail,
-          customer_telephone: customerType === 'company' ? customerTelephone : null,
+          customer_telephone: customerType === 'company' ? (customerMobile || customerTelephone) : customerMobile,
           customer_tin: customerType === 'company' ? customerTin : null,
           customer_address: customerAddress,
           vehicle_plate: vehiclePlate.toUpperCase(), 
@@ -454,11 +459,19 @@ export default function NewQuotationPage() {
           subtotal: subtotal,
           discount_amount: Number(discount) || 0,
           grand_total: grandTotal
-        })
+      };
+
+      // 2. Insert Quotation
+      const { data: quote, error: quoteError } = await supabase
+        .from('quotations')
+        .insert(quotePayload)
         .select()
         .single()
 
-      if (quoteError) throw quoteError
+      if (quoteError) {
+        console.error("[QUOTATION SAVE] Step 4 FAILED (Quotation Header)", JSON.stringify(quoteError, null, 2));
+        throw new Error(`Quotation Header Save Failed: ${quoteError.message} (${quoteError.code})`);
+      }
 
       // 3. Insert Line Items
       const itemsToInsert = items
@@ -479,24 +492,24 @@ export default function NewQuotationPage() {
           standard_hour_snapshot: item.standard_hour_snapshot || null
         }))
 
+
       if (itemsToInsert.length > 0) {
         const { error: itemsError } = await supabase
           .from('quotation_items')
           .insert(itemsToInsert)
           
-        if (itemsError) throw itemsError
+        if (itemsError) {
+          console.error("[QUOTATION SAVE] Step 5 FAILED (Quotation Items)", JSON.stringify(itemsError, null, 2));
+          throw new Error(`Quotation Items Save Failed: ${itemsError.message} (${itemsError.code})`);
+        }
       }
 
       // 4. Redirect to view page
       router.push(`/quotations/${quote.id}`)
 
     } catch (err: any) {
-      console.error(err)
-      if (err instanceof Error && err.message.includes('Unable to create')) {
-        setError(err.message)
-      } else {
-        setError('Unable to save the quotation. Please try again.')
-      }
+      console.error("[QUOTATION SAVE] CAUGHT ERROR:", err)
+      setError(err.message || 'Unable to save the quotation. Please try again.')
       setIsSubmitting(false)
     }
   }

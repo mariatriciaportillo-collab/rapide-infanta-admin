@@ -93,10 +93,8 @@ export default function QuotationPrintPage({
               <div>Attn: {quote.contact_person}</div>
             )}
             
-            {(quote.customer_phone || quote.customer_telephone) && (
-              <div>
-                {quote.customer_phone} {quote.customer_phone && quote.customer_telephone ? '/' : ''} {quote.customer_telephone}
-              </div>
+            {quote.customer_telephone && (
+              <div>{quote.customer_telephone}</div>
             )}
             
             {quote.customer_email && <div>{quote.customer_email}</div>}
