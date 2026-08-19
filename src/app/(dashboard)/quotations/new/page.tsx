@@ -75,9 +75,7 @@ export default function NewQuotationPage() {
   const [preparedBy, setPreparedBy] = useState('Rapide Infanta Admin')
   const [discount, setDiscount] = useState<number>(0)
 
-  const [items, setItems] = useState<LineItem[]>([
-    { id: '1', description: '', quantity: 1, unit_price: '', is_section_header: false }
-  ])
+  const [items, setItems] = useState<LineItem[]>([])
 
   // Labor Services for Combobox
   const [laborServices, setLaborServices] = useState<any[]>([])
@@ -663,118 +661,124 @@ export default function NewQuotationPage() {
       {/* Line Items */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-center mb-4 border-b pb-2">
-          <h3 className="text-lg font-semibold text-slate-800">Line Items</h3>
-          <div className="space-x-2">
-            <button type="button" onClick={() => addItem(true)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
-              + Add Section Header
-            </button>
-            <button type="button" onClick={() => addItem(false)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
-              + Add Item
-            </button>
+          <h3 className="text-lg font-semibold text-slate-800">Labor & Services</h3>
+          <div className="flex items-center gap-2">
+            <a href="/labor-lookup" target="_blank" className="text-xs text-blue-500 hover:underline">
+              View Labor Lookup ↗
+            </a>
           </div>
         </div>
 
-        <div className="space-y-3">
+        {/* SEARCH BAR — single search at top */}
+        <div className="mb-4">
+          <SearchableCombobox
+            options={laborServices.map(s => ({
+              id: s.id,
+              name: s.name,
+              subtext: `${s.labor_groups?.name || 'No Group'} • ${s.labor_categories?.name || 'No Category'} • ₱${s.rate?.toLocaleString() || '0'}`
+            }))}
+            value=""
+            onChange={(laborId) => {
+              const service = laborServices.find(s => s.id === laborId)
+              if (service) {
+                // Check for duplicates
+                const alreadyAdded = items.some(i => i.labor_service_id === service.id)
+                if (alreadyAdded) {
+                  setError(`"${service.name}" is already added to this quotation.`)
+                  setTimeout(() => setError(null), 3000)
+                  return
+                }
+                setItems(prev => [...prev, {
+                  id: Math.random().toString(36).substr(2, 9),
+                  description: service.name,
+                  quantity: 1,
+                  unit_price: service.rate,
+                  is_section_header: false,
+                  labor_service_id: service.id,
+                  group_id: service.group_id,
+                  category_id: service.category_id,
+                  group_name_snapshot: service.labor_groups?.name,
+                  category_name_snapshot: service.labor_categories?.name,
+                  standard_hour_snapshot: service.standard_hours,
+                }])
+              }
+            }}
+            placeholder="Search labor / service to add..."
+            searchPlaceholder="Search by service, group, or category..."
+            onAddNew={(query) => {
+              setNewLaborSearchQuery(query)
+              setActiveItemIndexForModal(null)
+              setIsNewLaborModalOpen(true)
+            }}
+            addNewLabel="+ Add New Labor"
+          />
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="flex gap-2 mb-4">
+          <button type="button" onClick={() => addItem(false)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
+            + Add Manual Labor
+          </button>
+          <button type="button" onClick={() => addItem(true)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
+            + Add Section Header
+          </button>
+        </div>
+
+        {/* TABLE HEADER */}
+        {items.length > 0 && (
+          <div className="flex gap-3 items-center text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
+            <div className="flex-1">Description</div>
+            <div className="w-24 text-center">Qty</div>
+            <div className="w-32 text-right">Unit Price</div>
+            <div className="w-32 text-right">Amount</div>
+            <div className="w-10"></div>
+          </div>
+        )}
+
+        {/* ITEM ROWS */}
+        <div className="space-y-2">
           {items.map((item, index) => (
-            <div key={item.id} className={`flex gap-3 items-start ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : ''}`}>
+            <div key={item.id} className={`flex gap-3 items-center ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : 'py-1'}`}>
               <div className="flex-1">
-                {item.is_section_header || item.is_manual_labor ? (
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      value={item.description}
-                      onChange={e => updateItem(item.id, 'description', e.target.value)}
-                      placeholder={item.is_section_header ? "e.g. LABOR CHARGES" : "Manual item description..."}
-                      className={`w-full border border-slate-300 rounded-md p-2 ${item.is_section_header ? 'font-bold bg-transparent' : ''}`}
-                      required={!item.is_section_header}
-                    />
-                    {!item.is_section_header && (
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          updateItem(item.id, 'is_manual_labor', false)
-                          updateItem(item.id, 'description', '')
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-blue-500 hover:underline"
-                      >
-                        Cancel Manual
-                      </button>
-                    )}
-                  </div>
+                {item.is_section_header ? (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="e.g. LABOR CHARGES"
+                    className="w-full border border-slate-300 rounded-md p-2 font-bold bg-transparent"
+                  />
                 ) : (
-                  <SearchableCombobox 
-                    options={laborServices.map(s => ({
-                      id: s.id,
-                      name: s.name,
-                      subtext: `${s.labor_groups?.name || 'No Group'} • ${s.labor_categories?.name || 'No Category'}`
-                    }))}
-                    value={item.labor_service_id || ''}
-                    onChange={(laborId) => {
-                      const service = laborServices.find(s => s.id === laborId)
-                      if (service) {
-                        // Check for duplicates
-                        const alreadyAdded = items.some(i => i.labor_service_id === service.id && i.id !== item.id)
-                        if (alreadyAdded) {
-                          setError(`"${service.name}" is already added to this quotation.`)
-                          setTimeout(() => setError(null), 3000)
-                          return
-                        }
-                        updateItemBulk(item.id, {
-                          labor_service_id: service.id,
-                          description: service.name,
-                          unit_price: service.rate,
-                          quantity: 1,
-                          group_id: service.group_id,
-                          category_id: service.category_id,
-                          group_name_snapshot: service.labor_groups?.name,
-                          category_name_snapshot: service.labor_categories?.name,
-                          standard_hour_snapshot: service.standard_hours,
-                        })
-                      }
-                    }}
-                    placeholder="Search labor / service..."
-                    searchPlaceholder="Search by service, group, or category..."
-                    onAddNew={(query) => {
-                      setNewLaborSearchQuery(query)
-                      setActiveItemIndexForModal(item.id)
-                      setIsNewLaborModalOpen(true)
-                    }}
-                    addNewLabel="+ Add New Labor"
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="Item description..."
+                    className={`w-full border border-slate-300 rounded-md p-2 ${item.labor_service_id ? 'bg-blue-50 font-medium text-blue-900' : ''}`}
                   />
                 )}
-                {!item.is_section_header && !item.is_manual_labor && !item.labor_service_id && (
-                  <div className="mt-1">
-                    <button 
-                      type="button" 
-                      onClick={() => updateItem(item.id, 'is_manual_labor', true)}
-                      className="text-xs text-slate-500 hover:text-slate-700 underline"
-                    >
-                      Add Manual Labor Instead
-                    </button>
-                  </div>
-                )}
               </div>
-              
+
               {!item.is_section_header && (
                 <>
                   <div className="w-24">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min="0.1" step="0.1"
                       value={item.quantity}
                       onChange={e => updateItem(item.id, 'quantity', e.target.value)}
                       placeholder="Qty"
-                      className="w-full border border-slate-300 rounded-md p-2"
+                      className="w-full border border-slate-300 rounded-md p-2 text-center"
                     />
                   </div>
                   <div className="w-32">
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min="0" step="0.01"
                       value={item.unit_price}
                       onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
                       placeholder="Unit Price"
-                      className="w-full border border-slate-300 rounded-md p-2"
+                      className="w-full border border-slate-300 rounded-md p-2 text-right"
                     />
                   </div>
                   <div className="w-32 py-2 text-right font-medium text-slate-700">
@@ -782,28 +786,26 @@ export default function NewQuotationPage() {
                   </div>
                 </>
               )}
-              
+
               {item.is_section_header && (
-                <div className="w-24"></div>
-              )}
-              {item.is_section_header && (
-                <div className="w-32"></div>
-              )}
-              {item.is_section_header && (
-                <div className="w-32"></div>
+                <>
+                  <div className="w-24"></div>
+                  <div className="w-32"></div>
+                  <div className="w-32"></div>
+                </>
               )}
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => removeItem(item.id)}
-                className="p-2 text-slate-400 hover:text-red-500 transition"
+                className="p-2 text-slate-400 hover:text-red-500 transition w-10 flex justify-center"
               >
-                <Trash2 size={20} />
+                <Trash2 size={18} />
               </button>
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-center text-slate-500 py-4">No items added yet.</p>
+            <p className="text-center text-slate-400 py-8">No items added yet. Use the search above to add labor services.</p>
           )}
         </div>
       </div>
@@ -863,20 +865,20 @@ export default function NewQuotationPage() {
           setIsNewLaborModalOpen(false)
           setLaborServices(prev => [...prev, newLabor].sort((a: any, b: any) => a.name.localeCompare(b.name)))
           
-          if (activeItemIndexForModal) {
-            updateItemBulk(activeItemIndexForModal, {
-              labor_service_id: newLabor.id,
-              description: newLabor.name,
-              unit_price: newLabor.rate,
-              quantity: 1,
-              group_id: newLabor.group_id,
-              category_id: newLabor.category_id,
-              group_name_snapshot: newLabor.labor_groups?.name,
-              category_name_snapshot: newLabor.labor_categories?.name,
-              standard_hour_snapshot: newLabor.standard_hours,
-            })
-            setActiveItemIndexForModal(null)
-          }
+          // Add the new labor as a new row
+          setItems(prev => [...prev, {
+            id: Math.random().toString(36).substr(2, 9),
+            description: newLabor.name,
+            quantity: 1,
+            unit_price: newLabor.rate,
+            is_section_header: false,
+            labor_service_id: newLabor.id,
+            group_id: newLabor.group_id,
+            category_id: newLabor.category_id,
+            group_name_snapshot: newLabor.labor_groups?.name,
+            category_name_snapshot: newLabor.labor_categories?.name,
+            standard_hour_snapshot: newLabor.standard_hours,
+          }])
         }}
       />
     </form>
