@@ -410,7 +410,7 @@ export default function NewQuotationPage() {
           customer_type: customerType,
           customer_name: finalDisplayName, 
           contact_person: customerType === 'company' ? finalContactPerson : null,
-          customer_mobile: customerMobile,
+          customer_phone: customerMobile,
           customer_email: customerEmail,
           customer_telephone: customerType === 'company' ? customerTelephone : null,
           customer_tin: customerType === 'company' ? customerTin : null,
@@ -465,7 +465,11 @@ export default function NewQuotationPage() {
 
     } catch (err: any) {
       console.error(err)
-      setError(err.message || 'An error occurred while saving the quotation.')
+      if (err instanceof Error && err.message.includes('Unable to create')) {
+        setError(err.message)
+      } else {
+        setError('Unable to save the quotation. Please try again.')
+      }
       setIsSubmitting(false)
     }
   }
