@@ -36,24 +36,22 @@ export default function NewStockAdjustmentPage() {
   const [notes, setNotes] = useState('')
   
   const [items, setItems] = useState<AdjItem[]>([
-    { id: crypto.randomUUID(), partId: '', part: null, adjType: 'Increase Stock', qty: '' }
+    { id: 'initial-row-1', partId: '', part: null, adjType: 'Increase Stock', qty: '' }
   ])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleAddItem = () => {
-    setItems([...items, { id: crypto.randomUUID(), partId: '', part: null, adjType: 'Increase Stock', qty: '' }])
+    setItems(prev => [...prev, { id: crypto.randomUUID(), partId: '', part: null, adjType: 'Increase Stock', qty: '' }])
   }
 
   const handleRemoveItem = (id: string) => {
-    if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id))
-    }
+    setItems(prev => prev.length > 1 ? prev.filter(item => item.id !== id) : prev)
   }
 
   const handleUpdateItem = (id: string, field: keyof AdjItem, value: any) => {
-    setItems(items.map(item => {
+    setItems(prevItems => prevItems.map(item => {
       if (item.id === id) {
         return { ...item, [field]: value }
       }
@@ -277,10 +275,22 @@ export default function NewStockAdjustmentPage() {
                       <div className="md:col-span-2 text-right pb-1">
                         <div className="text-[10px] text-slate-400 font-bold uppercase">Result</div>
                         <div className={`font-bold text-lg ${isError ? 'text-red-600' : 'text-slate-800'}`}>
-                          {item.part ? `${newStock}` : '—'}
+                          {item.part ? (
+                            <span className="flex items-center justify-end gap-2">
+                              <span className="text-slate-400 text-sm">{currentStock}</span>
+                              <span className="text-slate-300 text-xs">→</span>
+                              <span>{newStock}</span>
+                            </span>
+                          ) : '—'}
                         </div>
                       </div>
                     </div>
+                    {isError && (
+                      <div className="mt-2 text-sm text-red-600 bg-red-100 p-2 rounded flex items-center gap-2">
+                        <AlertCircle size={14} />
+                        Cannot deduct more than the available stock of {currentStock} {item.part?.unit || 'pcs'}.
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -321,7 +331,7 @@ export default function NewStockAdjustmentPage() {
             <div className="mt-8 pt-6 border-t border-slate-200">
               <button 
                 type="submit" 
-                disabled={isSubmitting || items.some(i => !i.partId)}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-md font-bold transition flex items-center justify-center gap-2 shadow-sm"
               >
                 <Save size={20} />
