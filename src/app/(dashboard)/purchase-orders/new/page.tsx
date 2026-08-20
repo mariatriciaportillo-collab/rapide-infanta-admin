@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Plus, Trash2, CheckCircle } from 'lucide-react'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
+import { SupplierModal } from '@/components/suppliers/SupplierModal'
 
 type POItem = {
   id: string
@@ -37,6 +38,7 @@ export default function NewPurchaseOrderPage() {
   // Post-save shortcut state
   const [savedPoId, setSavedPoId] = useState<string | null>(null)
   const [savedPoNumber, setSavedPoNumber] = useState<string | null>(null)
+  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
 
   useEffect(() => {
     setOrderDate(new Date().toISOString().split('T')[0])
@@ -100,14 +102,14 @@ export default function NewPurchaseOrderPage() {
     const userId = userData.user?.id
 
     const { data, error: rpcError } = await supabase.rpc('create_purchase_order', {
-      p_supplier_id: supplierId,
-      p_order_date: orderDate,
+      p_supplier_id: supplierId || null,
+      p_order_date: orderDate || null,
       p_expected_date: expectedDate || null,
-      p_reference: reference,
-      p_notes: notes,
-      p_terms: terms,
+      p_reference: reference || null,
+      p_notes: notes || null,
+      p_terms: terms || null,
       p_items: rpcItems,
-      p_user_id: userId
+      p_user_id: userId || null
     })
 
     if (rpcError) {
@@ -180,7 +182,16 @@ export default function NewPurchaseOrderPage() {
           <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Order Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Supplier *</label>
+              <div className="flex justify-between items-end mb-1">
+                <label className="block text-sm font-medium text-slate-700">Supplier *</label>
+                <button 
+                  type="button" 
+                  onClick={() => setIsSupplierModalOpen(true)}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <Plus size={12} /> Add New Supplier
+                </button>
+              </div>
               <select 
                 required
                 value={supplierId}
@@ -343,6 +354,17 @@ export default function NewPurchaseOrderPage() {
           {isSubmitting ? 'Saving Order...' : 'Save Purchase Order'}
         </button>
       </form>
+
+      {isSupplierModalOpen && (
+        <SupplierModal 
+          onClose={() => setIsSupplierModalOpen(false)}
+          onSuccess={(newSupplier) => {
+            setSuppliers(prev => [...prev, newSupplier].sort((a, b) => a.name.localeCompare(b.name)))
+            setSupplierId(newSupplier.id)
+            setIsSupplierModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
