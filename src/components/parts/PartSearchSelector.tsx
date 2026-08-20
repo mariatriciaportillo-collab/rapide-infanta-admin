@@ -120,9 +120,18 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                 />
               </>
             ) : (
-              <span className={`truncate text-sm ${selectedPart ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
-                {selectedPart ? `${selectedPart.name} ${selectedPart.part_number ? `(${selectedPart.part_number})` : ''}` : 'Search part by name, SKU, or brand...'}
-              </span>
+              <div className={`truncate text-sm ${selectedPart ? 'w-full' : 'text-slate-500'}`}>
+                {selectedPart ? (
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-slate-900 font-medium truncate">{selectedPart.name}</span>
+                    <span className="text-[11px] text-slate-500 truncate">
+                      {[selectedPart.part_number, selectedPart.brands?.name, `Stock: ${selectedPart.stock_quantity}`].filter(Boolean).join(' • ')}
+                    </span>
+                  </div>
+                ) : (
+                  'Search part by name, SKU, or brand...'
+                )}
+              </div>
             )}
           </div>
           <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''} ml-2`} />
@@ -138,7 +147,8 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                   <p className="text-sm text-slate-500 mb-3">No matching products found.</p>
                   <button 
                     type="button"
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault();
                       setIsOpen(false)
                       setShowAddModal(true)
                     }}
@@ -155,7 +165,8 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                       className={`p-2 hover:bg-blue-50 rounded cursor-pointer flex justify-between items-center transition ${
                         selectedPartId === part.id ? 'bg-blue-100/50' : ''
                       }`}
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault(); // Prevent input blur
                         setSelectedPartId(part.id)
                         onSelectPart?.(part)
                         setIsOpen(false)
@@ -181,7 +192,8 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                   <div className="pt-2 mt-2 border-t border-slate-100">
                     <button 
                       type="button"
-                      onClick={() => {
+                      onMouseDown={(e) => {
+                        e.preventDefault();
                         setIsOpen(false)
                         setShowAddModal(true)
                       }}

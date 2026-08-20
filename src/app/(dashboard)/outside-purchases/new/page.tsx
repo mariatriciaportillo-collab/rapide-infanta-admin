@@ -55,7 +55,7 @@ export default function NewOutsidePurchasePage() {
     setItems(prevItems => prevItems.map(item => {
       if (item.id === id) {
         if (field === 'part' && value) {
-          return { ...item, part: value, unitCost: value.cost ? value.cost.toString() : '' }
+          return { ...item, part: value, unitCost: item.unitCost ? item.unitCost : (value.cost ? value.cost.toString() : '') }
         }
         return { ...item, [field]: value }
       }
