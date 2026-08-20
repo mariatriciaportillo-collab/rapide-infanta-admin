@@ -1,9 +1,29 @@
 'use client'
 
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronRight, Settings, Calculator, ShoppingCart, Receipt, CreditCard, LayoutDashboard, Briefcase, Users, User, Car, Wrench, Package, Box, Search } from 'lucide-react'
+import { 
+  LayoutDashboard, 
+  Users, 
+  Car, 
+  User, 
+  Settings, 
+  Calculator, 
+  Wrench, 
+  Box,
+  ChevronDown,
+  ChevronRight,
+  Briefcase,
+  Search,
+  ShoppingCart,
+  Receipt,
+  CreditCard,
+  Package,
+  Truck,
+  ClipboardList,
+  Archive
+} from 'lucide-react'
 
 export function SidebarNav() {
   const pathname = usePathname()
@@ -12,17 +32,20 @@ export function SidebarNav() {
   const isOperationsActive = ['/quotations', '/estimate', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
   const isCustomerAccountsActive = ['/customers', '/vehicles'].some(route => pathname?.startsWith(route))
   const isProductsActive = ['/labor-lookup', '/labor-charges', '/parts', '/packages'].some(route => pathname?.startsWith(route))
+  const isInventoryActive = ['/inventory', '/stock-adjustments', '/purchase-orders', '/suppliers'].some(route => pathname?.startsWith(route))
   
   const [operationsOpen, setOperationsOpen] = useState(isOperationsActive)
   const [customersOpen, setCustomersOpen] = useState(isCustomerAccountsActive)
   const [productsOpen, setProductsOpen] = useState(isProductsActive)
+  const [inventoryOpen, setInventoryOpen] = useState(isInventoryActive)
 
   // Auto-expand if active route changes
   useEffect(() => {
     if (isOperationsActive) setOperationsOpen(true)
     if (isCustomerAccountsActive) setCustomersOpen(true)
     if (isProductsActive) setProductsOpen(true)
-  }, [pathname, isOperationsActive, isCustomerAccountsActive, isProductsActive])
+    if (isInventoryActive) setInventoryOpen(true)
+  }, [pathname, isOperationsActive, isCustomerAccountsActive, isProductsActive, isInventoryActive])
 
   return (
     <nav className="flex-1 py-4 flex flex-col gap-1 px-3">
@@ -178,6 +201,58 @@ export function SidebarNav() {
             >
               <Box size={16} />
               Packages
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* INVENTORY & PURCHASING */}
+      <div className="mt-2 mb-8">
+        <button 
+          onClick={() => setInventoryOpen(!inventoryOpen)}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
+            ${isInventoryActive && !inventoryOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+        >
+          <div className="flex items-center gap-2">
+            <Archive size={18} />
+            Inventory & Purchasing
+          </div>
+          {inventoryOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+        
+        {inventoryOpen && (
+          <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
+            <Link 
+              href="/inventory" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/inventory') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <ClipboardList size={16} />
+              Inventory
+            </Link>
+            <Link 
+              href="/stock-adjustments" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/stock-adjustments') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Settings size={16} />
+              Stock Adjustments
+            </Link>
+            <Link 
+              href="/purchase-orders" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/purchase-orders') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <ShoppingCart size={16} />
+              Purchase Orders
+            </Link>
+            <Link 
+              href="/suppliers" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/suppliers') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Truck size={16} />
+              Suppliers
             </Link>
           </div>
         )}
