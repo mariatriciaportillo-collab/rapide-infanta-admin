@@ -44,17 +44,15 @@ export default function NewOutsidePurchasePage() {
   }
 
   const handleAddItem = () => {
-    setItems([...items, { id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '', inventoryTreatment: 'ADD_TO_INVENTORY' }])
+    setItems(prev => [...prev, { id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '', inventoryTreatment: 'ADD_TO_INVENTORY' }])
   }
 
   const handleRemoveItem = (id: string) => {
-    if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id))
-    }
+    setItems(prev => prev.length > 1 ? prev.filter(item => item.id !== id) : prev)
   }
 
   const handleUpdateItem = (id: string, field: keyof OPItem, value: any) => {
-    setItems(items.map(item => {
+    setItems(prevItems => prevItems.map(item => {
       if (item.id === id) {
         if (field === 'part' && value) {
           return { ...item, part: value, unitCost: value.cost ? value.cost.toString() : '' }
@@ -71,7 +69,7 @@ export default function NewOutsidePurchasePage() {
     setError(null)
 
     if (!supplierId) {
-      setError("Please select a Supplier.")
+      setError("Supplier is required.")
       setIsSubmitting(false)
       return
     }
@@ -88,7 +86,7 @@ export default function NewOutsidePurchasePage() {
     for (let i = 0; i < items.length; i++) {
       const item = items[i]
       if (!item.partId) {
-        setError(`Please select a Part for line ${i + 1}.`)
+        setError(`Part / Material is required for line ${i + 1}.`)
         setIsSubmitting(false)
         return
       }
@@ -342,7 +340,7 @@ export default function NewOutsidePurchasePage() {
             <div className="mt-8 pt-6 border-t border-slate-200">
               <button 
                 type="submit" 
-                disabled={isSubmitting || items.some(i => !i.partId)}
+                disabled={isSubmitting}
                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-md font-bold transition flex items-center justify-center gap-2 shadow-sm"
               >
                 <Save size={20} />
