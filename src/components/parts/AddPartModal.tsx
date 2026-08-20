@@ -15,6 +15,9 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
   const supabase = createClient()
   
   const [name, setName] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [hasEditedDisplayName, setHasEditedDisplayName] = useState(false)
+  
   const [partNumber, setPartNumber] = useState('')
   const [brandId, setBrandId] = useState('')
   const [groupId, setGroupId] = useState('')
@@ -28,12 +31,24 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const handleNameChange = (val: string) => {
+    setName(val)
+    if (!hasEditedDisplayName) {
+      setDisplayName(val)
+    }
+  }
+
+  const handleDisplayNameChange = (val: string) => {
+    setDisplayName(val)
+    setHasEditedDisplayName(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
 
-    if (!name.trim() || !groupId || !categoryId || !sellingPrice) {
+    if (!name.trim() || !displayName.trim() || !groupId || !categoryId || !sellingPrice) {
       setError("Please fill in all required fields.")
       setIsSubmitting(false)
       return
@@ -50,6 +65,7 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
 
     const payload = {
       name: name.trim(),
+      display_name: displayName.trim(),
       part_number: partNumber.trim() || null,
       brand_id: brandId || null,
       group_id: groupId,
@@ -79,11 +95,11 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
           <h2 className="text-xl font-bold text-slate-800">Add New Product</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
             <X size={24} />
           </button>
         </div>
@@ -100,7 +116,12 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Part / Product Name *</label>
-                <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="e.g. Toyota Engine Oil 5W-30" />
+                <input required type="text" value={name} onChange={e => handleNameChange(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="e.g. Toyota Engine Oil 5W-30 (Internal)" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Display Name *</label>
+                <input required type="text" value={displayName} onChange={e => handleDisplayNameChange(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium text-blue-900 bg-blue-50/50" placeholder="e.g. Engine Oil 5W-30" />
+                <p className="text-xs text-slate-500 mt-1">This is the cleaner name shown on quotations, invoices, and printed documents to the customer.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Part Number / SKU</label>
@@ -153,7 +174,7 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
         
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-4">
           <button type="button" onClick={onClose} className="px-6 py-2 border border-slate-300 rounded-md font-medium text-slate-700 hover:bg-white transition">Cancel</button>
-          <button type="submit" form="add-part-form" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-2 rounded-md font-medium transition flex items-center gap-2">
+          <button type="submit" form="add-part-form" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm">
             <Save size={18} /> {isSubmitting ? 'Saving...' : 'Save Product'}
           </button>
         </div>

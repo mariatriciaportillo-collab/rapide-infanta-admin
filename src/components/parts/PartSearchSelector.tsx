@@ -8,6 +8,7 @@ import { AddPartModal } from './AddPartModal'
 type Part = {
   id: string
   name: string
+  display_name?: string | null
   part_number: string | null
   stock_quantity: number
   unit: string
@@ -51,7 +52,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     setIsLoading(true)
     const { data } = await supabase
       .from('parts')
-      .select('id, name, part_number, stock_quantity, unit, cost, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
       .eq('is_active', true)
       .order('name')
     
@@ -63,6 +64,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     const q = search.toLowerCase()
     return (
       p.name.toLowerCase().includes(q) ||
+      (p.display_name && p.display_name.toLowerCase().includes(q)) ||
       (p.part_number && p.part_number.toLowerCase().includes(q)) ||
       (p.brands?.name && p.brands.name.toLowerCase().includes(q))
     )
@@ -78,7 +80,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     setSelectedPartId(newPartId)
     const { data } = await supabase
       .from('parts')
-      .select('id, name, part_number, stock_quantity, unit, cost, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
       .eq('id', newPartId)
       .single()
       

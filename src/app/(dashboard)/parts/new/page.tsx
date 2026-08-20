@@ -14,6 +14,8 @@ export default function AddPartPage() {
 
   // Form State
   const [name, setName] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [hasEditedDisplayName, setHasEditedDisplayName] = useState(false)
   const [partNumber, setPartNumber] = useState('')
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState('')
@@ -70,6 +72,7 @@ export default function AddPartPage() {
     }
 
     const payload = {
+      display_name: displayName.trim(),
       name: name.trim(),
       part_number: partNumber.trim() || null,
       brand_id: selectedBrandId || null,
@@ -127,10 +130,28 @@ export default function AddPartPage() {
                 required 
                 type="text" 
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => {
+                  setName(e.target.value)
+                  if (!hasEditedDisplayName) setDisplayName(e.target.value)
+                }}
                 className="w-full border border-slate-300 rounded-md p-2 font-medium" 
-                placeholder="e.g. Toyota Engine Oil 5W-30" 
+                placeholder="e.g. Toyota Engine Oil 5W-30 (Internal)"
               />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Display Name *</label>
+              <input 
+                required 
+                type="text" 
+                value={displayName}
+                onChange={e => {
+                  setDisplayName(e.target.value)
+                  setHasEditedDisplayName(true)
+                }}
+                className="w-full border border-slate-300 rounded-md p-2 font-medium text-blue-900 bg-blue-50/50" 
+                placeholder="e.g. Engine Oil 5W-30"
+              />
+              <p className="text-xs text-slate-500 mt-1">This is the cleaner name shown on quotations, invoices, and printed documents to the customer.</p>
             </div>
             
             <div>
