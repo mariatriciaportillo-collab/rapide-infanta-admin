@@ -7,11 +7,21 @@ import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, AlertCircle, RefreshCcw } from 'lucide-react'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
 
+const REASONS = [
+  'Wrong Part',
+  'Replacement',
+  'Exchange',
+  'Supplier Replacement',
+  'Product Substitution',
+  'Correction',
+  'Other'
+]
+
 export default function NewStockSwapPage() {
   const router = useRouter()
   const supabase = createClient()
   
-  const [reason, setReason] = useState('Wrong part / replacement / exchange')
+  const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
   
   const [partOutId, setPartOutId] = useState('')
@@ -37,7 +47,7 @@ export default function NewStockSwapPage() {
     }
 
     if (partOutId === partInId) {
-      setError("ITEM OUT and ITEM IN cannot be the same part.")
+      setError("ITEM OUT and ITEM IN cannot be the exact same product.")
       setIsSubmitting(false)
       return
     }
@@ -46,7 +56,7 @@ export default function NewStockSwapPage() {
     const nQtyIn = Number(qtyIn)
 
     if (!nQtyOut || nQtyOut <= 0 || !nQtyIn || nQtyIn <= 0) {
-      setError("Please enter valid quantities for both items.")
+      setError("Please enter valid quantities greater than zero for both items.")
       setIsSubmitting(false)
       return
     }
@@ -58,10 +68,21 @@ export default function NewStockSwapPage() {
       return
     }
 
+    if (!reason) {
+      setError("Please select a Reason.")
+      setIsSubmitting(false)
+      return
+    }
+
+    if (reason === 'Other' && !notes.trim()) {
+      setError("Notes are required when Reason is 'Other'.")
+      setIsSubmitting(false)
+      return
+    }
+
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Call RPC
-    const { data, error: rpcError } = await supabase.rpc('process_stock_swap', {
+    const { error: rpcError } = await supabase.rpc('process_stock_swap', {
       p_reason: reason,
       p_notes: notes.trim() || null,
       p_part_out_id: partOutId,
@@ -89,7 +110,7 @@ export default function NewStockSwapPage() {
   const resultingIn = currentIn + (Number(qtyIn) || 0)
 
   return (
-    <div className="max-w-4xl mx-auto pb-24">
+    <div className="max-w-5xl mx-auto pb-24">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Link href="/stock-adjustments" className="text-slate-400 hover:text-slate-600 transition">
@@ -112,36 +133,46 @@ export default function NewStockSwapPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* SWAP OUT */}
-        <div className="bg-white border border-red-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-red-100 bg-red-50 flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-red-200 bg-red-50 flex justify-between items-center">
             <h3 className="font-bold text-red-800">ITEM OUT (Decrease)</h3>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            <div className="md:col-span-8">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
-              <PartSearchSelector 
-                selectedPartId={partOutId} 
-                setSelectedPartId={setPartOutId} 
-                onSelectPart={setPartOut}
-              />
-            </div>
-            <div className="md:col-span-4">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Qty Out *</label>
-              <div className="flex items-center gap-4">
-                <input 
-                  required
-                  type="number" 
-                  step="0.01"
-                  min="0.01"
-                  value={qtyOut}
-                  onChange={e => setQtyOut(e.target.value)}
-                  className="w-full border border-red-300 rounded-md p-2 font-bold text-lg text-red-700 text-center"
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
+                <PartSearchSelector 
+                  selectedPartId={partOutId} 
+                  setSelectedPartId={setPartOutId} 
+                  onSelectPart={setPartOut}
                 />
-                <div className="text-right whitespace-nowrap min-w-[80px]">
-                  <div className="text-xs font-bold text-slate-400">RESULT</div>
-                  <div className={`font-bold text-xl ${resultingOut < 0 ? 'text-red-600' : 'text-slate-800'}`}>
-                    {partOut ? resultingOut : '—'}
-                  </div>
+              </div>
+              <div className="w-full md:w-48 shrink-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Qty Out *</label>
+                <div className="relative">
+                  <input 
+                    required
+                    type="number" 
+                    step="0.01"
+                    min="0.01"
+                    value={qtyOut}
+                    onChange={e => setQtyOut(e.target.value)}
+                    className="w-full border border-slate-300 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md p-2 font-bold text-lg text-center"
+                    placeholder="0"
+                  />
+                  {partOut?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{partOut.unit}</span>}
+                </div>
+              </div>
+              <div className="w-full md:w-48 shrink-0 flex flex-col justify-end pb-1 text-right">
+                <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide">Result</div>
+                <div className={`font-bold text-2xl ${resultingOut < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                  {partOut ? (
+                    <span className="flex items-center justify-end gap-2">
+                      <span className="text-slate-400 text-lg">{currentOut}</span>
+                      <span className="text-slate-300">→</span>
+                      <span className={resultingOut < 0 ? 'text-red-600' : 'text-red-600'}>{resultingOut}</span>
+                    </span>
+                  ) : '—'}
                 </div>
               </div>
             </div>
@@ -149,36 +180,46 @@ export default function NewStockSwapPage() {
         </div>
 
         {/* SWAP IN */}
-        <div className="bg-white border border-green-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-green-100 bg-green-50 flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-green-200 bg-green-50 flex justify-between items-center">
             <h3 className="font-bold text-green-800">ITEM IN (Increase)</h3>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            <div className="md:col-span-8">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
-              <PartSearchSelector 
-                selectedPartId={partInId} 
-                setSelectedPartId={setPartInId} 
-                onSelectPart={setPartIn}
-              />
-            </div>
-            <div className="md:col-span-4">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Qty In *</label>
-              <div className="flex items-center gap-4">
-                <input 
-                  required
-                  type="number" 
-                  step="0.01"
-                  min="0.01"
-                  value={qtyIn}
-                  onChange={e => setQtyIn(e.target.value)}
-                  className="w-full border border-green-300 rounded-md p-2 font-bold text-lg text-green-700 text-center"
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
+                <PartSearchSelector 
+                  selectedPartId={partInId} 
+                  setSelectedPartId={setPartInId} 
+                  onSelectPart={setPartIn}
                 />
-                <div className="text-right whitespace-nowrap min-w-[80px]">
-                  <div className="text-xs font-bold text-slate-400">RESULT</div>
-                  <div className="font-bold text-xl text-slate-800">
-                    {partIn ? resultingIn : '—'}
-                  </div>
+              </div>
+              <div className="w-full md:w-48 shrink-0">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Qty In *</label>
+                <div className="relative">
+                  <input 
+                    required
+                    type="number" 
+                    step="0.01"
+                    min="0.01"
+                    value={qtyIn}
+                    onChange={e => setQtyIn(e.target.value)}
+                    className="w-full border border-slate-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 rounded-md p-2 font-bold text-lg text-center"
+                    placeholder="0"
+                  />
+                  {partIn?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{partIn.unit}</span>}
+                </div>
+              </div>
+              <div className="w-full md:w-48 shrink-0 flex flex-col justify-end pb-1 text-right">
+                <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide">Result</div>
+                <div className="font-bold text-2xl text-slate-800">
+                  {partIn ? (
+                    <span className="flex items-center justify-end gap-2">
+                      <span className="text-slate-400 text-lg">{currentIn}</span>
+                      <span className="text-slate-300">→</span>
+                      <span className="text-green-600">{resultingIn}</span>
+                    </span>
+                  ) : '—'}
                 </div>
               </div>
             </div>
@@ -189,15 +230,18 @@ export default function NewStockSwapPage() {
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Reason / Notes *</label>
-              <input 
+              <label className="block text-sm font-medium text-slate-700 mb-1">Reason *</label>
+              <select 
                 required
-                type="text" 
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2"
-                placeholder="e.g., Customer exchanged defective filter"
-              />
+                className="w-full border border-slate-300 rounded-md p-2 bg-white"
+              >
+                <option value="" disabled>Select reason...</option>
+                {REASONS.map(r => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Additional Notes</label>
@@ -206,6 +250,7 @@ export default function NewStockSwapPage() {
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 className="w-full border border-slate-300 rounded-md p-2"
+                placeholder={reason === 'Other' ? "Please specify reason..." : "Optional details"}
               />
             </div>
           </div>

@@ -32,7 +32,7 @@ export function SidebarNav() {
   const isOperationsActive = ['/quotations', '/estimate', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
   const isCustomerAccountsActive = ['/customers', '/vehicles'].some(route => pathname?.startsWith(route))
   const isProductsActive = ['/labor-lookup', '/labor-charges', '/parts', '/packages'].some(route => pathname?.startsWith(route))
-  const isInventoryActive = ['/inventory', '/stock-adjustments', '/purchase-orders', '/suppliers'].some(route => pathname?.startsWith(route))
+  const isInventoryActive = ['/inventory', '/stock-adjustments', '/outside-purchases', '/purchase-orders', '/suppliers'].some(route => pathname?.startsWith(route))
   
   const [operationsOpen, setOperationsOpen] = useState(isOperationsActive)
   const [customersOpen, setCustomersOpen] = useState(isCustomerAccountsActive)
@@ -239,11 +239,19 @@ export function SidebarNav() {
               Stock Adjustments
             </Link>
             <Link 
+              href="/outside-purchases" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/outside-purchases') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <ShoppingCart size={16} />
+              Outside Purchase
+            </Link>
+            <Link 
               href="/purchase-orders" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
                 ${pathname?.startsWith('/purchase-orders') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
             >
-              <ShoppingCart size={16} />
+              <Receipt size={16} />
               Purchase Orders
             </Link>
             <Link 
