@@ -138,9 +138,9 @@ export default function NewStockSwapPage() {
             <h3 className="font-bold text-red-800">ITEM OUT (Decrease)</h3>
           </div>
           <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-medium text-slate-700 mb-1 h-5">Part / Material *</label>
                 <PartSearchSelector 
                   selectedPartId={partOutId} 
                   setSelectedPartId={setPartOutId} 
@@ -148,7 +148,7 @@ export default function NewStockSwapPage() {
                 />
               </div>
               <div className="w-full md:w-48 shrink-0">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Qty Out *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 h-5">Qty Out *</label>
                 <div className="relative">
                   <input 
                     required
@@ -157,15 +157,15 @@ export default function NewStockSwapPage() {
                     min="0.01"
                     value={qtyOut}
                     onChange={e => setQtyOut(e.target.value)}
-                    className="w-full border border-slate-300 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md p-2 font-bold text-lg text-center"
+                    className="w-full h-[42px] px-3 border border-slate-300 focus:border-red-500 focus:ring-1 focus:ring-red-500 rounded-md font-bold text-lg text-center bg-white"
                     placeholder="0"
                   />
-                  {partOut?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{partOut.unit}</span>}
+                  {partOut?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">{partOut.unit}</span>}
                 </div>
               </div>
-              <div className="w-full md:w-48 shrink-0 flex flex-col justify-end pb-1 text-right">
-                <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide">Result</div>
-                <div className={`font-bold text-2xl ${resultingOut < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+              <div className="w-full md:w-48 shrink-0 flex flex-col text-right">
+                <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide h-5 flex items-end justify-end">Result</label>
+                <div className={`h-[42px] flex items-center justify-end font-bold text-2xl ${resultingOut < 0 ? 'text-red-600' : 'text-slate-800'}`}>
                   {partOut ? (
                     <span className="flex items-center justify-end gap-2">
                       <span className="text-slate-400 text-lg">{currentOut}</span>
@@ -185,9 +185,9 @@ export default function NewStockSwapPage() {
             <h3 className="font-bold text-green-800">ITEM IN (Increase)</h3>
           </div>
           <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-medium text-slate-700 mb-1 h-5">Part / Material *</label>
                 <PartSearchSelector 
                   selectedPartId={partInId} 
                   setSelectedPartId={setPartInId} 
@@ -195,7 +195,7 @@ export default function NewStockSwapPage() {
                 />
               </div>
               <div className="w-full md:w-48 shrink-0">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Qty In *</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1 h-5">Qty In *</label>
                 <div className="relative">
                   <input 
                     required
@@ -204,15 +204,15 @@ export default function NewStockSwapPage() {
                     min="0.01"
                     value={qtyIn}
                     onChange={e => setQtyIn(e.target.value)}
-                    className="w-full border border-slate-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 rounded-md p-2 font-bold text-lg text-center"
+                    className="w-full h-[42px] px-3 border border-slate-300 focus:border-green-500 focus:ring-1 focus:ring-green-500 rounded-md font-bold text-lg text-center bg-white"
                     placeholder="0"
                   />
-                  {partIn?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">{partIn.unit}</span>}
+                  {partIn?.unit && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm pointer-events-none">{partIn.unit}</span>}
                 </div>
               </div>
-              <div className="w-full md:w-48 shrink-0 flex flex-col justify-end pb-1 text-right">
-                <div className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide">Result</div>
-                <div className="font-bold text-2xl text-slate-800">
+              <div className="w-full md:w-48 shrink-0 flex flex-col text-right">
+                <label className="block text-xs font-bold text-slate-400 mb-1 uppercase tracking-wide h-5 flex items-end justify-end">Result</label>
+                <div className="h-[42px] flex items-center justify-end font-bold text-2xl text-slate-800">
                   {partIn ? (
                     <span className="flex items-center justify-end gap-2">
                       <span className="text-slate-400 text-lg">{currentIn}</span>
@@ -235,7 +235,7 @@ export default function NewStockSwapPage() {
                 required
                 value={reason}
                 onChange={e => setReason(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 bg-white"
+                className="w-full h-[42px] px-3 border border-slate-300 rounded-md bg-white"
               >
                 <option value="" disabled>Select reason...</option>
                 {REASONS.map(r => (
@@ -249,7 +249,7 @@ export default function NewStockSwapPage() {
                 type="text" 
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2"
+                className="w-full h-[42px] px-3 border border-slate-300 rounded-md bg-white"
                 placeholder={reason === 'Other' ? "Please specify reason..." : "Optional details"}
               />
             </div>

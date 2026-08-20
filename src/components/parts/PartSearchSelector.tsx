@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Search, ChevronDown, Check, Plus } from 'lucide-react'
+import { Search, ChevronDown, Plus } from 'lucide-react'
 import { AddPartModal } from './AddPartModal'
 
 type Part = {
@@ -93,33 +93,43 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     <>
       <div className="relative w-full" ref={wrapperRef}>
         <div 
-          className={`w-full border rounded-md p-2 bg-white flex justify-between items-center transition ${
+          className={`w-full h-[42px] px-3 border bg-white flex justify-between items-center transition ${
+            isOpen ? 'rounded-t-md border-b-0 border-blue-400 ring-1 ring-blue-400/20' : 'rounded-md'
+          } ${
             disabled ? 'bg-slate-100 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:border-slate-400'
           } ${
-            error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'
+            error && !isOpen ? 'border-red-500 ring-1 ring-red-500' : (!isOpen ? 'border-slate-300' : '')
           }`}
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={() => {
+            if (!disabled && !isOpen) {
+              setIsOpen(true)
+              setSearch('')
+            }
+          }}
         >
-          <span className={`truncate ${selectedPart ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
-            {selectedPart ? `${selectedPart.name} ${selectedPart.part_number ? `(${selectedPart.part_number})` : ''}` : 'Search part by name, SKU, or brand...'}
-          </span>
-          <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <div className="flex-1 overflow-hidden flex items-center gap-2 h-full">
+            {isOpen ? (
+              <>
+                <Search size={16} className="text-blue-500 shrink-0" />
+                <input
+                  autoFocus
+                  className="w-full h-full focus:outline-none text-sm bg-transparent text-slate-900 placeholder:text-slate-400"
+                  placeholder="Type to filter products..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </>
+            ) : (
+              <span className={`truncate text-sm ${selectedPart ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
+                {selectedPart ? `${selectedPart.name} ${selectedPart.part_number ? `(${selectedPart.part_number})` : ''}` : 'Search part by name, SKU, or brand...'}
+              </span>
+            )}
+          </div>
+          <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''} ml-2`} />
         </div>
 
         {isOpen && (
-          <div className="absolute z-[60] w-full mt-1 bg-white border border-slate-300 rounded-md shadow-xl flex flex-col" style={{ maxHeight: '320px' }}>
-            <div className="p-2 border-b border-slate-100 flex items-center gap-2 bg-slate-50 shrink-0 rounded-t-md">
-              <Search size={16} className="text-slate-400" />
-              <input 
-                type="text" 
-                autoFocus
-                className="w-full focus:outline-none text-sm bg-transparent" 
-                placeholder="Type to filter products..." 
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-            
+          <div className="absolute top-full left-0 z-[60] w-full bg-white border border-t-0 border-blue-400 rounded-b-md shadow-lg flex flex-col overflow-hidden" style={{ maxHeight: '320px' }}>
             <div className="overflow-y-auto p-1 flex-1">
               {isLoading ? (
                 <div className="p-4 text-center text-sm text-slate-500">Loading parts...</div>
@@ -153,15 +163,15 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                       }}
                     >
                       <div className="truncate pr-2">
-                        <div className="font-medium text-slate-900 truncate">{part.name}</div>
+                        <div className="font-medium text-slate-900 text-sm truncate">{part.name}</div>
                         <div className="text-xs text-slate-500 flex gap-2 truncate">
                           {part.part_number && <span>{part.part_number}</span>}
                           {part.brands?.name && <span>• {part.brands.name}</span>}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-xs text-slate-500">Stock</div>
-                        <div className={`text-sm font-semibold ${part.stock_quantity > 0 ? 'text-green-600' : 'text-slate-400'}`}>
+                        <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider leading-tight">Stock</div>
+                        <div className={`text-sm font-semibold leading-tight ${part.stock_quantity > 0 ? 'text-green-600' : 'text-slate-400'}`}>
                           {part.stock_quantity}
                         </div>
                       </div>
