@@ -3,31 +3,25 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Search, ChevronDown, Plus } from 'lucide-react'
-import { AddPartModal } from './AddPartModal'
+import { SupplierModal } from './SupplierModal'
 
-type Part = {
+type Supplier = {
   id: string
   name: string
-  display_name?: string | null
-  part_number: string | null
-  stock_quantity: number
-  unit: string
-  cost: number
-  brands: any
 }
 
 type Props = {
-  selectedPartId: string
-  setSelectedPartId: (val: string) => void
-  onSelectPart?: (part: Part | null) => void
+  selectedSupplierId: string
+  setSelectedSupplierId: (val: string) => void
+  onSelectSupplier?: (supplier: Supplier | null) => void
   error?: boolean
   disabled?: boolean
 }
 
-export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelectPart, error, disabled }: Props) {
+export function SupplierSearchSelector({ selectedSupplierId, setSelectedSupplierId, onSelectSupplier, error, disabled }: Props) {
   const supabase = createClient()
   
-  const [parts, setParts] = useState<Part[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -35,7 +29,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetchParts()
+    fetchSuppliers()
   }, [])
 
   useEffect(() => {
@@ -48,44 +42,32 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const fetchParts = async () => {
+  const fetchSuppliers = async () => {
     setIsLoading(true)
     const { data } = await supabase
-      .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
+      .from('suppliers')
+      .select('id, name')
       .eq('is_active', true)
       .order('name')
     
-    if (data) setParts(data)
+    if (data) setSuppliers(data)
     setIsLoading(false)
   }
 
-  const filteredParts = parts.filter(p => {
+  const filteredSuppliers = suppliers.filter(s => {
     const q = search.toLowerCase()
-    return (
-      p.name.toLowerCase().includes(q) ||
-      (p.display_name && p.display_name.toLowerCase().includes(q)) ||
-      (p.part_number && p.part_number.toLowerCase().includes(q)) ||
-      (p.brands?.name && p.brands.name.toLowerCase().includes(q))
-    )
+    return s.name.toLowerCase().includes(q)
   })
 
-  const selectedPart = parts.find(p => p.id === selectedPartId)
+  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId)
 
-  const handlePartCreated = async (newPartId: string) => {
+  const handleSupplierCreated = async (newSupplier: any) => {
     setShowAddModal(false)
-    await fetchParts()
+    await fetchSuppliers()
     
-    // Auto select the new part
-    setSelectedPartId(newPartId)
-    const { data } = await supabase
-      .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
-      .eq('id', newPartId)
-      .single()
-      
-    if (data && onSelectPart) {
-      onSelectPart(data)
+    setSelectedSupplierId(newSupplier.id)
+    if (onSelectSupplier) {
+      onSelectSupplier(newSupplier)
     }
     setIsOpen(false)
     setSearch('')
@@ -114,23 +96,14 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                 <input
                   autoFocus
                   className="w-full h-full focus:outline-none text-sm bg-transparent text-slate-900 placeholder:text-slate-400"
-                  placeholder="Type to filter products..."
+                  placeholder="Search supplier..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
               </>
             ) : (
-              <div className={`truncate text-sm ${selectedPart ? 'w-full' : 'text-slate-500'}`}>
-                {selectedPart ? (
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-slate-900 font-medium truncate">{selectedPart.name}</span>
-                    <span className="text-[11px] text-slate-500 truncate">
-                      {[selectedPart.part_number, selectedPart.brands?.name, `Stock: ${selectedPart.stock_quantity}`].filter(Boolean).join(' • ')}
-                    </span>
-                  </div>
-                ) : (
-                  'Search part by name, SKU, or brand...'
-                )}
+              <div className={`truncate text-sm ${selectedSupplier ? 'w-full text-slate-900 font-medium' : 'text-slate-500'}`}>
+                {selectedSupplier ? selectedSupplier.name : 'Select Supplier...'}
               </div>
             )}
           </div>
@@ -141,10 +114,10 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
           <div className="absolute top-full left-0 z-[70] w-full bg-white border border-t-0 border-blue-500 rounded-b-md shadow-xl flex flex-col overflow-hidden" style={{ maxHeight: '320px', marginTop: '-1px' }}>
             <div className="overflow-y-auto p-1 flex-1">
               {isLoading ? (
-                <div className="p-4 text-center text-sm text-slate-500">Loading parts...</div>
-              ) : filteredParts.length === 0 ? (
+                <div className="p-4 text-center text-sm text-slate-500">Loading suppliers...</div>
+              ) : filteredSuppliers.length === 0 ? (
                 <div className="p-4 text-center">
-                  <p className="text-sm text-slate-500 mb-3">No matching products found.</p>
+                  <p className="text-sm text-slate-500 mb-3">No matching suppliers found.</p>
                   <button 
                     type="button"
                     onMouseDown={(e) => {
@@ -154,38 +127,26 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                     }}
                     className="inline-flex items-center justify-center gap-2 w-full py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 font-medium text-sm transition"
                   >
-                    <Plus size={16} /> Add New Product
+                    <Plus size={16} /> Add New Supplier
                   </button>
                 </div>
               ) : (
                 <>
-                  {filteredParts.map(part => (
+                  {filteredSuppliers.map(supplier => (
                     <div 
-                      key={part.id}
+                      key={supplier.id}
                       className={`p-2 hover:bg-blue-50 rounded cursor-pointer flex justify-between items-center transition ${
-                        selectedPartId === part.id ? 'bg-blue-100/50' : ''
+                        selectedSupplierId === supplier.id ? 'bg-blue-100/50' : ''
                       }`}
                       onMouseDown={(e) => {
-                        e.preventDefault(); // Prevent input blur
-                        setSelectedPartId(part.id)
-                        onSelectPart?.(part)
+                        e.preventDefault();
+                        setSelectedSupplierId(supplier.id)
+                        onSelectSupplier?.(supplier)
                         setIsOpen(false)
                         setSearch('')
                       }}
                     >
-                      <div className="truncate pr-2">
-                        <div className="font-medium text-slate-900 text-sm truncate">{part.name}</div>
-                        <div className="text-xs text-slate-500 flex gap-2 truncate">
-                          {part.part_number && <span>{part.part_number}</span>}
-                          {part.brands?.name && <span>• {part.brands.name}</span>}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider leading-tight">Stock</div>
-                        <div className={`text-sm font-semibold leading-tight ${part.stock_quantity > 0 ? 'text-green-600' : 'text-slate-400'}`}>
-                          {part.stock_quantity}
-                        </div>
-                      </div>
+                      <div className="font-medium text-slate-900 text-sm truncate">{supplier.name}</div>
                     </div>
                   ))}
                   
@@ -199,7 +160,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                       }}
                       className="w-full text-left px-2 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded font-medium flex items-center gap-2 transition"
                     >
-                      <Plus size={16} /> Add New Product
+                      <Plus size={16} /> Add New Supplier
                     </button>
                   </div>
                 </>
@@ -210,9 +171,9 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
       </div>
 
       {showAddModal && (
-        <AddPartModal 
+        <SupplierModal 
           onClose={() => setShowAddModal(false)} 
-          onSuccess={handlePartCreated} 
+          onSuccess={handleSupplierCreated} 
         />
       )}
     </>

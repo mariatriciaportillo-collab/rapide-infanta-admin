@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Plus, Trash2, CheckCircle } from 'lucide-react'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
-import { SupplierModal } from '@/components/suppliers/SupplierModal'
+import { SupplierSearchSelector } from '@/components/suppliers/SupplierSearchSelector'
 
 type POItem = {
   id: string
@@ -38,7 +38,6 @@ export default function NewPurchaseOrderPage() {
   // Post-save shortcut state
   const [savedPoId, setSavedPoId] = useState<string | null>(null)
   const [savedPoNumber, setSavedPoNumber] = useState<string | null>(null)
-  const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false)
 
   useEffect(() => {
     setOrderDate(new Date().toISOString().split('T')[0])
@@ -182,27 +181,11 @@ export default function NewPurchaseOrderPage() {
           <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Order Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <div className="flex justify-between items-end mb-1">
-                <label className="block text-sm font-medium text-slate-700">Supplier *</label>
-                <button 
-                  type="button" 
-                  onClick={() => setIsSupplierModalOpen(true)}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                >
-                  <Plus size={12} /> Add New Supplier
-                </button>
-              </div>
-              <select 
-                required
-                value={supplierId}
-                onChange={e => setSupplierId(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Supplier...</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Supplier *</label>
+              <SupplierSearchSelector 
+                selectedSupplierId={supplierId}
+                setSelectedSupplierId={setSupplierId}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Order Date *</label>
@@ -355,16 +338,6 @@ export default function NewPurchaseOrderPage() {
         </button>
       </form>
 
-      {isSupplierModalOpen && (
-        <SupplierModal 
-          onClose={() => setIsSupplierModalOpen(false)}
-          onSuccess={(newSupplier) => {
-            setSuppliers(prev => [...prev, newSupplier].sort((a, b) => a.name.localeCompare(b.name)))
-            setSupplierId(newSupplier.id)
-            setIsSupplierModalOpen(false)
-          }}
-        />
-      )}
     </div>
   )
 }
