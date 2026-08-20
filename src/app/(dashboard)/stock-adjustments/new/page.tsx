@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Save, AlertCircle, Plus, Trash2 } from 'lucide-react'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
 
 const REASONS = [
@@ -20,71 +20,51 @@ const REASONS = [
   'Other'
 ]
 
+type AdjItem = {
+  id: string
+  partId: string
+  part: any
+  adjType: 'Increase Stock' | 'Decrease Stock'
+  qty: string
+}
+
 export default function NewStockAdjustmentPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   
-  // Pre-fill from URL if provided (e.g., from inventory detail page)
-  const initialPartId = searchParams.get('part_id') || ''
-
-  const [selectedPartId, setSelectedPartId] = useState(initialPartId)
-  const [selectedPart, setSelectedPart] = useState<any>(null)
-  
-  const [adjType, setAdjType] = useState<'Increase Stock' | 'Decrease Stock'>('Increase Stock')
-  const [quantity, setQuantity] = useState('')
   const [reason, setReason] = useState('Physical Count Correction')
   const [notes, setNotes] = useState('')
   
+  const [items, setItems] = useState<AdjItem[]>([
+    { id: crypto.randomUUID(), partId: '', part: null, adjType: 'Increase Stock', qty: '' }
+  ])
+
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch part details if initialPartId is provided
-  useEffect(() => {
-    if (initialPartId && !selectedPart) {
-      fetchPart(initialPartId)
-    }
-  }, [initialPartId])
-
-  const fetchPart = async (id: string) => {
-    const { data } = await supabase.from('parts').select('*, brands(name)').eq('id', id).single()
-    if (data) setSelectedPart(data)
+  const handleAddItem = () => {
+    setItems([...items, { id: crypto.randomUUID(), partId: '', part: null, adjType: 'Increase Stock', qty: '' }])
   }
 
-  // Calculate preview
-  const currentStock = selectedPart ? Number(selectedPart.stock_quantity) || 0 : 0
-  const adjQty = Number(quantity) || 0
-  
-  let newStock = currentStock
-  if (adjQty > 0) {
-    newStock = adjType === 'Increase Stock' ? currentStock + adjQty : currentStock - adjQty
+  const handleRemoveItem = (id: string) => {
+    if (items.length > 1) {
+      setItems(items.filter(item => item.id !== id))
+    }
   }
 
-  // Auto-switch type for specific reasons to prevent common mistakes
-  useEffect(() => {
-    if (reason === 'Damaged Item' || reason === 'Expired Item' || reason === 'Lost Item' || reason === 'Supplier Return') {
-      setAdjType('Decrease Stock')
-    } else if (reason === 'Found Stock' || reason === 'Customer Return' || reason === 'Opening Balance') {
-      setAdjType('Increase Stock')
-    }
-  }, [reason])
+  const handleUpdateItem = (id: string, field: keyof AdjItem, value: any) => {
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return { ...item, [field]: value }
+      }
+      return item
+    }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
-
-    if (!selectedPartId) {
-      setError("Please select a Part / Material.")
-      setIsSubmitting(false)
-      return
-    }
-
-    if (adjQty <= 0) {
-      setError("Quantity must be greater than zero.")
-      setIsSubmitting(false)
-      return
-    }
 
     if (!reason) {
       setError("Please select a Reason.")
@@ -98,39 +78,59 @@ export default function NewStockAdjustmentPage() {
       return
     }
 
-    if (newStock < 0) {
-      setError("Adjustment exceeds available stock. Negative stock is not allowed.")
-      setIsSubmitting(false)
-      return
+    // Validation
+    const processedItems: any[] = []
+    const seenParts = new Set()
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (!item.partId) {
+        setError(`Please select a Part for line ${i + 1}.`)
+        setIsSubmitting(false)
+        return
+      }
+
+      if (seenParts.has(item.partId)) {
+        setError(`Duplicate part selected: ${item.part?.name}. Please consolidate into one line.`)
+        setIsSubmitting(false)
+        return
+      }
+      seenParts.add(item.partId)
+
+      const qtyNum = Number(item.qty)
+      if (!qtyNum || qtyNum <= 0) {
+        setError(`Please enter a valid quantity for ${item.part?.name || `line ${i + 1}`}.`)
+        setIsSubmitting(false)
+        return
+      }
+
+      const currentStock = Number(item.part?.stock_quantity) || 0
+      if (item.adjType === 'Decrease Stock' && currentStock < qtyNum) {
+        setError(`Insufficient stock for ${item.part?.name}. Cannot decrease by ${qtyNum} (Current: ${currentStock}).`)
+        setIsSubmitting(false)
+        return
+      }
+
+      processedItems.push({
+        part_id: item.partId,
+        adj_type: item.adjType,
+        qty: qtyNum,
+        unit_cost: item.part?.cost || 0
+      })
     }
 
-    // Get current user for audit
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Determine movement values
-    const movementType = reason === 'Opening Balance' 
-      ? 'OPENING_BALANCE' 
-      : adjType === 'Increase Stock' ? 'POSITIVE_ADJUSTMENT' : 'NEGATIVE_ADJUSTMENT'
-      
-    // Quantity in movement ledger is always positive for IN, negative for OUT
-    const movementQty = adjType === 'Increase Stock' ? adjQty : -Math.abs(adjQty)
+    // Call RPC
+    const { data, error: rpcError } = await supabase.rpc('process_stock_adjustment', {
+      p_reason: reason,
+      p_notes: notes.trim() || null,
+      p_items: processedItems,
+      p_user_id: user?.id || null
+    })
 
-    const payload = {
-      part_id: selectedPartId,
-      movement_type: movementType,
-      quantity: movementQty,
-      unit_cost: selectedPart?.cost || 0,
-      reference_type: reason, // Store the reason here
-      notes: notes.trim() || null,
-      created_by: user?.id || null
-    }
-
-    const { error: insertError } = await supabase
-      .from('inventory_movements')
-      .insert(payload)
-
-    if (insertError) {
-      setError(`Failed to save adjustment: ${insertError.message}`)
+    if (rpcError) {
+      setError(`Failed to save adjustment: ${rpcError.message}`)
       setIsSubmitting(false)
       return
     }
@@ -139,8 +139,13 @@ export default function NewStockAdjustmentPage() {
     router.refresh()
   }
 
+  // Summary counts
+  const totalIncreases = items.filter(i => i.partId && i.adjType === 'Increase Stock').length
+  const totalDecreases = items.filter(i => i.partId && i.adjType === 'Decrease Stock').length
+  const totalItems = items.filter(i => i.partId).length
+
   return (
-    <div className="max-w-4xl mx-auto pb-24">
+    <div className="max-w-6xl mx-auto pb-24">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Link href="/stock-adjustments" className="text-slate-400 hover:text-slate-600 transition">
@@ -157,157 +162,181 @@ export default function NewStockAdjustmentPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-            
-            {/* LEFT COLUMN */}
-            <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* LEFT COLUMN - MAIN FORM */}
+        <div className="w-full lg:w-2/3 space-y-6">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <h3 className="font-semibold text-slate-800 mb-4 pb-2 border-b border-slate-100">TRANSACTION DETAILS</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Part / Material *</label>
-                <PartSearchSelector 
-                  selectedPartId={selectedPartId} 
-                  setSelectedPartId={setSelectedPartId} 
-                  onSelectPart={setSelectedPart}
-                />
+                <label className="block text-sm font-medium text-slate-700 mb-1">Reason *</label>
+                <select 
+                  required
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  className="w-full border border-slate-300 rounded-md p-2 bg-white"
+                >
+                  <option value="" disabled>Select reason...</option>
+                  {REASONS.map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Adjustment Type *</label>
-                <div className="flex bg-slate-100 p-1 rounded-md">
-                  <button
-                    type="button"
-                    onClick={() => setAdjType('Increase Stock')}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
-                      adjType === 'Increase Stock' 
-                        ? 'bg-white text-green-700 shadow-sm' 
-                        : 'text-slate-600 hover:text-slate-800'
-                    }`}
-                  >
-                    Increase Stock
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAdjType('Decrease Stock')}
-                    className={`flex-1 py-2 text-sm font-medium rounded-md transition ${
-                      adjType === 'Decrease Stock' 
-                        ? 'bg-white text-red-700 shadow-sm' 
-                        : 'text-slate-600 hover:text-slate-800'
-                    }`}
-                  >
-                    Decrease Stock
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Quantity *</label>
-                  <div className="relative">
-                    <input 
-                      required
-                      type="number" 
-                      step="0.01"
-                      min="0.01"
-                      value={quantity}
-                      onChange={e => setQuantity(e.target.value)}
-                      className={`w-full border border-slate-300 rounded-md p-2 font-bold text-lg ${
-                        adjType === 'Increase Stock' ? 'text-green-700' : 'text-red-700'
-                      }`}
-                    />
-                    {selectedPart && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                        {selectedPart.unit}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Reason *</label>
-                  <select 
-                    required
-                    value={reason}
-                    onChange={e => setReason(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md p-2 bg-white"
-                  >
-                    <option value="" disabled>Select reason...</option>
-                    {REASONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-                <textarea 
+                <input 
+                  type="text"
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  rows={3}
                   className="w-full border border-slate-300 rounded-md p-2" 
                   placeholder={reason === 'Other' ? "Please specify reason..." : "Optional internal notes..."}
-                ></textarea>
+                />
               </div>
             </div>
+          </div>
 
-            {/* RIGHT COLUMN - PREVIEW */}
-            <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 flex flex-col justify-center">
-              <h3 className="text-sm font-bold text-slate-400 tracking-wider mb-6 text-center uppercase">Adjustment Preview</h3>
-              
-              <div className="space-y-6">
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                  <span className="text-slate-600 font-medium">Current Stock</span>
-                  <span className="text-2xl font-bold text-slate-800">
-                    {currentStock} <span className="text-sm font-normal text-slate-500">{selectedPart?.unit || ''}</span>
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                  <span className="text-slate-600 font-medium">Adjustment</span>
-                  <span className={`text-2xl font-bold ${
-                    adjQty === 0 ? 'text-slate-400' : adjType === 'Increase Stock' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {adjQty === 0 ? '' : adjType === 'Increase Stock' ? '+' : '-'}{adjQty}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-end pt-2">
-                  <span className="text-slate-800 font-bold text-lg">Resulting Stock</span>
-                  <span className={`text-4xl font-black ${
-                    newStock < 0 ? 'text-red-600' : 'text-blue-700'
-                  }`}>
-                    {newStock} <span className="text-lg font-normal opacity-70">{selectedPart?.unit || ''}</span>
-                  </span>
-                </div>
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">ITEMS ({items.length})</h3>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              {items.map((item, index) => {
+                const currentStock = Number(item.part?.stock_quantity) || 0
+                const adjQty = Number(item.qty) || 0
+                let newStock = currentStock
+                if (adjQty > 0) {
+                  newStock = item.adjType === 'Increase Stock' ? currentStock + adjQty : currentStock - adjQty
+                }
+                const isError = newStock < 0
 
-                {newStock < 0 && (
-                  <div className="bg-red-100 text-red-700 p-3 rounded-md text-sm text-center font-medium">
-                    Cannot save: Stock would become negative.
+                return (
+                  <div key={item.id} className={`p-4 rounded-lg border relative ${isError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-bold text-slate-400">LINE {index + 1}</span>
+                      {items.length > 1 && (
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveItem(item.id)}
+                          className="text-red-400 hover:text-red-600 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                      <div className="md:col-span-5">
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Part / Material *</label>
+                        <PartSearchSelector 
+                          selectedPartId={item.partId} 
+                          setSelectedPartId={(id) => handleUpdateItem(item.id, 'partId', id)} 
+                          onSelectPart={(p) => handleUpdateItem(item.id, 'part', p)}
+                        />
+                      </div>
+
+                      <div className="md:col-span-3">
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Adjustment *</label>
+                        <div className="flex bg-white border border-slate-300 rounded-md overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItem(item.id, 'adjType', 'Increase Stock')}
+                            className={`flex-1 py-1.5 text-xs font-medium transition ${
+                              item.adjType === 'Increase Stock' ? 'bg-green-100 text-green-800' : 'text-slate-500 hover:bg-slate-50'
+                            }`}
+                          >
+                            + Add
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateItem(item.id, 'adjType', 'Decrease Stock')}
+                            className={`flex-1 py-1.5 text-xs font-medium transition border-l border-slate-300 ${
+                              item.adjType === 'Decrease Stock' ? 'bg-red-100 text-red-800' : 'text-slate-500 hover:bg-slate-50'
+                            }`}
+                          >
+                            - Deduct
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-medium text-slate-500 mb-1">Qty *</label>
+                        <input 
+                          required
+                          type="number" 
+                          step="0.01"
+                          min="0.01"
+                          value={item.qty}
+                          onChange={e => handleUpdateItem(item.id, 'qty', e.target.value)}
+                          className={`w-full border rounded-md py-1.5 px-2 text-center font-bold ${
+                            item.adjType === 'Increase Stock' ? 'border-green-300 text-green-700' : 'border-red-300 text-red-700'
+                          }`}
+                        />
+                      </div>
+
+                      <div className="md:col-span-2 text-right pb-1">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Result</div>
+                        <div className={`font-bold text-lg ${isError ? 'text-red-600' : 'text-slate-800'}`}>
+                          {item.part ? `${newStock}` : '—'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            </div>
+                )
+              })}
 
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="w-full py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition flex items-center justify-center gap-2"
+              >
+                <Plus size={18} /> Add Another Item
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-4">
-          <Link 
-            href="/stock-adjustments"
-            className="px-6 py-2 border border-slate-300 rounded-md font-medium text-slate-700 hover:bg-slate-50 transition"
-          >
-            Cancel
-          </Link>
-          <button 
-            type="submit" 
-            disabled={isSubmitting || newStock < 0 || adjQty <= 0}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-2 rounded-md font-medium transition flex items-center gap-2"
-          >
-            <Save size={18} />
-            {isSubmitting ? 'Saving...' : 'Save Adjustment'}
-          </button>
+        {/* RIGHT COLUMN - PREVIEW */}
+        <div className="w-full lg:w-1/3 sticky top-6">
+          <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 flex flex-col justify-center">
+            <h3 className="text-sm font-bold text-slate-400 tracking-wider mb-6 text-center uppercase">Transaction Summary</h3>
+            
+            <div className="space-y-6">
+              <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                <span className="text-slate-600 font-medium">Total Items</span>
+                <span className="text-2xl font-bold text-slate-800">{totalItems}</span>
+              </div>
+              
+              <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                <span className="text-slate-600 font-medium">Increases</span>
+                <span className="text-xl font-bold text-green-600">{totalIncreases}</span>
+              </div>
+
+              <div className="flex justify-between items-end pb-2">
+                <span className="text-slate-600 font-medium">Decreases</span>
+                <span className="text-xl font-bold text-red-600">{totalDecreases}</span>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-200">
+              <button 
+                type="submit" 
+                disabled={isSubmitting || items.some(i => !i.partId)}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-md font-bold transition flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Save size={20} />
+                {isSubmitting ? 'Saving Transaction...' : 'Save Adjustment'}
+              </button>
+              <Link 
+                href="/stock-adjustments"
+                className="block text-center w-full py-3 mt-2 text-slate-500 font-medium hover:text-slate-700 transition"
+              >
+                Cancel
+              </Link>
+            </div>
+          </div>
         </div>
+
       </form>
     </div>
   )
