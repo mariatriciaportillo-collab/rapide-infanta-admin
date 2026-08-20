@@ -23,7 +23,7 @@ export function OutsidePurchaseDetailClient({ id }: { id: string }) {
     // Fetch outside purchase
     const { data: opData } = await supabase
       .from('outside_purchases')
-      .select('*, suppliers(name), profiles:created_by(email)')
+      .select('*, suppliers(name)')
       .eq('id', id)
       .single()
       
@@ -82,7 +82,7 @@ export function OutsidePurchaseDetailClient({ id }: { id: string }) {
             </div>
             <div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2"><User size={14} /> Created By</div>
-              <div className="font-medium text-slate-800">{purchase.profiles?.email || 'Unknown User'}</div>
+              <div className="font-medium text-slate-800 text-sm">{purchase.created_by || 'Unknown'}</div>
             </div>
           </div>
           <div className="pt-2 border-t border-slate-100">

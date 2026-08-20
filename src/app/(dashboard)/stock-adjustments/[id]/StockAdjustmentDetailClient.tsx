@@ -22,9 +22,10 @@ export function StockAdjustmentDetailClient({ id }: { id: string }) {
     
     // Fetch adjustment
     const { data: adjData } = await supabase
-      .from('stock_adjustments')
-      .select('*, profiles:created_by(email)')
+      .from('inventory_transactions')
+      .select('*')
       .eq('id', id)
+      .eq('type', 'ADJUSTMENT')
       .single()
       
     if (adjData) {
@@ -32,9 +33,9 @@ export function StockAdjustmentDetailClient({ id }: { id: string }) {
       
       // Fetch items
       const { data: itemData } = await supabase
-        .from('stock_adjustment_items')
-        .select('*, parts(name, part_number, unit)')
-        .eq('adjustment_id', id)
+        .from('inventory_movements')
+        .select('*, parts(name, part_number, unit, stock_quantity)')
+        .eq('transaction_id', id)
         .order('id')
         
       if (itemData) setItems(itemData)
@@ -80,7 +81,7 @@ export function StockAdjustmentDetailClient({ id }: { id: string }) {
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-sm space-y-4">
           <div>
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2"><User size={14} /> Created By</div>
-            <div className="font-medium text-slate-800">{adjustment.profiles?.email || 'Unknown User'}</div>
+            <div className="font-medium text-slate-800 text-sm">{adjustment.created_by || 'Unknown'}</div>
           </div>
           <div>
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2"><FileText size={14} /> Notes</div>
@@ -105,10 +106,13 @@ export function StockAdjustmentDetailClient({ id }: { id: string }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {items.map(item => {
-              const prev = Number(item.previous_stock)
-              const newQty = Number(item.resulting_stock)
               const change = Number(item.quantity)
               const unit = item.parts?.unit || 'pcs'
+              const isPositive = change > 0
+              
+              // Note: Since historical stock isn't saved per-row, we display current parts stock as a proxy for the resulting stock if it's recent, or we just show the adjustment.
+              const currentStock = Number(item.parts?.stock_quantity) || 0
+              const prev = currentStock - change
 
               return (
                 <tr key={item.id} className="hover:bg-slate-50 transition">
@@ -116,19 +120,19 @@ export function StockAdjustmentDetailClient({ id }: { id: string }) {
                   <td className="px-6 py-4 text-slate-500 text-sm font-mono">{item.parts?.part_number || '—'}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2 py-1 rounded text-xs font-bold ${
-                      item.adjustment_type === 'Increase Stock' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      isPositive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                     }`}>
-                      {item.adjustment_type}
+                      {isPositive ? 'Increase Stock' : 'Decrease Stock'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right font-bold text-slate-700">
-                    {item.adjustment_type === 'Increase Stock' ? '+' : '-'}{change} {unit}
+                    {isPositive ? '+' : ''}{change} {unit}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span className="flex items-center justify-end gap-2 text-sm font-medium">
                       <span className="text-slate-400">{prev}</span>
                       <span className="text-slate-300">→</span>
-                      <span className="text-slate-800 font-bold">{newQty}</span>
+                      <span className="text-slate-800 font-bold">{currentStock}</span>
                     </span>
                   </td>
                 </tr>
