@@ -23,18 +23,19 @@ export default function NewOutsidePurchasePage() {
   const [suppliers, setSuppliers] = useState<any[]>([])
   
   const [supplierId, setSupplierId] = useState('')
-  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
+  const [purchaseDate, setPurchaseDate] = useState('')
   const [receiptNumber, setReceiptNumber] = useState('')
   const [notes, setNotes] = useState('')
   
   const [items, setItems] = useState<OPItem[]>([
-    { id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '', inventoryTreatment: 'ADD_TO_INVENTORY' }
+    { id: 'initial-row-1', partId: '', part: null, qty: '', unitCost: '', inventoryTreatment: 'ADD_TO_INVENTORY' }
   ])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    setPurchaseDate(new Date().toISOString().split('T')[0])
     fetchSuppliers()
   }, [])
 
