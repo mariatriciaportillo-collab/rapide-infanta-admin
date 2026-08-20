@@ -53,16 +53,20 @@ CREATE TABLE IF NOT EXISTS public.purchase_receipt_items (
     total_amount NUMERIC(12,2) DEFAULT 0
 );
 
+-- Drop previous overloaded functions to prevent conflicts
+DROP FUNCTION IF EXISTS public.create_purchase_order(UUID, DATE, DATE, TEXT, TEXT, TEXT, JSONB, UUID);
+DROP FUNCTION IF EXISTS public.create_purchase_order(UUID, DATE, JSONB, DATE, TEXT, TEXT, TEXT, UUID);
+
 -- 6. RPC for Atomic Purchase Order Creation
 CREATE OR REPLACE FUNCTION create_purchase_order(
     p_supplier_id UUID,
     p_order_date DATE,
-    p_expected_date DATE,
-    p_reference TEXT,
-    p_notes TEXT,
-    p_terms TEXT,
     p_items JSONB,
-    p_user_id UUID
+    p_expected_date DATE DEFAULT NULL,
+    p_reference TEXT DEFAULT NULL,
+    p_notes TEXT DEFAULT NULL,
+    p_terms TEXT DEFAULT NULL,
+    p_user_id UUID DEFAULT NULL
 ) RETURNS UUID AS $$
 DECLARE
     v_po_id UUID;
@@ -89,14 +93,17 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop previous overloaded functions to prevent conflicts
+DROP FUNCTION IF EXISTS public.receive_po_items(UUID, DATE, TEXT, TEXT, JSONB, UUID);
+
 -- 7. RPC for Receiving PO Items
 CREATE OR REPLACE FUNCTION receive_po_items(
     p_po_id UUID,
     p_receive_date DATE,
-    p_supplier_ref TEXT,
-    p_notes TEXT,
     p_items JSONB,
-    p_user_id UUID
+    p_supplier_ref TEXT DEFAULT NULL,
+    p_notes TEXT DEFAULT NULL,
+    p_user_id UUID DEFAULT NULL
 ) RETURNS UUID AS $$
 DECLARE
     v_receipt_id UUID;
