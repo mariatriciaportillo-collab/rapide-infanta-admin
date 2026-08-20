@@ -42,8 +42,9 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
     setIsLoading(false)
   }
 
-  const handleAddBrand = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleAddBrand = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault();
+
     setError(null)
     setExistingId(null)
     
@@ -138,7 +139,7 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
               <h3 className="font-semibold text-slate-800">Add New Brand</h3>
             </div>
             
-            <form onSubmit={handleAddBrand} className="p-6">
+            <div className="p-6">
               {error && (
                 <div className="bg-amber-50 text-amber-800 p-3 rounded-md text-sm mb-4 border border-amber-200">
                   <span className="font-medium">{error}</span>
@@ -161,6 +162,12 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
                   required
                   autoFocus
                   value={newBrandName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                  
+                      handleAddBrand(e)
+                    }
+                  }}
                   onChange={(e) => {
                     setNewBrandName(e.target.value)
                     setError(null)
@@ -181,14 +188,15 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleAddBrand}
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition disabled:bg-blue-400"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Brand'}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

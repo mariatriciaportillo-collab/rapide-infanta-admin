@@ -43,8 +43,9 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
     setHasEditedDisplayName(true)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+
     setIsSubmitting(true)
     setError(null)
 
@@ -112,7 +113,7 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
             </div>
           )}
 
-          <form id="add-part-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Part / Product Name *</label>
@@ -168,12 +169,12 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
               <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full border border-slate-300 rounded-md p-2" placeholder="Optional internal notes..."></textarea>
             </div>
-          </form>
+          </div>
         </div>
         
         <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-4">
           <button type="button" onClick={onClose} className="px-6 py-2 border border-slate-300 rounded-md font-medium text-slate-700 hover:bg-white transition">Cancel</button>
-          <button type="submit" form="add-part-form" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm">
+          <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-8 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm">
             <Save size={18} /> {isSubmitting ? 'Saving...' : 'Save Product'}
           </button>
         </div>
