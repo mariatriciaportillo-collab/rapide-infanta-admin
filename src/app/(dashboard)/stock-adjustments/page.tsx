@@ -114,9 +114,9 @@ export default function StockAdjustmentsPage() {
                   const isSwap = t.type === 'SWAP'
                   
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition cursor-pointer" onClick={() => window.location.href = `/stock-adjustments/${t.id}`}>
+                    <tr key={t.id} className="hover:bg-slate-50 transition cursor-pointer" onClick={() => window.location.href = t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}>
                       <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
-                        <Link href={`/stock-adjustments/${t.id}`}>{t.reference_number}</Link>
+                        <Link href={t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}>{t.reference_number}</Link>
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                         {format(new Date(t.created_at), 'MMM d, yyyy HH:mm')}
