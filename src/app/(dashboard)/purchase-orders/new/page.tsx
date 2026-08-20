@@ -247,7 +247,7 @@ export default function NewPurchaseOrderPage() {
               const lineTotal = qtyNum * costNum
 
               return (
-                <div key={item.id} className="p-4 rounded-lg border bg-slate-50 border-slate-200">
+                <div key={item.id} className="p-4 rounded-lg border bg-slate-50 border-slate-200 relative" style={{ zIndex: items.length - index }}>
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-bold text-slate-700">Line {index + 1}</span>
                     <button 

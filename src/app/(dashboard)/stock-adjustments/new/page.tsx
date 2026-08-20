@@ -193,7 +193,7 @@ export default function NewStockAdjustmentPage() {
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
             <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
               <h3 className="font-semibold text-slate-800">ITEMS ({items.length})</h3>
             </div>
@@ -209,7 +209,7 @@ export default function NewStockAdjustmentPage() {
                 const isError = newStock < 0
 
                 return (
-                  <div key={item.id} className={`p-4 rounded-lg border relative ${isError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div key={item.id} className={`p-4 rounded-lg border relative ${isError ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: items.length - index }}>
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-xs font-bold text-slate-400">LINE {index + 1}</span>
                       {items.length > 1 && (

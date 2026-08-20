@@ -100,7 +100,7 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
           <h2 className="text-xl font-bold text-slate-800">Add New Product</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
             <X size={24} />
           </button>
         </div>

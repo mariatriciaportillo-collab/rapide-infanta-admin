@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/utils/supabase/client'
 import { X, Save } from 'lucide-react'
 
@@ -57,12 +58,17 @@ export function SupplierModal({ onClose, onSuccess }: { onClose: () => void, onS
     }
   }
 
-  return (
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
+  if (!mounted) return null
+
+  return createPortal(
     <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl my-8 flex flex-col max-h-[90vh]">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold text-slate-800">Add New Supplier</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
             <X size={24} />
           </button>
         </div>
@@ -190,6 +196,7 @@ export function SupplierModal({ onClose, onSuccess }: { onClose: () => void, onS
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
