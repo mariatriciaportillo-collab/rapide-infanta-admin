@@ -26,6 +26,7 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
   const [newBrandName, setNewBrandName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [existingId, setExistingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchBrands()
@@ -44,6 +45,8 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
   const handleAddBrand = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setExistingId(null)
+    
     const cleanName = newBrandName.trim()
     if (!cleanName) {
       setError("Brand name is required.")
@@ -51,6 +54,7 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
     }
 
     setIsSubmitting(true)
+    
     // Duplicate check
     const { data: existing } = await supabase
       .from('brands')
@@ -59,7 +63,8 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
       .maybeSingle()
 
     if (existing) {
-      setError(`Brand "${cleanName}" already exists.`)
+      setError(`This brand already exists.`)
+      setExistingId(existing.id)
       setIsSubmitting(false)
       return
     }
@@ -84,10 +89,20 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
       setNewBrandName('')
     }
   }
+  
+  const handleSelectExisting = () => {
+    if (existingId) {
+      setSelectedBrandId(existingId)
+      setIsAddingBrand(false)
+      setNewBrandName('')
+      setExistingId(null)
+      setError(null)
+    }
+  }
 
   return (
     <>
-      <div className="relative">
+      <div className="relative ">
         <label className="block text-sm font-medium text-slate-700 mb-1">Brand</label>
         <select
           value={selectedBrandId}
@@ -104,7 +119,11 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
         {!disabled && (
           <button
             type="button"
-            onClick={() => setIsAddingBrand(true)}
+            onClick={() => {
+              setIsAddingBrand(true)
+              setError(null)
+              setExistingId(null)
+            }}
             className="mt-2 text-sm font-medium text-blue-600 hover:underline flex items-center gap-1"
           >
             <Plus size={14} /> Add New Brand
@@ -113,7 +132,7 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
       </div>
 
       {isAddingBrand && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[200] p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="font-semibold text-slate-800">Add New Brand</h3>
@@ -121,8 +140,17 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
             
             <form onSubmit={handleAddBrand} className="p-6">
               {error && (
-                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm mb-4">
-                  {error}
+                <div className="bg-amber-50 text-amber-800 p-3 rounded-md text-sm mb-4 border border-amber-200">
+                  <span className="font-medium">{error}</span>
+                  {existingId && (
+                    <button 
+                      type="button" 
+                      onClick={handleSelectExisting}
+                      className="ml-2 underline hover:text-amber-900 font-bold"
+                    >
+                      Use existing brand instead
+                    </button>
+                  )}
                 </div>
               )}
               
@@ -133,7 +161,11 @@ export function BrandSelector({ selectedBrandId, setSelectedBrandId, disabled }:
                   required
                   autoFocus
                   value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
+                  onChange={(e) => {
+                    setNewBrandName(e.target.value)
+                    setError(null)
+                    setExistingId(null)
+                  }}
                   className="w-full border border-slate-300 rounded-md p-2"
                   placeholder="e.g. Toyota"
                 />

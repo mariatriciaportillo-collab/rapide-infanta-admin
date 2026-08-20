@@ -128,7 +128,6 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
                 <input type="text" value={partNumber} onChange={e => setPartNumber(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="e.g. TY-5W30-1L" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Brand</label>
                 <BrandSelector selectedBrandId={brandId} setSelectedBrandId={setBrandId} />
               </div>
             </div>
