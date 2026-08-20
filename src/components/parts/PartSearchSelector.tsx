@@ -93,12 +93,10 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     <>
       <div className="relative w-full" ref={wrapperRef}>
         <div 
-          className={`w-full h-[42px] px-3 border bg-white flex justify-between items-center transition ${
-            isOpen ? 'rounded-t-md border-b-0 border-blue-400 ring-1 ring-blue-400/20' : 'rounded-md'
-          } ${
+          className={`w-full h-[42px] px-3 border bg-white flex justify-between items-center transition rounded-md ${
             disabled ? 'bg-slate-100 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:border-slate-400'
           } ${
-            error && !isOpen ? 'border-red-500 ring-1 ring-red-500' : (!isOpen ? 'border-slate-300' : '')
+            isOpen ? 'border-blue-500 ring-1 ring-blue-500' : (error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300')
           }`}
           onClick={() => {
             if (!disabled && !isOpen) {
@@ -129,7 +127,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
         </div>
 
         {isOpen && (
-          <div className="absolute top-full left-0 z-[60] w-full bg-white border border-t-0 border-blue-400 rounded-b-md shadow-lg flex flex-col overflow-hidden" style={{ maxHeight: '320px' }}>
+          <div className="absolute top-[calc(100%+4px)] left-0 z-[60] w-full bg-white border border-slate-300 rounded-md shadow-lg flex flex-col overflow-hidden" style={{ maxHeight: '320px' }}>
             <div className="overflow-y-auto p-1 flex-1">
               {isLoading ? (
                 <div className="p-4 text-center text-sm text-slate-500">Loading parts...</div>
@@ -144,7 +142,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                     }}
                     className="inline-flex items-center justify-center gap-2 w-full py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 font-medium text-sm transition"
                   >
-                    <Plus size={16} /> Create New Product
+                    <Plus size={16} /> Add New Product
                   </button>
                 </div>
               ) : (

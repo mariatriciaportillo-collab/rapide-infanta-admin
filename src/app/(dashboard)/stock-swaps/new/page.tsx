@@ -133,8 +133,8 @@ export default function NewStockSwapPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         
         {/* SWAP OUT */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-red-200 bg-red-50 flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+          <div className="px-6 py-4 border-b border-red-200 bg-red-50 flex justify-between items-center rounded-t-[7px]">
             <h3 className="font-bold text-red-800">ITEM OUT (Decrease)</h3>
           </div>
           <div className="p-6">
@@ -180,8 +180,8 @@ export default function NewStockSwapPage() {
         </div>
 
         {/* SWAP IN */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-green-200 bg-green-50 flex justify-between items-center">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+          <div className="px-6 py-4 border-b border-green-200 bg-green-50 flex justify-between items-center rounded-t-[7px]">
             <h3 className="font-bold text-green-800">ITEM IN (Increase)</h3>
           </div>
           <div className="p-6">
