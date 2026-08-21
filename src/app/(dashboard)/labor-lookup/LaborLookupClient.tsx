@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { Search, Edit, Plus, Wrench, Car, ArrowRight } from 'lucide-react'
+import { Search, Edit, Plus, Wrench, Car } from 'lucide-react'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
 
 // Types based on schema
@@ -25,8 +25,6 @@ type LookupRate = {
   labor_service_id: string
   vehicle_make_id: string
   vehicle_model_id: string
-  year_from: number
-  year_to: number
   labor_manual: number | null
   labor_automatic: number | null
   notes: string | null
@@ -50,7 +48,6 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
   const [selectedServiceId, setSelectedServiceId] = useState('')
   const [filterMakeId, setFilterMakeId] = useState('')
   const [filterModelId, setFilterModelId] = useState('')
-  const [filterYear, setFilterYear] = useState('')
 
   const selectedService = useMemo(() => {
     if (!selectedServiceId) return null
@@ -62,33 +59,40 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
     return models.filter(m => m.make_id === filterMakeId)
   }, [models, filterMakeId])
 
+  // Deduplicate service rates by Make + Model + Service for display safety
   const serviceRates = useMemo(() => {
     if (!selectedServiceId) return []
     let result = lookupRates.filter(r => r.labor_service_id === selectedServiceId)
 
     if (filterMakeId) result = result.filter(r => r.vehicle_make_id === filterMakeId)
     if (filterModelId) result = result.filter(r => r.vehicle_model_id === filterModelId)
-    if (filterYear) {
-      const year = parseInt(filterYear)
-      if (!isNaN(year)) {
-        result = result.filter(r => year >= r.year_from && year <= r.year_to)
+
+    // Deduplicate on Make+Model
+    const seen = new Set<string>()
+    const deduplicated = []
+    
+    // Sort by Make, then Model to keep order deterministic before deduplication
+    result.sort((a, b) => {
+      const makeCompare = a.vehicle_makes.name.localeCompare(b.vehicle_makes.name)
+      if (makeCompare !== 0) return makeCompare
+      return a.vehicle_models.name.localeCompare(b.vehicle_models.name)
+    })
+
+    for (const r of result) {
+      const key = `${r.vehicle_make_id}_${r.vehicle_model_id}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        deduplicated.push(r)
       }
     }
 
-    return result.sort((a, b) => {
-      const makeCompare = a.vehicle_makes.name.localeCompare(b.vehicle_makes.name)
-      if (makeCompare !== 0) return makeCompare
-      const modelCompare = a.vehicle_models.name.localeCompare(b.vehicle_models.name)
-      if (modelCompare !== 0) return modelCompare
-      return b.year_from - a.year_from
-    })
-  }, [lookupRates, selectedServiceId, filterMakeId, filterModelId, filterYear])
+    return deduplicated
+  }, [lookupRates, selectedServiceId, filterMakeId, filterModelId])
 
 
   // === MODE 2: SEARCH BY VEHICLE ===
   const [vehMakeId, setVehMakeId] = useState('')
   const [vehModelId, setVehModelId] = useState('')
-  const [vehYear, setVehYear] = useState('')
 
   const availableModelsForVeh = useMemo(() => {
     if (!vehMakeId) return []
@@ -98,23 +102,33 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
   const selectedVehicleName = useMemo(() => {
     const make = makes.find(m => m.id === vehMakeId)?.name
     const model = models.find(m => m.id === vehModelId)?.name
-    if (make && model && vehYear) return `${make} ${model} ${vehYear}`
+    if (make && model) return `${make} ${model}`
     return null
-  }, [makes, models, vehMakeId, vehModelId, vehYear])
+  }, [makes, models, vehMakeId, vehModelId])
 
   const vehicleRates = useMemo(() => {
-    if (!vehMakeId || !vehModelId || !vehYear) return []
-    const year = parseInt(vehYear)
-    if (isNaN(year)) return []
+    if (!vehMakeId || !vehModelId) return []
     
     let result = lookupRates.filter(r => 
       r.vehicle_make_id === vehMakeId && 
-      r.vehicle_model_id === vehModelId &&
-      year >= r.year_from && year <= r.year_to
+      r.vehicle_model_id === vehModelId
     )
 
-    return result.sort((a, b) => a.labor_services.name.localeCompare(b.labor_services.name))
-  }, [lookupRates, vehMakeId, vehModelId, vehYear])
+    // Deduplicate on Service for this Make/Model
+    const seen = new Set<string>()
+    const deduplicated = []
+    
+    result.sort((a, b) => a.labor_services.name.localeCompare(b.labor_services.name))
+
+    for (const r of result) {
+      if (!seen.has(r.labor_service_id)) {
+        seen.add(r.labor_service_id)
+        deduplicated.push(r)
+      }
+    }
+
+    return deduplicated
+  }, [lookupRates, vehMakeId, vehModelId])
 
 
   const formatCurrency = (val: number | null | undefined) => {
@@ -184,7 +198,6 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                     // Reset filters when changing service
                     setFilterMakeId('')
                     setFilterModelId('')
-                    setFilterYear('')
                   }}
                   placeholder="Search labor or service..."
                   searchPlaceholder="Type to search service..."
@@ -213,7 +226,7 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                   {/* Optional Filters */}
                   <div className="flex gap-3 bg-slate-50 p-2 rounded-md border border-slate-200">
                     <select 
-                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700"
+                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 w-36"
                       value={filterMakeId}
                       onChange={e => {
                         setFilterMakeId(e.target.value)
@@ -224,7 +237,7 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                       {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
                     <select 
-                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400"
+                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 w-40"
                       value={filterModelId}
                       onChange={e => setFilterModelId(e.target.value)}
                       disabled={!filterMakeId}
@@ -232,14 +245,6 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                       <option value="">All Models</option>
                       {availableModelsForLabor.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
-                    <input 
-                      type="text"
-                      className="w-24 px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700"
-                      placeholder="Year"
-                      value={filterYear}
-                      onChange={e => setFilterYear(e.target.value.replace(/[^0-9]/g, ''))}
-                      maxLength={4}
-                    />
                   </div>
                 </div>
 
@@ -260,40 +265,32 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                         <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
                           <th className="px-6 py-3">Make</th>
                           <th className="px-6 py-3">Model</th>
-                          <th className="px-6 py-3 text-right">Year</th>
                           <th className="px-6 py-3 text-right">Labor MT</th>
                           <th className="px-6 py-3 text-right">Labor AT</th>
                           <th className="px-6 py-3 text-center w-24">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {serviceRates.map(rate => {
-                          const yearStr = rate.year_from === rate.year_to 
-                            ? rate.year_from.toString() 
-                            : `${rate.year_from}–${rate.year_to === 9999 ? 'Present' : rate.year_to}`
-
-                          return (
-                            <tr key={rate.id} className="hover:bg-slate-50 transition">
-                              <td className="px-6 py-4 font-bold text-slate-800">{rate.vehicle_makes.name}</td>
-                              <td className="px-6 py-4 font-medium text-slate-700">{rate.vehicle_models.name}</td>
-                              <td className="px-6 py-4 text-right text-slate-600 font-mono text-sm bg-slate-50">{yearStr}</td>
-                              <td className="px-6 py-4 text-right font-bold text-slate-900">
-                                {formatCurrency(rate.labor_manual)}
-                              </td>
-                              <td className="px-6 py-4 text-right font-bold text-slate-900">
-                                {formatCurrency(rate.labor_automatic)}
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                <Link 
-                                  href={`/labor-lookup/${rate.id}/edit`}
-                                  className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-                                >
-                                  Edit
-                                </Link>
-                              </td>
-                            </tr>
-                          )
-                        })}
+                        {serviceRates.map(rate => (
+                          <tr key={rate.id} className="hover:bg-slate-50 transition">
+                            <td className="px-6 py-4 font-bold text-slate-800">{rate.vehicle_makes.name}</td>
+                            <td className="px-6 py-4 font-medium text-slate-700">{rate.vehicle_models.name}</td>
+                            <td className="px-6 py-4 text-right font-bold text-slate-900">
+                              {formatCurrency(rate.labor_manual)}
+                            </td>
+                            <td className="px-6 py-4 text-right font-bold text-slate-900">
+                              {formatCurrency(rate.labor_automatic)}
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                              <Link 
+                                href={`/labor-lookup/${rate.id}/edit`}
+                                className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                              >
+                                Edit
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -313,8 +310,8 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
         {mode === 'vehicle' && (
           <div>
             <div className="p-6 bg-slate-50 border-b border-slate-200">
-              <div className="flex flex-wrap gap-4 items-end max-w-4xl">
-                <div className="flex-1 min-w-[200px]">
+              <div className="flex flex-col md:flex-row gap-4 items-end max-w-4xl">
+                <div className="flex-1 w-full">
                   <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
                     Make
                   </label>
@@ -331,7 +328,7 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                   </select>
                 </div>
                 
-                <div className="flex-1 min-w-[200px]">
+                <div className="flex-1 w-full">
                   <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
                     Model
                   </label>
@@ -345,21 +342,6 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                     {availableModelsForVeh.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </div>
-
-                <div className="w-32">
-                  <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
-                    Year
-                  </label>
-                  <input 
-                    type="text"
-                    className="w-full px-4 py-3 border border-slate-300 rounded-md outline-none focus:border-blue-500 bg-white font-mono font-medium text-slate-800 shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
-                    placeholder="YYYY"
-                    value={vehYear}
-                    onChange={e => setVehYear(e.target.value.replace(/[^0-9]/g, ''))}
-                    maxLength={4}
-                    disabled={!vehModelId}
-                  />
-                </div>
               </div>
             </div>
 
@@ -370,14 +352,14 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                     <Car size={24} className="text-blue-600" />
                     {selectedVehicleName}
                   </h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Labor references saved for this exact vehicle</p>
+                  <p className="text-sm font-medium text-slate-500 mt-1">Labor references saved for this vehicle</p>
                 </div>
 
                 {vehicleRates.length === 0 ? (
                   <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
                     <p className="text-slate-600 font-medium mb-4">No labor reference rates have been added for this vehicle yet.</p>
                     <Link 
-                      href={`/labor-lookup/new?make_id=${vehMakeId}&model_id=${vehModelId}&year=${vehYear}`}
+                      href={`/labor-lookup/new?make_id=${vehMakeId}&model_id=${vehModelId}`}
                       className="inline-flex items-center gap-2 bg-white border border-blue-600 text-blue-700 px-6 py-2 rounded-md font-bold hover:bg-blue-50 transition"
                     >
                       <Plus size={18} /> Add Vehicle Labor Rate
@@ -431,7 +413,7 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
               <div className="p-16 text-center text-slate-500">
                 <Car className="mx-auto mb-4 opacity-20" size={48} />
                 <p className="text-xl font-bold text-slate-700">Select a Vehicle</p>
-                <p className="text-sm mt-2 text-slate-500">Provide the Make, Model, and Year above to view labor rates.</p>
+                <p className="text-sm mt-2 text-slate-500">Select the Make and Model above to view labor rates.</p>
               </div>
             )}
           </div>

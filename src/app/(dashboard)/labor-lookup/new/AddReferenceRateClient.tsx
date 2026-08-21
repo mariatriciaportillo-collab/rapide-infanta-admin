@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Save, Info } from 'lucide-react'
+import { ArrowLeft, Save } from 'lucide-react'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 import { ServiceSelector, LaborService } from '@/components/labor/ServiceSelector'
 
@@ -19,9 +19,6 @@ export function AddReferenceRateClient() {
   const [modelId, setModelId] = useState(searchParams.get('model_id') || '')
   const [modelName, setModelName] = useState('')
   
-  const [yearFrom, setYearFrom] = useState(searchParams.get('year') || '1980')
-  const [yearTo, setYearTo] = useState(searchParams.get('year') || '2027')
-  
   const [serviceId, setServiceId] = useState(searchParams.get('service_id') || '')
   const [selectedService, setSelectedService] = useState<LaborService | null>(null)
   
@@ -32,13 +29,6 @@ export function AddReferenceRateClient() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const availableYears = useMemo(() => {
-    const currentYear = new Date().getFullYear() + 1
-    const years = []
-    for (let y = currentYear; y >= 1980; y--) years.push(y)
-    return years
-  }, [])
 
   const handleServiceSelect = (service: LaborService) => {
     setServiceId(service.id)
@@ -54,17 +44,8 @@ export function AddReferenceRateClient() {
     setIsSubmitting(true)
     setError(null)
 
-    if (!makeId || !modelId || !yearFrom || !yearTo || !serviceId) {
-      setError("Please fill in all required fields.")
-      setIsSubmitting(false)
-      return
-    }
-
-    const yF = parseInt(yearFrom)
-    const yT = parseInt(yearTo)
-
-    if (yF > yT) {
-      setError("Year From cannot be greater than Year To.")
+    if (!makeId || !modelId || !serviceId) {
+      setError("Please fill in all required fields (Make, Model, Labor / Service).")
       setIsSubmitting(false)
       return
     }
@@ -84,10 +65,10 @@ export function AddReferenceRateClient() {
       return
     }
 
-    // Overlap Protection
+    // Overlap Protection - Avoid duplicate Make+Model+Service
     const { data: existingRates, error: checkError } = await supabase
       .from('labor_lookup_rates')
-      .select('id, year_from, year_to')
+      .select('id')
       .eq('labor_service_id', serviceId)
       .eq('vehicle_model_id', modelId)
       .eq('is_active', true)
@@ -98,24 +79,19 @@ export function AddReferenceRateClient() {
       return
     }
 
-    const hasOverlap = existingRates?.some(r => {
-      // Two ranges overlap if (StartA <= EndB) and (EndA >= StartB)
-      return yF <= r.year_to && yT >= r.year_from
-    })
-
-    if (hasOverlap) {
-      setError("An active Labor Lookup rate already exists for this vehicle, service, and overlapping year range.")
+    if (existingRates && existingRates.length > 0) {
+      setError("An active Labor Lookup rate already exists for this vehicle Make and Model for this service.")
       setIsSubmitting(false)
       return
     }
 
-    // Insert
+    // Insert with default years to satisfy DB if required
     const { error: insertError } = await supabase.from('labor_lookup_rates').insert({
       labor_service_id: serviceId,
       vehicle_make_id: makeId,
       vehicle_model_id: modelId,
-      year_from: yF,
-      year_to: yT,
+      year_from: 1900,
+      year_to: 9999,
       labor_manual: lm,
       labor_automatic: la,
       notes: notes.trim() || null,
@@ -123,7 +99,7 @@ export function AddReferenceRateClient() {
     })
 
     if (insertError) {
-      setError(`Failed to save: ${insertError.message}`)
+      setError(`Failed to save rate: ${insertError.message}`)
       setIsSubmitting(false)
       return
     }
@@ -138,43 +114,23 @@ export function AddReferenceRateClient() {
         <Link href="/labor-lookup" className="p-2 hover:bg-slate-100 rounded-full transition">
           <ArrowLeft className="text-slate-500" size={24} />
         </Link>
-        <h2 className="text-2xl font-bold text-slate-800">Add Reference Rate</h2>
+        <h2 className="text-2xl font-bold text-slate-800">Add Vehicle Labor Rate</h2>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg">
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-lg font-medium">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        
+        {/* LABOR SERVICE */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-             Vehicle Information
+             Labor / Service
           </h3>
-          
-          <div className="mb-6">
-            <MakeModelSelector
-              selectedMake={makeName}
-              setSelectedMake={setMakeName}
-              selectedModel={modelName}
-              setSelectedModel={setModelName}
-              onMakeSelect={(id) => setMakeId(id)}
-              onModelSelect={(id) => setModelId(id)}
-            />
-          </div>
-
-          {/* Hidden Fields for Year */}
-          <input type="hidden" name="year_from" value={yearFrom} />
-          <input type="hidden" name="year_to" value={yearTo} />
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
-             Labor & Pricing
-          </h3>
-          <div className="space-y-6">
-            
+          <div className="space-y-4">
             <ServiceSelector
               selectedServiceId={serviceId}
               setSelectedServiceId={setServiceId}
@@ -188,86 +144,93 @@ export function AddReferenceRateClient() {
                 <div><span className="font-semibold text-slate-500 uppercase text-xs block mb-1">Std Hrs</span>{selectedService.standard_hours || '-'}</div>
               </div>
             )}
+          </div>
+        </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
-              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                Reference Labor Charges
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Manual Labor Charge (₱)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={laborManual}
-                    onChange={e => setLaborManual(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-                    placeholder="e.g. 1500"
-                  />
+        {/* VEHICLE */}
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+             Vehicle Information
+          </h3>
+          <div className="mb-2">
+            <MakeModelSelector
+              selectedMake={makeName}
+              setSelectedMake={setMakeName}
+              selectedModel={modelName}
+              setSelectedModel={setModelName}
+              onMakeSelect={(id) => setMakeId(id)}
+              onModelSelect={(id) => setModelId(id)}
+            />
+          </div>
+        </div>
+
+        {/* PRICING */}
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+          <h3 className="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">
+             Labor Rate
+          </h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Manual Transmission Rate</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 font-medium">₱</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Automatic Labor Charge (₱)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={laborAutomatic}
-                    onChange={e => setLaborAutomatic(e.target.value)}
-                    className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-                    placeholder="e.g. 1800"
-                  />
-                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={laborManual}
+                  onChange={e => setLaborManual(e.target.value)}
+                  placeholder="0.00"
+                />
               </div>
-              {selectedService?.rate !== undefined && selectedService?.rate !== null && (
-                <div className="mt-4 text-xs text-slate-500 flex items-center gap-1">
-                  <Info size={14}/> General Base Rate for this service is ₱{selectedService.rate.toLocaleString()}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-1">Automatic Transmission Rate</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-slate-500 font-medium">₱</span>
                 </div>
-              )}
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={laborAutomatic}
+                  onChange={e => setLaborAutomatic(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-              <textarea 
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="w-full border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 min-h-[80px]"
-                placeholder="Optional notes..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-              <select
-                value={isActive ? 'active' : 'inactive'}
-                onChange={e => setIsActive(e.target.value === 'active')}
-                className="w-full md:w-1/3 border border-slate-300 rounded-md p-2 focus:outline-none focus:border-blue-500 bg-white"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
+          </div>
+          
+          <div className="mt-6">
+            <label className="block text-sm font-bold text-slate-700 mb-1">Notes (Optional)</label>
+            <textarea
+              className="w-full p-3 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Any specific conditions or notes for this vehicle rate..."
+            />
           </div>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
           <Link 
-            href="/labor-lookup"
-            className="px-6 py-2 border border-slate-300 text-slate-700 font-medium rounded-md hover:bg-slate-50 transition"
+            href="/labor-lookup" 
+            className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-md font-medium hover:bg-slate-50 transition"
           >
             Cancel
           </Link>
           <button 
-            type="submit"
+            type="submit" 
             disabled={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition flex items-center gap-2 disabled:bg-blue-400"
+            className="px-6 py-2.5 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2 shadow-sm"
           >
             <Save size={18} />
-            {isSubmitting ? 'Saving...' : 'Save Rate'}
+            {isSubmitting ? 'Saving...' : 'Save Vehicle Labor Rate'}
           </button>
         </div>
       </form>
