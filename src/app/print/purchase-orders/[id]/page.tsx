@@ -28,12 +28,14 @@ export default function PurchaseOrderPrintPage({
             unit_cost,
             total_amount,
             parts(name)
-          ),
-          auth_users:created_by(email)
+          )
         `)
         .eq('id', id)
         .single()
         
+      if (error) {
+        console.error("Print Error:", error)
+      }
       if (data) {
         setPo(data)
       }

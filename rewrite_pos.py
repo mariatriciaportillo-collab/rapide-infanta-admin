@@ -1,4 +1,6 @@
-'use client'
+import re
+
+content = """'use client'
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -163,9 +165,9 @@ export default function PurchaseOrdersPage() {
                   const totalAmount = Number(po.total_amount) || 0
 
                   return (
-                    <tr key={po.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                      <td className="px-6 py-4 font-bold text-slate-800">
-                        {po.po_number}
+                    <tr key={po.id} className="hover:bg-slate-50 transition cursor-pointer border-b border-slate-100 last:border-0" onClick={() => window.location.href = `/purchase-orders/${po.id}`}>
+                      <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
+                        <Link href={`/purchase-orders/${po.id}`}>{po.po_number}</Link>
                       </td>
                       <td className="px-6 py-4 font-medium text-slate-800">
                         {po.suppliers?.name || 'Unknown Supplier'}
@@ -231,3 +233,8 @@ export default function PurchaseOrdersPage() {
     </div>
   )
 }
+"""
+
+with open('src/app/(dashboard)/purchase-orders/page.tsx', 'w') as f:
+    f.write(content)
+
