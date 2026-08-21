@@ -1,37 +1,177 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Search, Filter, ClipboardList, AlertCircle, CheckCircle2, XCircle, Download, Printer } from 'lucide-react'
+import { Search, Filter, Download, Printer, ClipboardList, CheckCircle2, AlertCircle, XCircle } from 'lucide-react'
+import { Pagination } from '@/components/ui/Pagination'
+
+const PAGE_SIZE = 25
 
 export default function InventoryListPage() {
   const supabase = createClient()
   
   const [parts, setParts] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
   const [searchQuery, setSearchQuery] = useState('')
   const [stockFilter, setStockFilter] = useState('all')
 
-  useEffect(() => {
-    fetchInventory()
-  }, [])
+  // Pagination State
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const fetchInventory = async () => {
+  const fetchInventory = useCallback(async () => {
     setIsLoading(true)
+    
     let query = supabase
+      .from('parts')
+      .select('*, brands(name), part_groups(name), part_categories(name)', { count: 'exact' })
+      .order('name')
+      
+    // Apply Stock Filter
+    if (stockFilter === 'out-of-stock') {
+      query = query.lte('stock_quantity', 0)
+    } else if (stockFilter === 'in-stock' || stockFilter === 'low-stock') {
+      // Need to compare two columns which PostgREST doesn't support natively without RPC/Views.
+      // We will fetch the subset of IDs that match the criteria.
+      const { data: stockData } = await supabase.from('parts').select('id, stock_quantity, reorder_level')
+      if (stockData) {
+        const matchingIds = stockData.filter(p => {
+          const stock = Number(p.stock_quantity) || 0
+          const reorder = Number(p.reorder_level) || 0
+          if (stockFilter === 'in-stock') return stock > reorder
+          if (stockFilter === 'low-stock') return stock > 0 && stock <= reorder
+          return false
+        }).map(p => p.id)
+        
+        if (matchingIds.length > 0) {
+          query = query.in('id', matchingIds)
+        } else {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000') // Force empty
+        }
+      }
+    }
+
+    // Apply Search
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      let orParts = [
+        `name.ilike.%${q}%`,
+        `part_number.ilike.%${q}%`
+      ]
+
+      // Fetch matching related IDs
+      const [{ data: brands }, { data: groups }, { data: categories }] = await Promise.all([
+        supabase.from('brands').select('id').ilike('name', `%${q}%`),
+        supabase.from('part_groups').select('id').ilike('name', `%${q}%`),
+        supabase.from('part_categories').select('id').ilike('name', `%${q}%`)
+      ])
+
+      if (brands && brands.length > 0) {
+        orParts.push(`brand_id.in.(${brands.map(b => b.id).join(',')})`)
+      }
+      if (groups && groups.length > 0) {
+        orParts.push(`group_id.in.(${groups.map(g => g.id).join(',')})`)
+      }
+      if (categories && categories.length > 0) {
+        orParts.push(`category_id.in.(${categories.map(c => c.id).join(',')})`)
+      }
+
+      query = query.or(orParts.join(','))
+    }
+
+    // Apply Pagination Range
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    query = query.range(from, to)
+      
+    const { data, count, error } = await query
+    
+    if (!error && data) {
+      setParts(data)
+      setTotalCount(count || 0)
+    } else {
+      console.error("Failed to fetch inventory:", error)
+      setParts([])
+      setTotalCount(0)
+    }
+    
+    setIsLoading(false)
+  }, [supabase, searchQuery, stockFilter, page])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchInventory()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [fetchInventory])
+
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, stockFilter])
+
+  const handleExport = async () => {
+    // Export should probably export the whole filtered dataset, not just the page.
+    // We'll fetch all matching items for export.
+    let exportQuery = supabase
       .from('parts')
       .select('*, brands(name), part_groups(name), part_categories(name)')
       .order('name')
       
-    const { data } = await query
-    if (data) setParts(data)
-    setIsLoading(false)
-  }
+    // Apply filters identically to fetchInventory
+    if (stockFilter === 'out-of-stock') {
+      exportQuery = exportQuery.lte('stock_quantity', 0)
+    } else if (stockFilter === 'in-stock' || stockFilter === 'low-stock') {
+      const { data: stockData } = await supabase.from('parts').select('id, stock_quantity, reorder_level')
+      if (stockData) {
+        const matchingIds = stockData.filter(p => {
+          const stock = Number(p.stock_quantity) || 0
+          const reorder = Number(p.reorder_level) || 0
+          if (stockFilter === 'in-stock') return stock > reorder
+          if (stockFilter === 'low-stock') return stock > 0 && stock <= reorder
+          return false
+        }).map(p => p.id)
+        
+        if (matchingIds.length > 0) {
+          exportQuery = exportQuery.in('id', matchingIds)
+        } else {
+          exportQuery = exportQuery.eq('id', '00000000-0000-0000-0000-000000000000')
+        }
+      }
+    }
 
-  const handleExport = () => {
-    const headers = ['Part / Product', 'Part No.', 'Brand', 'Current Stock', 'Cost', 'Stock Value', 'Reorder Level', 'Status']
-    const rows = parts.map(p => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      let orParts = [
+        `name.ilike.%${q}%`,
+        `part_number.ilike.%${q}%`
+      ]
+
+      const [{ data: brands }, { data: groups }, { data: categories }] = await Promise.all([
+        supabase.from('brands').select('id').ilike('name', `%${q}%`),
+        supabase.from('part_groups').select('id').ilike('name', `%${q}%`),
+        supabase.from('part_categories').select('id').ilike('name', `%${q}%`)
+      ])
+
+      if (brands && brands.length > 0) orParts.push(`brand_id.in.(${brands.map(b => b.id).join(',')})`)
+      if (groups && groups.length > 0) orParts.push(`group_id.in.(${groups.map(g => g.id).join(',')})`)
+      if (categories && categories.length > 0) orParts.push(`category_id.in.(${categories.map(c => c.id).join(',')})`)
+
+      exportQuery = exportQuery.or(orParts.join(','))
+    }
+
+    const { data: allParts } = await exportQuery
+
+    if (!allParts || allParts.length === 0) {
+      alert("No data to export.");
+      return;
+    }
+
+    const headers = ['Part / Product', 'Part No.', 'Brand', 'Current Stock', 'Cost', 'Stock Value', 'Reorder Level', 'Status'];
+    
+    const rows = allParts.map(p => {
       const stock = Number(p.stock_quantity) || 0;
       const reorder = Number(p.reorder_level) || 0;
       const cost = Number(p.cost) || 0;
@@ -64,28 +204,6 @@ export default function InventoryListPage() {
     document.body.removeChild(link);
   }
 
-  const filteredParts = parts.filter(p => {
-    // Search
-    const q = searchQuery.toLowerCase()
-    const matchesSearch = 
-      p.name.toLowerCase().includes(q) || 
-      (p.part_number && p.part_number.toLowerCase().includes(q)) ||
-      (p.brands?.name && p.brands.name.toLowerCase().includes(q)) ||
-      (p.part_groups?.name && p.part_groups.name.toLowerCase().includes(q)) ||
-      (p.part_categories?.name && p.part_categories.name.toLowerCase().includes(q))
-      
-    // Stock Status
-    const stockQty = Number(p.stock_quantity) || 0
-    const reorderLevel = Number(p.reorder_level) || 0
-    
-    let matchesStatus = true
-    if (stockFilter === 'in-stock') matchesStatus = stockQty > reorderLevel
-    else if (stockFilter === 'low-stock') matchesStatus = stockQty > 0 && stockQty <= reorderLevel
-    else if (stockFilter === 'out-of-stock') matchesStatus = stockQty <= 0
-
-    return matchesSearch && matchesStatus
-  })
-
   const getStatusDisplay = (stock: number, reorder: number) => {
     if (stock <= 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800', icon: <XCircle size={14} className="mr-1" /> }
     if (stock <= reorder) return { label: 'Low Stock', color: 'bg-orange-100 text-orange-800', icon: <AlertCircle size={14} className="mr-1" /> }
@@ -115,8 +233,8 @@ export default function InventoryListPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col mb-6">
+        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 shrink-0 rounded-t-lg">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -142,68 +260,81 @@ export default function InventoryListPage() {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-3 font-medium">PART / PRODUCT</th>
-                <th className="px-6 py-3 font-medium">PART NO.</th>
-                <th className="px-6 py-3 font-medium">BRAND</th>
-                <th className="px-6 py-3 font-medium text-right">CURRENT STOCK</th>
-                <th className="px-6 py-3 font-medium text-right">COST</th>
-                <th className="px-6 py-3 font-medium text-right">STOCK VALUE</th>
-                <th className="px-6 py-3 font-medium">STATUS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    <div className="flex justify-center mb-2"><ClipboardList className="animate-pulse text-slate-300" size={32} /></div>
-                    Loading inventory...
-                  </td>
-                </tr>
-              ) : filteredParts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    <div className="flex justify-center mb-2"><ClipboardList className="text-slate-300" size={32} /></div>
-                    No items found matching your criteria.
-                  </td>
-                </tr>
-              ) : (
-                filteredParts.map(part => {
-                  const stock = Number(part.stock_quantity) || 0
-                  const reorder = Number(part.reorder_level) || 0
-                  const cost = Number(part.cost) || 0
-                  const stockValue = stock * cost
-                  const status = getStatusDisplay(stock, reorder)
-                  
-                  return (
-                    <tr key={part.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
-                        <Link href={`/inventory/${part.id}`}>{part.name}</Link>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-mono text-sm">{part.part_number || '—'}</td>
-                      <td className="px-6 py-4 text-slate-600">{part.brands?.name || '—'}</td>
-                      <td className="px-6 py-4 font-bold text-slate-900 text-right">{stock}</td>
-                      <td className="px-6 py-4 text-slate-600 text-right font-medium">
-                        ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 font-bold text-slate-800 text-right">
-                        ₱{stockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${status.color}`}>
-                          {status.icon} {status.label}
-                        </span>
+        {isLoading ? (
+          <div className="py-16 flex justify-center items-center">
+            <div className="flex flex-col items-center text-slate-500 gap-3">
+              <ClipboardList className="animate-pulse text-slate-300" size={40} />
+              <span className="font-medium">Loading inventory...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                    <th className="px-6 py-3 font-medium">PART / PRODUCT</th>
+                    <th className="px-6 py-3 font-medium">PART NO.</th>
+                    <th className="px-6 py-3 font-medium">BRAND</th>
+                    <th className="px-6 py-3 font-medium text-right">CURRENT STOCK</th>
+                    <th className="px-6 py-3 font-medium text-right">COST</th>
+                    <th className="px-6 py-3 font-medium text-right">STOCK VALUE</th>
+                    <th className="px-6 py-3 font-medium">STATUS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {parts.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                        <div className="flex justify-center mb-3"><ClipboardList className="text-slate-300" size={40} /></div>
+                        <p className="text-base font-medium">No items found matching your criteria.</p>
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    parts.map(part => {
+                      const stock = Number(part.stock_quantity) || 0
+                      const reorder = Number(part.reorder_level) || 0
+                      const cost = Number(part.cost) || 0
+                      const stockValue = stock * cost
+                      const status = getStatusDisplay(stock, reorder)
+                      
+                      return (
+                        <tr key={part.id} className="hover:bg-slate-50 transition">
+                          <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
+                            <Link href={`/inventory/${part.id}`}>{part.name}</Link>
+                          </td>
+                          <td className="px-6 py-4 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
+                          <td className="px-6 py-4 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
+                          <td className="px-6 py-4 font-bold text-slate-900 text-right text-base">{stock}</td>
+                          <td className="px-6 py-4 text-slate-500 text-right font-medium">
+                            ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4 font-bold text-slate-800 text-right">
+                            ₱{stockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${status.color.replace('bg-', 'border-').replace('-100', '-200')} ${status.color}`}>
+                              {status.icon} {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalCount > 0 && (
+              <Pagination 
+                totalCount={totalCount}
+                pageSize={PAGE_SIZE}
+                currentPage={page}
+                onPageChange={(p) => setPage(p)}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
