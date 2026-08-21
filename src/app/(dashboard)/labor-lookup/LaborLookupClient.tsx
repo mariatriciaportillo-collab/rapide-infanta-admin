@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, Edit, Plus, Wrench, Car } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
+import { Search, Edit, Plus, Wrench, Car, Loader2 } from 'lucide-react'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
+import { Pagination } from '@/components/ui/Pagination'
 
 // Types based on schema
 type Make = { id: string; name: string }
@@ -38,11 +40,18 @@ type Props = {
   makes: Make[]
   models: Model[]
   services: Service[]
-  lookupRates: LookupRate[]
 }
 
-export function LaborLookupClient({ makes, models, services, lookupRates }: Props) {
+export function LaborLookupClient({ makes, models, services }: Props) {
+  const supabase = createClient()
   const [mode, setMode] = useState<'labor' | 'vehicle'>('labor')
+
+  // === PAGINATION STATE ===
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(25)
+  const [totalCount, setTotalCount] = useState(0)
+  const [paginatedRates, setPaginatedRates] = useState<LookupRate[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   // === MODE 1: SEARCH BY LABOR ===
   const [selectedServiceId, setSelectedServiceId] = useState('')
@@ -58,37 +67,6 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
     if (!filterMakeId) return []
     return models.filter(m => m.make_id === filterMakeId)
   }, [models, filterMakeId])
-
-  // Deduplicate service rates by Make + Model + Service for display safety
-  const serviceRates = useMemo(() => {
-    if (!selectedServiceId) return []
-    let result = lookupRates.filter(r => r.labor_service_id === selectedServiceId)
-
-    if (filterMakeId) result = result.filter(r => r.vehicle_make_id === filterMakeId)
-    if (filterModelId) result = result.filter(r => r.vehicle_model_id === filterModelId)
-
-    // Deduplicate on Make+Model
-    const seen = new Set<string>()
-    const deduplicated = []
-    
-    // Sort by Make, then Model to keep order deterministic before deduplication
-    result.sort((a, b) => {
-      const makeCompare = a.vehicle_makes.name.localeCompare(b.vehicle_makes.name)
-      if (makeCompare !== 0) return makeCompare
-      return a.vehicle_models.name.localeCompare(b.vehicle_models.name)
-    })
-
-    for (const r of result) {
-      const key = `${r.vehicle_make_id}_${r.vehicle_model_id}`
-      if (!seen.has(key)) {
-        seen.add(key)
-        deduplicated.push(r)
-      }
-    }
-
-    return deduplicated
-  }, [lookupRates, selectedServiceId, filterMakeId, filterModelId])
-
 
   // === MODE 2: SEARCH BY VEHICLE ===
   const [vehMakeId, setVehMakeId] = useState('')
@@ -106,30 +84,99 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
     return null
   }, [makes, models, vehMakeId, vehModelId])
 
-  const vehicleRates = useMemo(() => {
-    if (!vehMakeId || !vehModelId) return []
-    
-    let result = lookupRates.filter(r => 
-      r.vehicle_make_id === vehMakeId && 
-      r.vehicle_model_id === vehModelId
-    )
+  // === DATA FETCHING ===
+  const fetchRates = useCallback(async () => {
+    // Determine if we have a valid query criteria
+    const isLaborModeValid = mode === 'labor' && selectedServiceId
+    const isVehicleModeValid = mode === 'vehicle' && vehMakeId && vehModelId
 
-    // Deduplicate on Service for this Make/Model
-    const seen = new Set<string>()
-    const deduplicated = []
-    
-    result.sort((a, b) => a.labor_services.name.localeCompare(b.labor_services.name))
-
-    for (const r of result) {
-      if (!seen.has(r.labor_service_id)) {
-        seen.add(r.labor_service_id)
-        deduplicated.push(r)
-      }
+    if (!isLaborModeValid && !isVehicleModeValid) {
+      setPaginatedRates([])
+      setTotalCount(0)
+      return
     }
 
-    return deduplicated
-  }, [lookupRates, vehMakeId, vehModelId])
+    setIsLoading(true)
 
+    // Base query
+    let query = supabase
+      .from('labor_lookup_rates')
+      .select(`
+        *,
+        labor_services (
+          *,
+          labor_groups (*),
+          labor_categories (*)
+        ),
+        vehicle_makes (*),
+        vehicle_models (*)
+      `, { count: 'exact' })
+      .eq('is_active', true)
+
+    // Apply Mode Filters
+    if (mode === 'labor') {
+      query = query.eq('labor_service_id', selectedServiceId)
+      if (filterMakeId) query = query.eq('vehicle_make_id', filterMakeId)
+      if (filterModelId) query = query.eq('vehicle_model_id', filterModelId)
+      
+      // Since it's Labor mode, we want to group essentially by Make+Model,
+      // But PostgREST doesn't support GROUP BY natively in select. 
+      // We'll rely on the DB not having duplicates due to our new insertion logic.
+    } else {
+      query = query
+        .eq('vehicle_make_id', vehMakeId)
+        .eq('vehicle_model_id', vehModelId)
+    }
+
+    // Apply Sorting
+    // To ensure stable pagination, we sort deterministically
+    if (mode === 'labor') {
+      // For labor mode, sort by Make then Model
+      // PostgREST sorting on joined tables is limited, so we order by Make ID / Model ID instead,
+      // or sort by created_at. Sorting by related table columns requires embedded resources sorting (e.g. `vehicle_makes(name)`),
+      // which is supported natively in newer Supabase via string notation.
+      query = query.order('vehicle_make_id', { ascending: true }).order('vehicle_model_id', { ascending: true })
+    } else {
+      // For vehicle mode, sort by Service ID
+      query = query.order('labor_service_id', { ascending: true })
+    }
+
+    // Apply Pagination Range
+    const from = (page - 1) * limit
+    const to = from + limit - 1
+    query = query.range(from, to)
+
+    const { data, count, error } = await query
+
+    if (!error && data) {
+      setPaginatedRates(data as LookupRate[])
+      setTotalCount(count || 0)
+    } else {
+      console.error("Failed to fetch rates:", error)
+      setPaginatedRates([])
+      setTotalCount(0)
+    }
+
+    setIsLoading(false)
+  }, [supabase, mode, selectedServiceId, filterMakeId, filterModelId, vehMakeId, vehModelId, page, limit])
+
+  useEffect(() => {
+    fetchRates()
+  }, [fetchRates])
+
+  // Reset to page 1 when filters or modes change
+  useEffect(() => {
+    setPage(1)
+  }, [mode, selectedServiceId, filterMakeId, filterModelId, vehMakeId, vehModelId])
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
+
+  const handlePageSizeChange = (newSize: number) => {
+    setLimit(newSize)
+    setPage(1)
+  }
 
   const formatCurrency = (val: number | null | undefined) => {
     if (val === null || val === undefined) return '-'
@@ -151,9 +198,9 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col">
         {/* TAB NAVIGATION */}
-        <div className="flex bg-slate-50 border-b border-slate-200">
+        <div className="flex bg-slate-50 border-b border-slate-200 shrink-0 rounded-t-lg">
           <button
             type="button"
             className={`flex-1 py-4 text-center font-bold text-sm tracking-wide transition uppercase ${
@@ -180,8 +227,8 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
 
         {/* MODE 1: LABOR */}
         {mode === 'labor' && (
-          <div>
-            <div className="p-6 bg-slate-50 border-b border-slate-200">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-6 bg-slate-50 border-b border-slate-200 shrink-0">
               <div className="max-w-2xl">
                 <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
                   Search Labor / Service
@@ -195,7 +242,8 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
                   value={selectedServiceId}
                   onChange={(val) => {
                     setSelectedServiceId(val)
-                    // Reset filters when changing service
+                    // Filters clear on service change automatically handled via state, 
+                    // and reset to page 1 handled by useEffect
                     setFilterMakeId('')
                     setFilterModelId('')
                   }}
@@ -206,95 +254,117 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
             </div>
 
             {selectedService ? (
-              <div className="p-6">
-                <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 pb-4">
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                      <Wrench size={24} className="text-blue-600" />
-                      {selectedService.name}
-                    </h2>
-                    <div className="text-sm font-medium text-slate-500 mt-1 flex gap-3">
-                      {selectedService.labor_groups?.name && (
-                        <span>Group: {selectedService.labor_groups.name}</span>
-                      )}
-                      {selectedService.labor_categories?.name && (
-                        <span>Category: {selectedService.labor_categories.name}</span>
-                      )}
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="p-6 pb-0 shrink-0">
+                  <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                        <Wrench size={24} className="text-blue-600" />
+                        {selectedService.name}
+                      </h2>
+                      <div className="text-sm font-medium text-slate-500 mt-1 flex gap-3">
+                        {selectedService.labor_groups?.name && (
+                          <span>Group: {selectedService.labor_groups.name}</span>
+                        )}
+                        {selectedService.labor_categories?.name && (
+                          <span>Category: {selectedService.labor_categories.name}</span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Optional Filters */}
-                  <div className="flex gap-3 bg-slate-50 p-2 rounded-md border border-slate-200">
-                    <select 
-                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 w-36"
-                      value={filterMakeId}
-                      onChange={e => {
-                        setFilterMakeId(e.target.value)
-                        setFilterModelId('')
-                      }}
-                    >
-                      <option value="">All Makes</option>
-                      {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-                    <select 
-                      className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 w-40"
-                      value={filterModelId}
-                      onChange={e => setFilterModelId(e.target.value)}
-                      disabled={!filterMakeId}
-                    >
-                      <option value="">All Models</option>
-                      {availableModelsForLabor.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                    {/* Optional Filters */}
+                    <div className="flex gap-3 bg-slate-50 p-2 rounded-md border border-slate-200">
+                      <select 
+                        className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 w-36"
+                        value={filterMakeId}
+                        onChange={e => {
+                          setFilterMakeId(e.target.value)
+                          setFilterModelId('')
+                        }}
+                      >
+                        <option value="">All Makes</option>
+                        {makes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                      <select 
+                        className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 w-40"
+                        value={filterModelId}
+                        onChange={e => setFilterModelId(e.target.value)}
+                        disabled={!filterMakeId}
+                      >
+                        <option value="">All Models</option>
+                        {availableModelsForLabor.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                {serviceRates.length === 0 ? (
-                  <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
-                    <p className="text-slate-600 font-medium mb-4">No vehicle-specific labor rates have been added for this service yet.</p>
-                    <Link 
-                      href={`/labor-lookup/new?service_id=${selectedService.id}`}
-                      className="inline-flex items-center gap-2 bg-white border border-blue-600 text-blue-700 px-6 py-2 rounded-md font-bold hover:bg-blue-50 transition"
-                    >
-                      <Plus size={18} /> Add Vehicle Labor Rate
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table className="w-full text-left border-collapse bg-white">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
-                          <th className="px-6 py-3">Make</th>
-                          <th className="px-6 py-3">Model</th>
-                          <th className="px-6 py-3 text-right">Labor MT</th>
-                          <th className="px-6 py-3 text-right">Labor AT</th>
-                          <th className="px-6 py-3 text-center w-24">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {serviceRates.map(rate => (
-                          <tr key={rate.id} className="hover:bg-slate-50 transition">
-                            <td className="px-6 py-4 font-bold text-slate-800">{rate.vehicle_makes.name}</td>
-                            <td className="px-6 py-4 font-medium text-slate-700">{rate.vehicle_models.name}</td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900">
-                              {formatCurrency(rate.labor_manual)}
-                            </td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900">
-                              {formatCurrency(rate.labor_automatic)}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <Link 
-                                href={`/labor-lookup/${rate.id}/edit`}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-                              >
-                                Edit
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <div className="flex-1 px-6 pb-6 min-h-[300px] flex flex-col">
+                  {isLoading ? (
+                    <div className="flex-1 flex justify-center items-center">
+                      <div className="flex flex-col items-center text-slate-500 gap-2">
+                        <Loader2 className="animate-spin text-blue-500" size={32} />
+                        <span className="font-medium">Loading rates...</span>
+                      </div>
+                    </div>
+                  ) : paginatedRates.length === 0 ? (
+                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                      <p className="text-slate-600 font-medium mb-4">No vehicle-specific labor rates found for this criteria.</p>
+                      <Link 
+                        href={`/labor-lookup/new?service_id=${selectedService.id}`}
+                        className="inline-flex items-center gap-2 bg-white border border-blue-600 text-blue-700 px-6 py-2 rounded-md font-bold hover:bg-blue-50 transition"
+                      >
+                        <Plus size={18} /> Add Vehicle Labor Rate
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm flex-1">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
+                              <th className="px-6 py-3">Make</th>
+                              <th className="px-6 py-3">Model</th>
+                              <th className="px-6 py-3 text-right">Labor MT</th>
+                              <th className="px-6 py-3 text-right">Labor AT</th>
+                              <th className="px-6 py-3 text-center w-24">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {paginatedRates.map(rate => (
+                              <tr key={rate.id} className="hover:bg-slate-50 transition">
+                                <td className="px-6 py-4 font-bold text-slate-800">{rate.vehicle_makes?.name || 'Unknown'}</td>
+                                <td className="px-6 py-4 font-medium text-slate-700">{rate.vehicle_models?.name || 'Unknown'}</td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                  {formatCurrency(rate.labor_manual)}
+                                </td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                  {formatCurrency(rate.labor_automatic)}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <Link 
+                                    href={`/labor-lookup/${rate.id}/edit`}
+                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                                  >
+                                    Edit
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* PAGINATION COMPONENT */}
+                      <Pagination
+                        totalCount={totalCount}
+                        pageSize={limit}
+                        currentPage={page}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="p-16 text-center text-slate-500">
@@ -308,8 +378,8 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
 
         {/* MODE 2: VEHICLE */}
         {mode === 'vehicle' && (
-          <div>
-            <div className="p-6 bg-slate-50 border-b border-slate-200">
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="p-6 bg-slate-50 border-b border-slate-200 shrink-0">
               <div className="flex flex-col md:flex-row gap-4 items-end max-w-4xl">
                 <div className="flex-1 w-full">
                   <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
@@ -346,68 +416,90 @@ export function LaborLookupClient({ makes, models, services, lookupRates }: Prop
             </div>
 
             {selectedVehicleName ? (
-              <div className="p-6">
-                <div className="mb-6 border-b border-slate-100 pb-4">
-                  <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-                    <Car size={24} className="text-blue-600" />
-                    {selectedVehicleName}
-                  </h2>
-                  <p className="text-sm font-medium text-slate-500 mt-1">Labor references saved for this vehicle</p>
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="p-6 pb-0 shrink-0">
+                  <div className="mb-6 border-b border-slate-100 pb-4">
+                    <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
+                      <Car size={24} className="text-blue-600" />
+                      {selectedVehicleName}
+                    </h2>
+                    <p className="text-sm font-medium text-slate-500 mt-1">Labor references saved for this vehicle</p>
+                  </div>
                 </div>
 
-                {vehicleRates.length === 0 ? (
-                  <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
-                    <p className="text-slate-600 font-medium mb-4">No labor reference rates have been added for this vehicle yet.</p>
-                    <Link 
-                      href={`/labor-lookup/new?make_id=${vehMakeId}&model_id=${vehModelId}`}
-                      className="inline-flex items-center gap-2 bg-white border border-blue-600 text-blue-700 px-6 py-2 rounded-md font-bold hover:bg-blue-50 transition"
-                    >
-                      <Plus size={18} /> Add Vehicle Labor Rate
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table className="w-full text-left border-collapse bg-white">
-                      <thead>
-                        <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
-                          <th className="px-6 py-3 w-80">Labor / Service</th>
-                          <th className="px-6 py-3">Group</th>
-                          <th className="px-6 py-3">Category</th>
-                          <th className="px-6 py-3 text-right w-32">Labor MT</th>
-                          <th className="px-6 py-3 text-right w-32">Labor AT</th>
-                          <th className="px-6 py-3 text-center w-24">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {vehicleRates.map(rate => (
-                          <tr key={rate.id} className="hover:bg-slate-50 transition">
-                            <td className="px-6 py-4 font-bold text-slate-800">{rate.labor_services.name}</td>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-600 bg-slate-50">
-                              {rate.labor_services.labor_groups?.name || '—'}
-                            </td>
-                            <td className="px-6 py-4 text-sm font-medium text-slate-600">
-                              {rate.labor_services.labor_categories?.name || '—'}
-                            </td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900">
-                              {formatCurrency(rate.labor_manual)}
-                            </td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900">
-                              {formatCurrency(rate.labor_automatic)}
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <Link 
-                                href={`/labor-lookup/${rate.id}/edit`}
-                                className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-                              >
-                                Edit
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <div className="flex-1 px-6 pb-6 min-h-[300px] flex flex-col">
+                  {isLoading ? (
+                    <div className="flex-1 flex justify-center items-center">
+                      <div className="flex flex-col items-center text-slate-500 gap-2">
+                        <Loader2 className="animate-spin text-blue-500" size={32} />
+                        <span className="font-medium">Loading rates...</span>
+                      </div>
+                    </div>
+                  ) : paginatedRates.length === 0 ? (
+                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                      <p className="text-slate-600 font-medium mb-4">No labor reference rates have been added for this vehicle yet.</p>
+                      <Link 
+                        href={`/labor-lookup/new?make_id=${vehMakeId}&model_id=${vehModelId}`}
+                        className="inline-flex items-center gap-2 bg-white border border-blue-600 text-blue-700 px-6 py-2 rounded-md font-bold hover:bg-blue-50 transition"
+                      >
+                        <Plus size={18} /> Add Vehicle Labor Rate
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm flex-1">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
+                              <th className="px-6 py-3 w-80">Labor / Service</th>
+                              <th className="px-6 py-3">Group</th>
+                              <th className="px-6 py-3">Category</th>
+                              <th className="px-6 py-3 text-right w-32">Labor MT</th>
+                              <th className="px-6 py-3 text-right w-32">Labor AT</th>
+                              <th className="px-6 py-3 text-center w-24">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {paginatedRates.map(rate => (
+                              <tr key={rate.id} className="hover:bg-slate-50 transition">
+                                <td className="px-6 py-4 font-bold text-slate-800">{rate.labor_services?.name || 'Unknown'}</td>
+                                <td className="px-6 py-4 text-sm font-medium text-slate-600 bg-slate-50">
+                                  {rate.labor_services?.labor_groups?.name || '—'}
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                                  {rate.labor_services?.labor_categories?.name || '—'}
+                                </td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                  {formatCurrency(rate.labor_manual)}
+                                </td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                  {formatCurrency(rate.labor_automatic)}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  <Link 
+                                    href={`/labor-lookup/${rate.id}/edit`}
+                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
+                                  >
+                                    Edit
+                                  </Link>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* PAGINATION COMPONENT */}
+                      <Pagination
+                        totalCount={totalCount}
+                        pageSize={limit}
+                        currentPage={page}
+                        onPageChange={handlePageChange}
+                        onPageSizeChange={handlePageSizeChange}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="p-16 text-center text-slate-500">
