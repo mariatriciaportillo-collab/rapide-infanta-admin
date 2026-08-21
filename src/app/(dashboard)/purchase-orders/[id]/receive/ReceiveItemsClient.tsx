@@ -140,16 +140,14 @@ export function ReceiveItemsClient({ id }: { id: string }) {
     const { data: userData } = await supabase.auth.getUser()
     const userId = userData.user?.id
 
-    const payload: any = {
+    const { data, error: rpcError } = await supabase.rpc('receive_po_items', {
       p_po_id: id,
-      p_receive_date: receiveDate,
-      p_items: rpcItems
-    }
-    if (supplierRef) payload.p_supplier_ref = supplierRef
-    if (notes) payload.p_notes = notes
-    if (userId) payload.p_user_id = userId
-
-    const { data, error: rpcError } = await supabase.rpc('receive_po_items', payload)
+      p_receive_date: receiveDate || null,
+      p_supplier_ref: supplierRef || null,
+      p_notes: notes || null,
+      p_items: rpcItems,
+      p_user_id: userId || null
+    })
 
     if (rpcError) {
       setError(rpcError.message)
