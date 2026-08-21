@@ -1,20 +1,38 @@
-import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { Search, Plus, User, Phone, Car, Building2 } from 'lucide-react'
+import { Plus, Search, Building2, User, Phone, Car } from 'lucide-react'
+import { createClient } from '@/utils/supabase/server'
 import { format } from 'date-fns'
-import { formatCustomerName, formatContactPerson } from '@/utils/customer'
+import { UrlPagination } from '@/components/ui/UrlPagination'
+
+function formatCustomerName(customer: any) {
+  if (customer.customer_type === 'company' && customer.name) {
+    return customer.name
+  }
+  const parts = [customer.first_name, customer.last_name].filter(Boolean)
+  return parts.length > 0 ? parts.join(' ') : 'Unnamed Customer'
+}
+
+function formatContactPerson(customer: any) {
+  const parts = [customer.contact_first_name, customer.contact_last_name].filter(Boolean)
+  if (parts.length > 0) return parts.join(' ')
+  return customer.contact_person || ''
+}
 
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string, page?: string }>
 }) {
   const supabase = await createClient()
-  const { q } = await searchParams
+  const params = await searchParams
+  const q = params.q
+  
+  const currentPage = parseInt(params.page || '1', 10)
+  const pageSize = 25
 
   let query = supabase
     .from('customers')
-    .select('*, vehicles(id, plate_number)')
+    .select('*, vehicles(id, plate_number)', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (q) {
@@ -31,7 +49,7 @@ export default async function CustomersPage({
       textMatches.forEach(m => matchingCustomerIds.add(m.id))
     }
 
-    // 2. Search all vehicles to allow normalized forgiving match (ignoring spaces/hyphens)
+    // 2. Search all vehicles to allow normalized forgiving match
     const { data: allVehicles } = await supabase
       .from('vehicles')
       .select('customer_id, plate_number')
@@ -54,7 +72,14 @@ export default async function CustomersPage({
     }
   }
 
-  const { data: customers, error } = await query
+  // Apply Pagination Range
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
+  query = query.range(from, to)
+
+  const { data: customers, count, error } = await query
+
+  const totalCount = count || 0
 
   return (
     <div className="pb-24">
@@ -69,8 +94,8 @@ export default async function CustomersPage({
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-200 bg-slate-50">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6 flex flex-col">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 shrink-0">
           <form className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -88,102 +113,112 @@ export default async function CustomersPage({
             Error loading customers: {error.message}
           </div>
         ) : (
-          <table className="w-full text-left text-sm text-slate-600">
-            <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
-              <tr>
-                <th className="px-6 py-3">Customer / Company</th>
-                <th className="px-6 py-3">Plate Number</th>
-                <th className="px-6 py-3">Contact</th>
-                <th className="px-6 py-3">Vehicles</th>
-                <th className="px-6 py-3">Added</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {customers?.length === 0 ? (
+          <div className="flex-1 overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
-                    No customers found. {q && 'Try a different search.'}
-                  </td>
+                  <th className="px-6 py-3">Customer / Company</th>
+                  <th className="px-6 py-3">Plate Number</th>
+                  <th className="px-6 py-3">Contact</th>
+                  <th className="px-6 py-3">Vehicles</th>
+                  <th className="px-6 py-3">Added</th>
                 </tr>
-              ) : (
-                customers?.map((customer) => {
-                  const displayName = formatCustomerName(customer)
-                  const displayContactPerson = formatContactPerson(customer)
-                  
-                  // Sort vehicles for consistent display
-                  const vehicles = customer.vehicles || []
-                  const vehicleCount = vehicles.length
-                  const displayVehicles = vehicles.slice(0, 2)
-                  const hiddenCount = vehicleCount > 2 ? vehicleCount - 2 : 0
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {customers?.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                      No customers found. {q && 'Try a different search.'}
+                    </td>
+                  </tr>
+                ) : (
+                  customers?.map((customer) => {
+                    const displayName = formatCustomerName(customer)
+                    const displayContactPerson = formatContactPerson(customer)
+                    
+                    // Sort vehicles for consistent display
+                    const vehicles = customer.vehicles || []
+                    const vehicleCount = vehicles.length
+                    const displayVehicles = vehicles.slice(0, 2)
+                    const hiddenCount = vehicleCount > 2 ? vehicleCount - 2 : 0
 
-                  return (
-                    <tr key={customer.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4">
-                        <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
-                          {customer.customer_type === 'company' ? (
-                            <Building2 size={16} className="text-slate-400" />
+                    return (
+                      <tr key={customer.id} className="hover:bg-slate-50 transition">
+                        <td className="px-6 py-4">
+                          <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
+                            {customer.customer_type === 'company' ? (
+                              <Building2 size={16} className="text-slate-400" />
+                            ) : (
+                              <User size={16} className="text-slate-400" />
+                            )}
+                            {displayName}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          {vehicleCount === 0 ? (
+                            <span className="text-slate-400 italic">No vehicle</span>
                           ) : (
-                            <User size={16} className="text-slate-400" />
+                            <div className="flex flex-wrap items-center gap-1.5 max-w-[200px]">
+                              {displayVehicles.map((v: any, idx: number) => (
+                                <Link 
+                                  key={v.id} 
+                                  href={`/vehicles/${v.id}`}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition border border-slate-200"
+                                >
+                                  {v.plate_number}
+                                </Link>
+                              ))}
+                              {hiddenCount > 0 && (
+                                <Link
+                                  href={`/customers/${customer.id}`}
+                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-50 text-slate-500 hover:text-slate-700 border border-slate-200 border-dashed"
+                                  title={`View all ${vehicleCount} vehicles`}
+                                >
+                                  +{hiddenCount} more
+                                </Link>
+                              )}
+                            </div>
                           )}
-                          {displayName}
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        {vehicleCount === 0 ? (
-                          <span className="text-slate-400 italic">No vehicle</span>
-                        ) : (
-                          <div className="flex flex-wrap items-center gap-1.5 max-w-[200px]">
-                            {displayVehicles.map((v: any, idx: number) => (
-                              <Link 
-                                key={v.id} 
-                                href={`/vehicles/${v.id}`}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition border border-slate-200"
-                              >
-                                {v.plate_number}
-                              </Link>
-                            ))}
-                            {hiddenCount > 0 && (
-                              <Link
-                                href={`/customers/${customer.id}`}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-50 text-slate-500 hover:text-slate-700 border border-slate-200 border-dashed"
-                                title={`View all ${vehicleCount} vehicles`}
-                              >
-                                +{hiddenCount} more
-                              </Link>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            {customer.customer_type === 'company' && displayContactPerson && (
+                              <span className="text-slate-700 font-medium text-xs">Attn: {displayContactPerson}</span>
+                            )}
+                            {customer.mobile ? (
+                              <span className="flex items-center gap-1.5 text-slate-700">
+                                <Phone size={14} className="text-slate-400" />
+                                {customer.mobile}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic text-xs">No mobile</span>
                             )}
                           </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          {customer.customer_type === 'company' && displayContactPerson && (
-                            <span className="text-slate-700 font-medium text-xs">Attn: {displayContactPerson}</span>
-                          )}
-                          {customer.mobile ? (
-                            <span className="flex items-center gap-1.5 text-slate-700">
-                              <Phone size={14} className="text-slate-400" />
-                              {customer.mobile}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 italic text-xs">No mobile</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="flex items-center gap-1.5 text-slate-700 font-medium">
-                          <Car size={16} className="text-slate-400" />
-                          {vehicleCount}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500">
-                        {format(new Date(customer.created_at), 'MMM d, yyyy')}
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="flex items-center gap-1.5 text-slate-700 font-medium">
+                            <Car size={16} className="text-slate-400" />
+                            {vehicleCount}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500">
+                          {format(new Date(customer.created_at), 'MMM d, yyyy')}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+        
+        {!error && totalCount > 0 && (
+          <UrlPagination 
+            totalCount={totalCount} 
+            pageSize={pageSize} 
+            currentPage={currentPage} 
+          />
         )}
       </div>
     </div>
