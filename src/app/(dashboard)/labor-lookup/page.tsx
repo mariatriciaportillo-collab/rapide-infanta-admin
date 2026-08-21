@@ -50,8 +50,6 @@ export default async function LaborLookupPage() {
           makes={makes || []} 
           models={models || []} 
           services={services || []}
-          groups={groups || []}
-          categories={categories || []}
           lookupRates={lookupRates || []} 
         />
       )}
