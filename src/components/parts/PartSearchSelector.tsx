@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { createClient } from '@/utils/supabase/client'
 import { Search, ChevronDown, Plus } from 'lucide-react'
 import { AddPartModal } from './AddPartModal'
+import { useFloating, autoUpdate, flip, size } from '@floating-ui/react-dom'
 
 type Part = {
   id: string
@@ -35,10 +36,22 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
   const [showAddModal, setShowAddModal] = useState(false)
   const [mounted, setMounted] = useState(false)
   
-  const wrapperRef = useRef<HTMLDivElement>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+
+  const { x, y, strategy, refs, placement } = useFloating({
+    placement: 'bottom-start',
+    middleware: [
+      flip({ padding: 10 }),
+      size({
+        apply({ rects, elements }) {
+          Object.assign(elements.floating.style, {
+            width: `${rects.reference.width}px`,
+          });
+        },
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  })
 
   useEffect(() => {
     setMounted(true)
@@ -48,47 +61,28 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node
-      if (
-        wrapperRef.current && 
-        !wrapperRef.current.contains(target) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(target)
-      ) {
+      const isOutsideTrigger = refs.reference.current && !(refs.reference.current as Node).contains(target)
+      const isOutsideFloating = refs.floating.current && !(refs.floating.current as Node).contains(target)
+      
+      if (isOutsideTrigger && isOutsideFloating) {
         setIsOpen(false)
       }
     }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  const updatePosition = () => {
-    if (wrapperRef.current) {
-      const rect = wrapperRef.current.getBoundingClientRect()
-      setDropdownStyle({
-        position: 'fixed',
-        top: rect.bottom, // Align exactly at the bottom edge
-        left: rect.left,
-        width: rect.width, // Match exact width
-        zIndex: 99999,
-      })
+    
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
     }
-  }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen, refs])
 
   useEffect(() => {
-    if (isOpen) {
-      updatePosition()
-      window.addEventListener('scroll', updatePosition, true)
-      window.addEventListener('resize', updatePosition)
-      
-      // Auto-focus search input when opened
-      if (searchInputRef.current) {
-        searchInputRef.current.focus()
-      }
-      
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true)
-        window.removeEventListener('resize', updatePosition)
-      }
+    if (isOpen && searchInputRef.current) {
+      // Small timeout ensures it focuses after render
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 0)
     }
   }, [isOpen])
 
@@ -120,7 +114,6 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     setShowAddModal(false)
     await fetchParts()
     
-    // Auto select the new part
     setSelectedPartId(newPartId)
     const { data } = await supabase
       .from('parts')
@@ -141,16 +134,18 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     }
   }
 
+  const isFlipped = placement.startsWith('top')
+
   return (
     <>
       <div 
-        ref={wrapperRef}
+        ref={refs.setReference}
         className={`w-full min-h-[42px] px-3 border bg-white flex justify-between items-center transition ${
-          isOpen ? 'rounded-t-md border-blue-500 z-10 relative' : 'rounded-md ' + (error ? 'border-red-500' : 'border-slate-300')
+          isOpen ? `border-blue-500 z-10 relative ${isFlipped ? 'rounded-b-md border-t-white' : 'rounded-t-md border-b-white'}` : 'rounded-md ' + (error ? 'border-red-500' : 'border-slate-300')
         } ${
           disabled ? 'bg-slate-100 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:border-slate-400'
         }`}
-        style={isOpen ? { borderBottomColor: 'transparent', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 } : {}}
+        style={isOpen ? (isFlipped ? { borderTopColor: 'transparent', borderTopLeftRadius: 0, borderTopRightRadius: 0 } : { borderBottomColor: 'transparent', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }) : {}}
         onClick={() => {
           if (!disabled && !isOpen) {
             setIsOpen(true)
@@ -191,12 +186,17 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
 
       {mounted && isOpen && createPortal(
         <div 
-          ref={dropdownRef}
-          className="bg-white border border-t-0 border-blue-500 rounded-b-md shadow-lg flex flex-col overflow-hidden" 
+          ref={refs.setFloating}
+          className={`bg-white border border-blue-500 shadow-lg flex flex-col overflow-hidden ${
+            isFlipped ? 'rounded-t-md border-b-0' : 'rounded-b-md border-t-0'
+          }`} 
           style={{ 
-            ...dropdownStyle, 
+            position: strategy,
+            top: y ?? 0,
+            left: x ?? 0,
             maxHeight: '350px',
-            marginTop: '-1px' // Seamless overlap to remove double border
+            marginTop: isFlipped ? '1px' : '-1px',
+            zIndex: 99999
           }}
         >
           {/* Scrollable Results Area */}
@@ -227,7 +227,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                       selectedPartId === part.id ? 'bg-blue-100/50' : ''
                     }`}
                     onMouseDown={(e) => {
-                      e.preventDefault(); // Prevent input blur
+                      e.preventDefault();
                       setSelectedPartId(part.id)
                       onSelectPart?.(part)
                       setIsOpen(false)
