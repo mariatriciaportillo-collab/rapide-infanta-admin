@@ -5,27 +5,19 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 
 type Props = {
   totalCount: number
-  pageSize: number
+  pageSize?: number
   currentPage: number
   onPageChange: (page: number) => void
-  onPageSizeChange: (size: number) => void
-  pageSizeOptions?: number[]
 }
 
 export function Pagination({
   totalCount,
-  pageSize,
+  pageSize = 25,
   currentPage,
   onPageChange,
-  onPageSizeChange,
-  pageSizeOptions = [25, 50, 100]
 }: Props) {
   if (totalCount === 0) {
-    return (
-      <div className="flex justify-center items-center py-6 text-slate-500 text-sm">
-        No records found.
-      </div>
-    )
+    return null
   }
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -59,82 +51,63 @@ export function Pagination({
       </div>
 
       {/* RIGHT: Controls */}
-      <div className="flex items-center gap-6">
-        
-        {/* Rows per page selector */}
-        <div className="flex items-center gap-2">
-          <label htmlFor="rowsPerPage" className="text-slate-600 font-medium">Rows per page:</label>
-          <select
-            id="rowsPerPage"
-            className="border border-slate-300 rounded px-2 py-1 text-slate-700 bg-white focus:outline-none focus:border-blue-500 font-medium"
-            value={pageSize}
-            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+      {totalPages > 1 && (
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onPageChange(1)}
+            disabled={safeCurrentPage === 1}
+            className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            title="First Page"
           >
-            {pageSizeOptions.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
+            <ChevronsLeft size={18} />
+          </button>
+          <button
+            onClick={() => onPageChange(safeCurrentPage - 1)}
+            disabled={safeCurrentPage === 1}
+            className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            title="Previous Page"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <div className="flex items-center gap-1 mx-2">
+            {pages.map((p, i) => (
+              p === '...' ? (
+                <span key={`dots-${i}`} className="px-2 text-slate-400">…</span>
+              ) : (
+                <button
+                  key={`page-${p}`}
+                  onClick={() => onPageChange(p as number)}
+                  className={`w-7 h-7 flex items-center justify-center rounded font-bold transition ${
+                    safeCurrentPage === p 
+                      ? 'bg-blue-600 text-white' 
+                      : 'text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {p}
+                </button>
+              )
             ))}
-          </select>
-        </div>
-
-        {/* Pagination Buttons */}
-        {totalPages > 1 && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => onPageChange(1)}
-              disabled={safeCurrentPage === 1}
-              className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
-              title="First Page"
-            >
-              <ChevronsLeft size={18} />
-            </button>
-            <button
-              onClick={() => onPageChange(safeCurrentPage - 1)}
-              disabled={safeCurrentPage === 1}
-              className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
-              title="Previous Page"
-            >
-              <ChevronLeft size={18} />
-            </button>
-
-            <div className="flex items-center gap-1 mx-2">
-              {pages.map((p, i) => (
-                p === '...' ? (
-                  <span key={`dots-${i}`} className="px-2 text-slate-400">…</span>
-                ) : (
-                  <button
-                    key={`page-${p}`}
-                    onClick={() => onPageChange(p as number)}
-                    className={`w-7 h-7 flex items-center justify-center rounded font-bold transition ${
-                      safeCurrentPage === p 
-                        ? 'bg-blue-600 text-white' 
-                        : 'text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    {p}
-                  </button>
-                )
-              ))}
-            </div>
-
-            <button
-              onClick={() => onPageChange(safeCurrentPage + 1)}
-              disabled={safeCurrentPage === totalPages}
-              className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
-              title="Next Page"
-            >
-              <ChevronRight size={18} />
-            </button>
-            <button
-              onClick={() => onPageChange(totalPages)}
-              disabled={safeCurrentPage === totalPages}
-              className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
-              title="Last Page"
-            >
-              <ChevronsRight size={18} />
-            </button>
           </div>
-        )}
-      </div>
+
+          <button
+            onClick={() => onPageChange(safeCurrentPage + 1)}
+            disabled={safeCurrentPage === totalPages}
+            className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            title="Next Page"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <button
+            onClick={() => onPageChange(totalPages)}
+            disabled={safeCurrentPage === totalPages}
+            className="p-1 rounded text-slate-500 hover:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            title="Last Page"
+          >
+            <ChevronsRight size={18} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

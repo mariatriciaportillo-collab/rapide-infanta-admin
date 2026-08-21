@@ -42,13 +42,14 @@ type Props = {
   services: Service[]
 }
 
+const PAGE_SIZE = 25
+
 export function LaborLookupClient({ makes, models, services }: Props) {
   const supabase = createClient()
   const [mode, setMode] = useState<'labor' | 'vehicle'>('labor')
 
   // === PAGINATION STATE ===
   const [page, setPage] = useState(1)
-  const [limit, setLimit] = useState(25)
   const [totalCount, setTotalCount] = useState(0)
   const [paginatedRates, setPaginatedRates] = useState<LookupRate[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -86,7 +87,6 @@ export function LaborLookupClient({ makes, models, services }: Props) {
 
   // === DATA FETCHING ===
   const fetchRates = useCallback(async () => {
-    // Determine if we have a valid query criteria
     const isLaborModeValid = mode === 'labor' && selectedServiceId
     const isVehicleModeValid = mode === 'vehicle' && vehMakeId && vehModelId
 
@@ -118,10 +118,6 @@ export function LaborLookupClient({ makes, models, services }: Props) {
       query = query.eq('labor_service_id', selectedServiceId)
       if (filterMakeId) query = query.eq('vehicle_make_id', filterMakeId)
       if (filterModelId) query = query.eq('vehicle_model_id', filterModelId)
-      
-      // Since it's Labor mode, we want to group essentially by Make+Model,
-      // But PostgREST doesn't support GROUP BY natively in select. 
-      // We'll rely on the DB not having duplicates due to our new insertion logic.
     } else {
       query = query
         .eq('vehicle_make_id', vehMakeId)
@@ -129,21 +125,15 @@ export function LaborLookupClient({ makes, models, services }: Props) {
     }
 
     // Apply Sorting
-    // To ensure stable pagination, we sort deterministically
     if (mode === 'labor') {
-      // For labor mode, sort by Make then Model
-      // PostgREST sorting on joined tables is limited, so we order by Make ID / Model ID instead,
-      // or sort by created_at. Sorting by related table columns requires embedded resources sorting (e.g. `vehicle_makes(name)`),
-      // which is supported natively in newer Supabase via string notation.
       query = query.order('vehicle_make_id', { ascending: true }).order('vehicle_model_id', { ascending: true })
     } else {
-      // For vehicle mode, sort by Service ID
       query = query.order('labor_service_id', { ascending: true })
     }
 
     // Apply Pagination Range
-    const from = (page - 1) * limit
-    const to = from + limit - 1
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
     query = query.range(from, to)
 
     const { data, count, error } = await query
@@ -158,7 +148,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
     }
 
     setIsLoading(false)
-  }, [supabase, mode, selectedServiceId, filterMakeId, filterModelId, vehMakeId, vehModelId, page, limit])
+  }, [supabase, mode, selectedServiceId, filterMakeId, filterModelId, vehMakeId, vehModelId, page])
 
   useEffect(() => {
     fetchRates()
@@ -171,11 +161,6 @@ export function LaborLookupClient({ makes, models, services }: Props) {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
-  }
-
-  const handlePageSizeChange = (newSize: number) => {
-    setLimit(newSize)
-    setPage(1)
   }
 
   const formatCurrency = (val: number | null | undefined) => {
@@ -198,9 +183,9 @@ export function LaborLookupClient({ makes, models, services }: Props) {
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
         {/* TAB NAVIGATION */}
-        <div className="flex bg-slate-50 border-b border-slate-200 shrink-0 rounded-t-lg">
+        <div className="flex bg-slate-50 border-b border-slate-200 rounded-t-lg">
           <button
             type="button"
             className={`flex-1 py-4 text-center font-bold text-sm tracking-wide transition uppercase ${
@@ -227,8 +212,8 @@ export function LaborLookupClient({ makes, models, services }: Props) {
 
         {/* MODE 1: LABOR */}
         {mode === 'labor' && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="p-6 bg-slate-50 border-b border-slate-200 shrink-0">
+          <div>
+            <div className="p-6 bg-slate-50 border-b border-slate-200">
               <div className="max-w-2xl">
                 <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
                   Search Labor / Service
@@ -242,8 +227,6 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                   value={selectedServiceId}
                   onChange={(val) => {
                     setSelectedServiceId(val)
-                    // Filters clear on service change automatically handled via state, 
-                    // and reset to page 1 handled by useEffect
                     setFilterMakeId('')
                     setFilterModelId('')
                   }}
@@ -254,8 +237,8 @@ export function LaborLookupClient({ makes, models, services }: Props) {
             </div>
 
             {selectedService ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-6 pb-0 shrink-0">
+              <div>
+                <div className="p-6 pb-0">
                   <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
                       <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
@@ -272,7 +255,6 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </div>
                     </div>
 
-                    {/* Optional Filters */}
                     <div className="flex gap-3 bg-slate-50 p-2 rounded-md border border-slate-200">
                       <select 
                         className="px-3 py-1.5 border border-slate-300 rounded text-sm outline-none focus:border-blue-500 bg-white font-medium text-slate-700 w-36"
@@ -298,9 +280,9 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                   </div>
                 </div>
 
-                <div className="flex-1 px-6 pb-6 min-h-[300px] flex flex-col">
+                <div className="px-6 pb-6">
                   {isLoading ? (
-                    <div className="flex-1 flex justify-center items-center">
+                    <div className="py-12 flex justify-center items-center">
                       <div className="flex flex-col items-center text-slate-500 gap-2">
                         <Loader2 className="animate-spin text-blue-500" size={32} />
                         <span className="font-medium">Loading rates...</span>
@@ -317,7 +299,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </Link>
                     </div>
                   ) : (
-                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm flex-1">
+                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
                       <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                           <thead>
@@ -354,13 +336,11 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                         </table>
                       </div>
                       
-                      {/* PAGINATION COMPONENT */}
                       <Pagination
                         totalCount={totalCount}
-                        pageSize={limit}
+                        pageSize={PAGE_SIZE}
                         currentPage={page}
                         onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
                       />
                     </div>
                   )}
@@ -378,8 +358,8 @@ export function LaborLookupClient({ makes, models, services }: Props) {
 
         {/* MODE 2: VEHICLE */}
         {mode === 'vehicle' && (
-          <div className="flex-1 flex flex-col min-h-0">
-            <div className="p-6 bg-slate-50 border-b border-slate-200 shrink-0">
+          <div>
+            <div className="p-6 bg-slate-50 border-b border-slate-200">
               <div className="flex flex-col md:flex-row gap-4 items-end max-w-4xl">
                 <div className="flex-1 w-full">
                   <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-wide">
@@ -416,8 +396,8 @@ export function LaborLookupClient({ makes, models, services }: Props) {
             </div>
 
             {selectedVehicleName ? (
-              <div className="flex-1 flex flex-col min-h-0">
-                <div className="p-6 pb-0 shrink-0">
+              <div>
+                <div className="p-6 pb-0">
                   <div className="mb-6 border-b border-slate-100 pb-4">
                     <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
                       <Car size={24} className="text-blue-600" />
@@ -427,9 +407,9 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                   </div>
                 </div>
 
-                <div className="flex-1 px-6 pb-6 min-h-[300px] flex flex-col">
+                <div className="px-6 pb-6">
                   {isLoading ? (
-                    <div className="flex-1 flex justify-center items-center">
+                    <div className="py-12 flex justify-center items-center">
                       <div className="flex flex-col items-center text-slate-500 gap-2">
                         <Loader2 className="animate-spin text-blue-500" size={32} />
                         <span className="font-medium">Loading rates...</span>
@@ -446,9 +426,9 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </Link>
                     </div>
                   ) : (
-                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm flex-1">
+                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                        <table className="w-full text-left border-collapse bg-white">
                           <thead>
                             <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
                               <th className="px-6 py-3 w-80">Labor / Service</th>
@@ -489,13 +469,11 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                         </table>
                       </div>
                       
-                      {/* PAGINATION COMPONENT */}
                       <Pagination
                         totalCount={totalCount}
-                        pageSize={limit}
+                        pageSize={PAGE_SIZE}
                         currentPage={page}
                         onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
                       />
                     </div>
                   )}
