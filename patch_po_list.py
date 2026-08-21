@@ -1,4 +1,6 @@
-'use client'
+import re
+
+content = """'use client'
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -253,3 +255,8 @@ export default function PurchaseOrdersPage() {
     </div>
   )
 }
+"""
+
+with open('src/app/(dashboard)/purchase-orders/page.tsx', 'w') as f:
+    f.write(content)
+

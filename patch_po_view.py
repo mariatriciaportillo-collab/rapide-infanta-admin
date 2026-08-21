@@ -1,4 +1,6 @@
-'use client'
+import re
+
+content = """'use client'
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -272,3 +274,8 @@ export function PurchaseOrderDetailClient({ id }: { id: string }) {
     </div>
   )
 }
+"""
+
+with open('src/app/(dashboard)/purchase-orders/[id]/PurchaseOrderDetailClient.tsx', 'w') as f:
+    f.write(content)
+

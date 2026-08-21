@@ -14,6 +14,9 @@ type POItem = {
   part: any
   qty: string
   unitCost: string
+  vehicleId: string | null
+  manualVehicle: string
+  chassisNumber: string
 }
 
 export default function NewPurchaseOrderPage() {
@@ -21,6 +24,7 @@ export default function NewPurchaseOrderPage() {
   const supabase = createClient()
   
   const [suppliers, setSuppliers] = useState<any[]>([])
+  const [vehicles, setVehicles] = useState<any[]>([])
   const [supplierId, setSupplierId] = useState('')
   const [orderDate, setOrderDate] = useState('')
   const [expectedDate, setExpectedDate] = useState('')
@@ -28,8 +32,11 @@ export default function NewPurchaseOrderPage() {
   const [notes, setNotes] = useState('')
   const [terms, setTerms] = useState('')
   
+  const [hasVehicleDetails, setHasVehicleDetails] = useState(false)
+  const [taxTreatment, setTaxTreatment] = useState('NON_VAT') // 'NON_VAT', 'VAT_INCLUSIVE', 'VAT_EXCLUSIVE'
+  
   const [items, setItems] = useState<POItem[]>([
-    { id: 'initial-row-1', partId: '', part: null, qty: '', unitCost: '' }
+    { id: 'initial-row-1', partId: '', part: null, qty: '', unitCost: '', vehicleId: null, manualVehicle: '', chassisNumber: '' }
   ])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -42,6 +49,7 @@ export default function NewPurchaseOrderPage() {
   useEffect(() => {
     setOrderDate(new Date().toISOString().split('T')[0])
     fetchSuppliers()
+    fetchVehicles()
   }, [])
 
   const fetchSuppliers = async () => {
@@ -49,8 +57,13 @@ export default function NewPurchaseOrderPage() {
     if (data) setSuppliers(data)
   }
 
+  const fetchVehicles = async () => {
+    const { data } = await supabase.from('vehicles').select('id, make, model, year, vin, plate_number').order('make')
+    if (data) setVehicles(data)
+  }
+
   const handleAddItem = () => {
-    setItems(prev => [...prev, { id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '' }])
+    setItems(prev => [...prev, { id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '', vehicleId: null, manualVehicle: '', chassisNumber: '' }])
   }
 
   const handleRemoveItem = (id: string) => {
@@ -61,10 +74,23 @@ export default function NewPurchaseOrderPage() {
     setItems(prevItems => prevItems.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value }
+        
+        // Auto populate fields
         if (field === 'part' && value) {
           updated.partId = value.id
           updated.unitCost = value.cost || '0'
         }
+        
+        if (field === 'manualVehicle') {
+          const match = vehicles.find(v => `${v.make} ${v.model} ${v.year || ''}`.trim().toLowerCase() === String(value).trim().toLowerCase())
+          if (match) {
+            updated.vehicleId = match.id
+            if (match.vin && !item.chassisNumber) updated.chassisNumber = match.vin
+          } else {
+            updated.vehicleId = null
+          }
+        }
+        
         return updated
       }
       return item
@@ -89,12 +115,14 @@ export default function NewPurchaseOrderPage() {
       return
     }
 
-    // Prepare items array
     const rpcItems = validItems.map(i => ({
       part_id: i.partId,
       qty: Number(i.qty),
       unit_cost: Number(i.unitCost) || 0,
-      total_amount: (Number(i.qty) * (Number(i.unitCost) || 0))
+      total_amount: (Number(i.qty) * (Number(i.unitCost) || 0)),
+      vehicle_id: hasVehicleDetails ? i.vehicleId : null,
+      manual_vehicle: hasVehicleDetails ? (i.manualVehicle || null) : null,
+      chassis_number: hasVehicleDetails ? (i.chassisNumber || null) : null
     }))
 
     const { data: userData } = await supabase.auth.getUser()
@@ -108,53 +136,55 @@ export default function NewPurchaseOrderPage() {
       p_terms: terms || null,
       p_notes: notes || null,
       p_items: rpcItems,
-      p_user_id: userId || null
+      p_user_id: userId || null,
+      p_has_vehicle_details: hasVehicleDetails,
+      p_tax_treatment: taxTreatment
     })
 
     if (rpcError) {
       setError(rpcError.message)
       setIsSubmitting(false)
     } else if (data) {
-      // data contains the UUID of the newly created PO
       const { data: poData } = await supabase.from('purchase_orders').select('po_number').eq('id', data).single()
       setSavedPoId(data)
-      setSavedPoNumber(poData?.po_number || 'Unknown')
-      setIsSubmitting(false)
+      if (poData) setSavedPoNumber(poData.po_number)
     }
   }
 
-  // Calculate Totals
-  const totalItems = items.filter(i => i.partId).length
-  const totalAmount = items.reduce((sum, item) => sum + (Number(item.qty || 0) * Number(item.unitCost || 0)), 0)
+  const subtotal = items.reduce((sum, item) => sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0), 0)
 
   if (savedPoId) {
     return (
-      <div className="max-w-2xl mx-auto mt-12 bg-white p-8 rounded-lg border border-slate-200 shadow-sm text-center">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle size={32} />
-        </div>
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Purchase Order Created</h2>
-        <p className="text-slate-600 mb-8">{savedPoNumber} has been created successfully.</p>
-        
-        <div className="space-y-3">
-          <Link 
-            href={`/purchase-orders/${savedPoId}/receive`}
-            className="block w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-lg transition"
-          >
-            Receive Items Now
-          </Link>
-          <Link 
-            href={`/purchase-orders/${savedPoId}`}
-            className="block w-full py-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-bold transition"
-          >
-            View Purchase Order
-          </Link>
-          <Link 
-            href="/purchase-orders"
-            className="block w-full py-3 text-slate-500 hover:text-slate-700 font-medium transition"
-          >
-            Back to Purchase Orders
-          </Link>
+      <div className="max-w-3xl mx-auto py-12">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
+          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Purchase Order Created!</h2>
+          <p className="text-slate-600 mb-8">
+            {savedPoNumber ? `Purchase order ${savedPoNumber} has been saved successfully.` : 'The purchase order has been saved successfully.'}
+          </p>
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={() => {
+                setSavedPoId(null)
+                setSavedPoNumber(null)
+                setItems([{ id: crypto.randomUUID(), partId: '', part: null, qty: '', unitCost: '', vehicleId: null, manualVehicle: '', chassisNumber: '' }])
+                setReference('')
+                setNotes('')
+                setIsSubmitting(false)
+              }}
+              className="px-6 py-2 border border-slate-300 rounded-md text-slate-700 font-medium hover:bg-slate-50 transition"
+            >
+              Create Another PO
+            </button>
+            <Link 
+              href={`/purchase-orders/${savedPoId}`}
+              className="px-6 py-2 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition"
+            >
+              View Purchase Order
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -166,35 +196,34 @@ export default function NewPurchaseOrderPage() {
         <Link href="/purchase-orders" className="text-slate-400 hover:text-slate-600 transition">
           <ArrowLeft size={24} />
         </Link>
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">New Purchase Order</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">New Purchase Order</h1>
+          <p className="text-slate-500 mt-1">Create a new order for inventory or specific vehicles.</p>
+        </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 flex items-start gap-2 border border-red-200">
-          <AlertCircle className="shrink-0 mt-0.5" size={18} />
-          <div>{error}</div>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Order Information</h2>
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Order Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Supplier *</label>
-              <SupplierSearchSelector 
-                selectedSupplierId={supplierId}
-                setSelectedSupplierId={setSupplierId}
-              />
+              <SupplierSearchSelector selectedSupplierId={supplierId} setSelectedSupplierId={setSupplierId} />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Order Date *</label>
               <input 
-                required
                 type="date" 
+                required
                 value={orderDate}
                 onChange={e => setOrderDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
               />
             </div>
             <div>
@@ -203,162 +232,240 @@ export default function NewPurchaseOrderPage() {
                 type="date" 
                 value={expectedDate}
                 onChange={e => setExpectedDate(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Reference No.</label>
               <input 
                 type="text" 
+                placeholder="Quote #, Reference..."
                 value={reference}
                 onChange={e => setReference(e.target.value)}
-                placeholder="Quote No., Supplier Ref..."
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
               />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Purchase Settings</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Vehicle Details</label>
+              <select 
+                value={hasVehicleDetails ? 'YES' : 'NO'}
+                onChange={e => setHasVehicleDetails(e.target.value === 'YES')}
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              >
+                <option value="NO">No Vehicle Details (Standard PO)</option>
+                <option value="YES">Include Vehicle Details (Spare Parts)</option>
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Terms</label>
-              <input 
-                type="text" 
-                value={terms}
-                onChange={e => setTerms(e.target.value)}
-                placeholder="e.g. Net 30, COD"
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-              <textarea 
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="block text-sm font-medium text-slate-700 mb-1">Tax Treatment</label>
+              <select 
+                value={taxTreatment}
+                onChange={e => setTaxTreatment(e.target.value)}
+                className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              >
+                <option value="NON_VAT">Non-VAT / No VAT Breakdown</option>
+                <option value="VAT_INCLUSIVE">VAT Inclusive</option>
+                <option value="VAT_EXCLUSIVE">VAT Exclusive</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Order Items</h2>
-          <div className="space-y-4">
-            {items.map((item, index) => {
-              const qtyNum = Number(item.qty) || 0
-              const costNum = Number(item.unitCost) || 0
-              const lineTotal = qtyNum * costNum
-
-              return (
-                <div key={item.id} className="p-4 rounded-lg border bg-slate-50 border-slate-200 relative" style={{ zIndex: items.length - index }}>
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="font-bold text-slate-700">Line {index + 1}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="text-red-500 hover:bg-red-50 p-1.5 rounded transition disabled:opacity-50"
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
-                    <div className="md:col-span-6">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Part / Material *</label>
-                      <PartSearchSelector 
-                        selectedPartId={item.partId} 
-                        setSelectedPartId={(id) => handleUpdateItem(item.id, 'partId', id)} 
-                        onSelectPart={(p) => handleUpdateItem(item.id, 'part', p)}
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Qty Ordered *</label>
-                      <input 
-                        required
-                        type="number" 
-                        step="0.01"
-                        min="0.01"
-                        value={item.qty}
-                        onChange={e => handleUpdateItem(item.id, 'qty', e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Unit Cost (₱)</label>
-                      <input 
-                        required
-                        type="number" 
-                        step="0.01"
-                        min="0"
-                        value={item.unitCost}
-                        onChange={e => handleUpdateItem(item.id, 'unitCost', e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="md:col-span-2 text-right">
-                      <label className="block text-xs font-medium text-slate-500 mb-1">Line Total</label>
-                      <div className="font-bold text-lg text-slate-800 pt-1">
-                        ₱{lineTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
-            
-            <button
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-slate-800">Order Items</h2>
+            <button 
               type="button"
               onClick={handleAddItem}
-              className="w-full py-3 border-2 border-dashed border-slate-300 rounded-lg text-slate-500 font-medium hover:bg-slate-50 hover:text-blue-600 hover:border-blue-300 transition flex items-center justify-center gap-2"
+              className="text-sm font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
-              <Plus size={18} /> Add Another Item
+              <Plus size={16} /> Add Item Row
             </button>
           </div>
-        </div>
+          
+          <datalist id="vehicles-list">
+            {vehicles.map(v => (
+              <option key={v.id} value={`${v.make} ${v.model} ${v.year || ''}`.trim()} />
+            ))}
+          </datalist>
 
-        <div className="bg-slate-800 text-white p-6 rounded-lg shadow-sm border border-slate-700 flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <div className="text-slate-400 font-medium">Order Summary</div>
-            <div className="text-sm mt-1 text-slate-300">Total Items: {totalItems}</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr className="bg-white border-b border-slate-200 text-xs uppercase text-slate-500 font-bold">
+                  {hasVehicleDetails && <th className="px-4 py-3 w-48">Vehicle / Unit</th>}
+                  {hasVehicleDetails && <th className="px-4 py-3 w-40">Chassis No.</th>}
+                  <th className="px-4 py-3 w-64">Item / Description *</th>
+                  <th className="px-4 py-3 w-24">Qty *</th>
+                  <th className="px-4 py-3 w-32">Unit Cost</th>
+                  <th className="px-4 py-3 w-32 text-right">Amount</th>
+                  <th className="px-4 py-3 w-12 text-center"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {items.map((item, index) => {
+                  const lineTotal = (Number(item.qty) || 0) * (Number(item.unitCost) || 0)
+                  return (
+                    <tr key={item.id} className="bg-white hover:bg-slate-50 transition">
+                      {hasVehicleDetails && (
+                        <td className="px-4 py-3">
+                          <input 
+                            type="text"
+                            list="vehicles-list"
+                            placeholder="e.g. Suzuki Jimny"
+                            value={item.manualVehicle}
+                            onChange={(e) => handleUpdateItem(item.id, 'manualVehicle', e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+                          />
+                        </td>
+                      )}
+                      {hasVehicleDetails && (
+                        <td className="px-4 py-3">
+                          <input 
+                            type="text"
+                            placeholder="VIN/Chassis"
+                            value={item.chassisNumber}
+                            onChange={(e) => handleUpdateItem(item.id, 'chassisNumber', e.target.value)}
+                            className="w-full p-2 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-3 relative">
+                        <PartSearchSelector 
+                          selectedPartId={item.partId}
+                          onSelectPart={(p) => handleUpdateItem(item.id, 'part', p)}
+                          error={!item.partId && isSubmitting} setSelectedPartId={() => {}}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="number"
+                          min="1"
+                          required
+                          value={item.qty}
+                          onChange={(e) => handleUpdateItem(item.id, 'qty', e.target.value)}
+                          className={`w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500 ${isSubmitting && !item.qty ? 'border-red-500' : 'border-slate-300'}`}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₱</span>
+                          <input 
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.unitCost}
+                            onChange={(e) => handleUpdateItem(item.id, 'unitCost', e.target.value)}
+                            className="w-full pl-7 pr-2 py-2 border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-800">
+                        ₱{lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveItem(item.id)}
+                          disabled={items.length === 1}
+                          className={`text-slate-400 hover:text-red-500 transition ${items.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-          <div className="text-right mt-4 md:mt-0">
-            <div className="text-slate-400 font-medium mb-1">Grand Total</div>
-            <div className="text-3xl font-bold">
-              ₱{totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}
+          
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+            <div className="w-64">
+              {taxTreatment === 'VAT_INCLUSIVE' && (
+                <>
+                  <div className="flex justify-between py-1 text-sm text-slate-600">
+                    <span>VATable Amount</span>
+                    <span>₱{(subtotal / 1.12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-sm text-slate-600">
+                    <span>VAT (12%)</span>
+                    <span>₱{(subtotal - (subtotal / 1.12)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
+              {taxTreatment === 'VAT_EXCLUSIVE' && (
+                <>
+                  <div className="flex justify-between py-1 text-sm text-slate-600">
+                    <span>Subtotal</span>
+                    <span>₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-sm text-slate-600">
+                    <span>VAT (12%)</span>
+                    <span>₱{(subtotal * 0.12).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between py-2 mt-2 border-t border-slate-200 font-bold text-lg text-slate-900">
+                <span>Total Amount</span>
+                <span>₱{(taxTreatment === 'VAT_EXCLUSIVE' ? subtotal * 1.12 : subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-4 rounded-lg font-bold text-lg transition flex items-center justify-center gap-2 shadow-sm"
-        >
-          <Save size={24} />
-          {isSubmitting ? 'Saving Order...' : 'Save Purchase Order'}
-        </button>
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
+          <h2 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Additional Information</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Terms / Conditions</label>
+              <textarea 
+                rows={3}
+                value={terms}
+                onChange={e => setTerms(e.target.value)}
+                placeholder="Payment terms, delivery conditions..."
+                className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"
+              ></textarea>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+              <textarea 
+                rows={3}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Internal notes or instructions for the supplier..."
+                className="w-full p-3 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+          <Link 
+            href="/purchase-orders"
+            className="px-6 py-2 border border-slate-300 rounded-md text-slate-700 font-medium hover:bg-slate-50 transition"
+          >
+            Cancel
+          </Link>
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="px-8 py-2 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700 transition flex items-center gap-2 shadow-sm disabled:opacity-70"
+          >
+            {isSubmitting ? (
+              <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span> Saving...</>
+            ) : (
+              <><Save size={18} /> Save Purchase Order</>
+            )}
+          </button>
+        </div>
       </form>
-
     </div>
-  )
-}
-
-function AlertCircle(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" x2="12" y1="8" y2="12" />
-      <line x1="12" x2="12.01" y1="16" y2="16" />
-    </svg>
   )
 }
