@@ -3,8 +3,67 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Search, Filter, Settings, RefreshCcw } from 'lucide-react'
+import { Plus, Search, Settings, RefreshCcw, X } from 'lucide-react'
 import { format } from 'date-fns'
+import { createPortal } from 'react-dom'
+
+const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+
+  return createPortal(
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-800">Items in {transaction.reference_number}</h2>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="p-0 max-h-[60vh] overflow-y-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                <th className="px-6 py-3 font-medium">Product</th>
+                <th className="px-6 py-3 font-medium text-right">Adjustment</th>
+                <th className="px-6 py-3 font-medium text-right">Qty</th>
+                <th className="px-6 py-3 font-medium text-right">Unit Cost</th>
+                <th className="px-6 py-3 font-medium text-right">Value</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {transaction.inventory_movements?.map((m: any, i: number) => {
+                const qty = Number(m.quantity) || 0
+                const cost = Number(m.unit_cost) || 0
+                const val = Math.abs(qty) * cost
+                const direction = qty > 0 ? 'Increase' : qty < 0 ? 'Decrease' : 'None'
+                const sign = qty > 0 ? '+' : ''
+                
+                return (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="px-6 py-3 text-sm text-slate-800 font-medium">{m.parts?.name || 'Unknown Product'}</td>
+                    <td className="px-6 py-3 text-sm text-right text-slate-600">{direction}</td>
+                    <td className={`px-6 py-3 text-sm text-right font-medium ${qty > 0 ? 'text-green-600' : qty < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                      {sign}{qty}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right text-slate-600">
+                      ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right font-medium text-slate-800">
+                      ₱{val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 export default function StockAdjustmentsPage() {
   const supabase = createClient()
@@ -12,6 +71,7 @@ export default function StockAdjustmentsPage() {
   const [transactions, setTransactions] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null)
 
   useEffect(() => {
     fetchTransactions()
@@ -21,7 +81,7 @@ export default function StockAdjustmentsPage() {
     setIsLoading(true)
     const { data } = await supabase
       .from('inventory_transactions')
-      .select('*, inventory_movements(quantity, movement_type)')
+      .select('*, inventory_movements(quantity, unit_cost, movement_type, parts(name))')
       .in('type', ['ADJUSTMENT', 'SWAP'])
       .order('created_at', { ascending: false })
       
@@ -83,24 +143,23 @@ export default function StockAdjustmentsPage() {
               <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
                 <th className="px-6 py-3 font-medium">ADJUSTMENT NO.</th>
                 <th className="px-6 py-3 font-medium">DATE</th>
-                <th className="px-6 py-3 font-medium">TYPE</th>
                 <th className="px-6 py-3 font-medium">REASON</th>
-                <th className="px-6 py-3 font-medium text-center">ITEMS</th>
-                <th className="px-6 py-3 font-medium text-center">INCREASES</th>
-                <th className="px-6 py-3 font-medium text-center">DECREASES</th>
+                <th className="px-6 py-3 font-medium text-right">ITEMS</th>
+                <th className="px-6 py-3 font-medium text-right">VALUE</th>
+                <th className="px-6 py-3 font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     <div className="flex justify-center mb-2"><Settings className="animate-pulse text-slate-300" size={32} /></div>
                     Loading transactions...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     <div className="flex justify-center mb-2"><Settings className="text-slate-300" size={32} /></div>
                     No transactions found.
                   </td>
@@ -109,34 +168,43 @@ export default function StockAdjustmentsPage() {
                 filtered.map(t => {
                   const movements = t.inventory_movements || []
                   const numItems = movements.length
-                  const increases = movements.filter((m: any) => Number(m.quantity) > 0).length
-                  const decreases = movements.filter((m: any) => Number(m.quantity) < 0).length
-                  const isSwap = t.type === 'SWAP'
+                  
+                  const totalValue = movements.reduce((sum: number, m: any) => {
+                    const qty = Math.abs(Number(m.quantity) || 0)
+                    const cost = Number(m.unit_cost) || 0
+                    return sum + (qty * cost)
+                  }, 0)
                   
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition cursor-pointer" onClick={() => window.location.href = t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}>
-                      <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
-                        <Link href={t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}>{t.reference_number}</Link>
+                    <tr key={t.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                      <td className="px-6 py-4 font-bold text-slate-800">
+                        {t.reference_number}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                        {format(new Date(t.created_at), 'MMM d, yyyy HH:mm')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isSwap ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'}`}>
-                          {t.type}
-                        </span>
+                        {format(new Date(t.created_at), 'MMM d, yyyy')}
                       </td>
                       <td className="px-6 py-4 text-slate-700 font-medium">
                         {t.reason || '—'}
                       </td>
-                      <td className="px-6 py-4 text-center font-bold text-slate-800">
-                        {numItems} {numItems === 1 ? 'Item' : 'Items'}
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setSelectedTransaction(t); }}
+                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
+                        >
+                          {numItems}
+                        </button>
                       </td>
-                      <td className="px-6 py-4 text-center font-medium text-green-600">
-                        {increases > 0 ? `${increases}` : '—'}
+                      <td className="px-6 py-4 text-right font-medium text-slate-800">
+                        ₱{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="px-6 py-4 text-center font-medium text-red-600">
-                        {decreases > 0 ? `${decreases}` : '—'}
+                      <td className="px-6 py-4">
+                        <Link 
+                          href={t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                        >
+                          View
+                        </Link>
                       </td>
                     </tr>
                   )
@@ -146,6 +214,13 @@ export default function StockAdjustmentsPage() {
           </table>
         </div>
       </div>
+      
+      {selectedTransaction && (
+        <ItemsModal 
+          transaction={selectedTransaction} 
+          onClose={() => setSelectedTransaction(null)} 
+        />
+      )}
     </div>
   )
 }
