@@ -3,8 +3,69 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Search, Settings } from 'lucide-react'
+import { Plus, Search, Settings, X } from 'lucide-react'
 import { format } from 'date-fns'
+import { createPortal } from 'react-dom'
+
+const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted) return null
+
+  const totalAmount = Number(transaction.total_amount) || 0
+
+  return createPortal(
+    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+          <h2 className="text-xl font-bold text-slate-800">Items in {transaction.reference_number}</h2>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="p-0 max-h-[60vh] overflow-y-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                <th className="px-6 py-3 font-medium">Item</th>
+                <th className="px-6 py-3 font-medium text-right">Qty</th>
+                <th className="px-6 py-3 font-medium text-right">Unit Cost</th>
+                <th className="px-6 py-3 font-medium text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {transaction.outside_purchase_items?.map((item: any, i: number) => {
+                const qty = Number(item.quantity) || 0
+                const cost = Number(item.unit_cost) || 0
+                const amount = Number(item.total_amount) || (qty * cost)
+                
+                return (
+                  <tr key={i} className="hover:bg-slate-50">
+                    <td className="px-6 py-3 text-sm text-slate-800 font-medium">{item.parts?.name || 'Unknown Item'}</td>
+                    <td className="px-6 py-3 text-sm text-right text-slate-800">{qty}</td>
+                    <td className="px-6 py-3 text-sm text-right text-slate-600">
+                      ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-6 py-3 text-sm text-right font-medium text-slate-800">
+                      ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-right">
+          <span className="text-slate-600 font-medium mr-4">Total Amount:</span>
+          <span className="text-xl font-bold text-slate-800">
+            ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 export default function OutsidePurchasesPage() {
   const supabase = createClient()
@@ -12,6 +73,7 @@ export default function OutsidePurchasesPage() {
   const [purchases, setPurchases] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null)
 
   useEffect(() => {
     fetchPurchases()
@@ -21,7 +83,7 @@ export default function OutsidePurchasesPage() {
     setIsLoading(true)
     const { data } = await supabase
       .from('outside_purchases')
-      .select('*, suppliers(name)')
+      .select('*, suppliers(name), outside_purchase_items(quantity, unit_cost, total_amount, parts(name))')
       .order('purchase_date', { ascending: false })
       .order('created_at', { ascending: false })
       
@@ -34,7 +96,8 @@ export default function OutsidePurchasesPage() {
     return (
       (p.reference_number && p.reference_number.toLowerCase().includes(q)) ||
       (p.receipt_number && p.receipt_number.toLowerCase().includes(q)) ||
-      (p.suppliers?.name && p.suppliers.name.toLowerCase().includes(q))
+      (p.suppliers?.name && p.suppliers.name.toLowerCase().includes(q)) ||
+      (p.notes && p.notes.toLowerCase().includes(q))
     )
   })
 
@@ -75,50 +138,78 @@ export default function OutsidePurchasesPage() {
                 <th className="px-6 py-3 font-medium">REFERENCE NO.</th>
                 <th className="px-6 py-3 font-medium">DATE</th>
                 <th className="px-6 py-3 font-medium">SUPPLIER</th>
-                <th className="px-6 py-3 font-medium">RECEIPT NO.</th>
+                <th className="px-6 py-3 font-medium text-right">ITEMS</th>
                 <th className="px-6 py-3 font-medium text-right">TOTAL AMOUNT</th>
+                <th className="px-6 py-3 font-medium">ACTIONS</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     <div className="flex justify-center mb-2"><Settings className="animate-pulse text-slate-300" size={32} /></div>
                     Loading outside purchases...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
                     <div className="flex justify-center mb-2"><Settings className="text-slate-300" size={32} /></div>
                     No outside purchases found.
                   </td>
                 </tr>
               ) : (
-                filtered.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition cursor-pointer" onClick={() => window.location.href = `/outside-purchases/${p.id}`}>
-                    <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
-                      <Link href={`/outside-purchases/${p.id}`}>{p.reference_number}</Link>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                      {format(new Date(p.purchase_date), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 text-slate-700 font-medium">
-                      {p.suppliers?.name || '—'}
-                    </td>
-                    <td className="px-6 py-4 text-slate-600">
-                      {p.receipt_number || '—'}
-                    </td>
-                    <td className="px-6 py-4 text-right font-bold text-slate-800">
-                      ₱{Number(p.total_amount).toFixed(2)}
-                    </td>
-                  </tr>
-                ))
+                filtered.map(p => {
+                  const items = p.outside_purchase_items || []
+                  const numItems = items.length
+                  const totalAmount = Number(p.total_amount) || 0
+                  
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                      <td className="px-6 py-4 font-bold text-slate-800">
+                        {p.reference_number}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                        {format(new Date(p.purchase_date || p.created_at), 'MMM d, yyyy')}
+                      </td>
+                      <td className="px-6 py-4 text-slate-700 font-medium">
+                        {p.suppliers?.name || 'Unknown Supplier'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); setSelectedTransaction(p); }}
+                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
+                        >
+                          {numItems}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-800">
+                        ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <Link 
+                          href={`/outside-purchases/${p.id}`}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
+      
+      {selectedTransaction && (
+        <ItemsModal 
+          transaction={selectedTransaction} 
+          onClose={() => setSelectedTransaction(null)} 
+        />
+      )}
     </div>
   )
 }
