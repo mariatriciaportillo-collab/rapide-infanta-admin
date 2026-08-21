@@ -1,16 +1,34 @@
 import re
 
-def patch():
-    with open('src/components/parts/AddPartModal.tsx', 'r') as f:
-        code = f.read()
+with open('src/components/parts/AddPartModal.tsx', 'r') as f:
+    content = f.read()
 
-    code = code.replace("const handleSubmit = async (e: React.FormEvent) => {", "const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {\n    if (e) e.preventDefault();")
-    code = code.replace('<form id="add-part-form" onSubmit={handleSubmit} className="space-y-6">', '<div className="space-y-6">')
-    code = code.replace('</form>', '</div>')
-    
-    code = code.replace('<button type="submit" form="add-part-form"', '<button type="button" onClick={handleSubmit}')
+# Add standard number change handler and blur handler inside the component
+handler_code = """  const handleNumberChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value
+    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) {
+      val = val.replace(/^0+/, '')
+      if (val === '') val = '0'
+    }
+    setter(val)
+  }
+  
+  const handleNumberBlur = (val: string, setter: React.Dispatch<React.SetStateAction<string>>) => () => {
+    if (val === '') setter('0')
+  }
 
-    with open('src/components/parts/AddPartModal.tsx', 'w') as f:
-        f.write(code)
+  const handleSubmit"""
+content = content.replace("  const handleSubmit", handler_code)
 
-patch()
+# Fix cost input
+old_cost = """onChange={e => setCost(e.target.value)} className="w-full border border-slate-300 rounded-md p-2\""""
+new_cost = """onChange={handleNumberChange(setCost)} onBlur={handleNumberBlur(cost, setCost)} onFocus={e => e.target.select()} className="w-full border border-slate-300 rounded-md p-2\""""
+content = content.replace(old_cost, new_cost)
+
+# Fix selling price input
+old_sell = """onChange={e => setSellingPrice(e.target.value)} className="w-full border border-slate-300 rounded-md p-2\""""
+new_sell = """onChange={handleNumberChange(setSellingPrice)} onBlur={handleNumberBlur(sellingPrice, setSellingPrice)} onFocus={e => e.target.select()} className="w-full border border-slate-300 rounded-md p-2\""""
+content = content.replace(old_sell, new_sell)
+
+with open('src/components/parts/AddPartModal.tsx', 'w') as f:
+    f.write(content)

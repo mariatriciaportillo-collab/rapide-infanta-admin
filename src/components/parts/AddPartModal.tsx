@@ -43,6 +43,19 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
     setHasEditedDisplayName(true)
   }
 
+  const handleNumberChange = (setter: React.Dispatch<React.SetStateAction<string>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value
+    if (val.length > 1 && val.startsWith('0') && !val.startsWith('0.')) {
+      val = val.replace(/^0+/, '')
+      if (val === '') val = '0'
+    }
+    setter(val)
+  }
+  
+  const handleNumberBlur = (val: string, setter: React.Dispatch<React.SetStateAction<string>>) => () => {
+    if (val === '') setter('0')
+  }
+
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
 
@@ -153,11 +166,11 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Cost</label>
-                <input type="number" step="0.01" value={cost} onChange={e => setCost(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="0.00" />
+                <input type="number" step="0.01" value={cost} onChange={handleNumberChange(setCost)} onBlur={handleNumberBlur(cost, setCost)} onFocus={e => e.target.select()} className="w-full border border-slate-300 rounded-md p-2" placeholder="0.00" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Selling Price *</label>
-                <input required type="number" step="0.01" value={sellingPrice} onChange={e => setSellingPrice(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="0.00" />
+                <input required type="number" step="0.01" value={sellingPrice} onChange={handleNumberChange(setSellingPrice)} onBlur={handleNumberBlur(sellingPrice, setSellingPrice)} onFocus={e => e.target.select()} className="w-full border border-slate-300 rounded-md p-2" placeholder="0.00" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Reorder Level</label>

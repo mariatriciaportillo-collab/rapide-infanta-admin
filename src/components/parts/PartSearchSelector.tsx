@@ -66,9 +66,9 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
       const rect = wrapperRef.current.getBoundingClientRect()
       setDropdownStyle({
         position: 'fixed',
-        top: rect.bottom - 1, // slight overlap for border continuity
+        top: rect.bottom, // Align exactly at the bottom edge
         left: rect.left,
-        width: rect.width,
+        width: rect.width, // Match exact width
         zIndex: 99999,
       })
     }
@@ -139,65 +139,68 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     if (e.key === 'Escape') {
       setIsOpen(false)
     }
-    // Note: Up/Down arrow selection can be implemented here if needed.
   }
 
   return (
     <>
-      <div className="relative w-full" ref={wrapperRef}>
-        <div 
-          className={`w-full h-[42px] px-3 border bg-white flex justify-between items-center transition ${
-            isOpen ? 'rounded-t-md border-blue-500 ring-1 ring-blue-500 z-10 relative' : 'rounded-md ' + (error ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300')
-          } ${
-            disabled ? 'bg-slate-100 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:border-slate-400'
-          }`}
-          onClick={() => {
-            if (!disabled && !isOpen) {
-              setIsOpen(true)
-              setSearch('')
-            }
-          }}
-        >
-          <div className="flex-1 overflow-hidden flex items-center gap-2 h-full">
-            {isOpen ? (
-              <>
-                <Search size={16} className="text-blue-500 shrink-0" />
-                <input
-                  ref={searchInputRef}
-                  className="w-full h-full focus:outline-none text-sm bg-transparent text-slate-900 placeholder:text-slate-400"
-                  placeholder="Type to filter products..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-              </>
-            ) : (
-              <div className={`truncate text-sm ${selectedPart ? 'w-full' : 'text-slate-500'}`}>
-                {selectedPart ? (
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-slate-900 font-medium truncate">{selectedPart.name}</span>
-                    <span className="text-[11px] text-slate-500 truncate">
-                      {[selectedPart.part_number, selectedPart.brands?.name, `Stock: ${selectedPart.stock_quantity}`].filter(Boolean).join(' • ')}
-                    </span>
-                  </div>
-                ) : (
-                  'Search part by name, SKU, or brand...'
-                )}
-              </div>
-            )}
-          </div>
-          <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''} ml-2`} />
+      <div 
+        ref={wrapperRef}
+        className={`w-full min-h-[42px] px-3 border bg-white flex justify-between items-center transition ${
+          isOpen ? 'rounded-t-md border-blue-500 z-10 relative' : 'rounded-md ' + (error ? 'border-red-500' : 'border-slate-300')
+        } ${
+          disabled ? 'bg-slate-100 cursor-not-allowed text-slate-400' : 'cursor-pointer hover:border-slate-400'
+        }`}
+        style={isOpen ? { borderBottomColor: 'transparent', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 } : {}}
+        onClick={() => {
+          if (!disabled && !isOpen) {
+            setIsOpen(true)
+            setSearch('')
+          }
+        }}
+      >
+        <div className="flex-1 overflow-hidden flex items-center gap-2">
+          {isOpen ? (
+            <>
+              <Search size={16} className="text-blue-500 shrink-0" />
+              <input
+                ref={searchInputRef}
+                className="w-full focus:outline-none text-sm bg-transparent text-slate-900 placeholder:text-slate-400 py-2"
+                placeholder="Type to filter products..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </>
+          ) : (
+            <div className={`truncate text-sm py-2 ${selectedPart ? 'w-full' : 'text-slate-500'}`}>
+              {selectedPart ? (
+                <div className="flex flex-col leading-tight">
+                  <span className="text-slate-900 font-medium truncate">{selectedPart.name}</span>
+                  <span className="text-[11px] text-slate-500 truncate">
+                    {[selectedPart.part_number, selectedPart.brands?.name].filter(Boolean).join(' • ')}
+                  </span>
+                </div>
+              ) : (
+                'Search part by name, SKU, or brand...'
+              )}
+            </div>
+          )}
         </div>
+        <ChevronDown size={16} className={`text-slate-400 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-blue-500' : ''} ml-2`} />
       </div>
 
       {mounted && isOpen && createPortal(
         <div 
           ref={dropdownRef}
-          className="bg-white border border-t-0 border-blue-500 rounded-b-md shadow-2xl flex flex-col overflow-hidden" 
-          style={{ ...dropdownStyle, maxHeight: '350px' }}
+          className="bg-white border border-t-0 border-blue-500 rounded-b-md shadow-lg flex flex-col overflow-hidden" 
+          style={{ 
+            ...dropdownStyle, 
+            maxHeight: '350px',
+            marginTop: '-1px' // Seamless overlap to remove double border
+          }}
         >
           {/* Scrollable Results Area */}
-          <div className="overflow-y-auto p-1 flex-1 custom-scrollbar">
+          <div className="overflow-y-auto p-2 flex-1 custom-scrollbar">
             {isLoading ? (
               <div className="p-4 text-center text-sm text-slate-500">Loading parts...</div>
             ) : filteredParts.length === 0 ? (
@@ -216,11 +219,11 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                 </button>
               </div>
             ) : (
-              <>
+              <div className="space-y-1">
                 {filteredParts.map(part => (
                   <div 
                     key={part.id}
-                    className={`p-2 hover:bg-blue-50 rounded cursor-pointer flex justify-between items-center transition ${
+                    className={`px-3 py-2 hover:bg-blue-50 rounded-md cursor-pointer flex justify-between items-center transition ${
                       selectedPartId === part.id ? 'bg-blue-100/50' : ''
                     }`}
                     onMouseDown={(e) => {
@@ -231,14 +234,14 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                       setSearch('')
                     }}
                   >
-                    <div className="truncate pr-2">
+                    <div className="truncate pr-4 flex-1">
                       <div className="font-medium text-slate-900 text-sm truncate">{part.name}</div>
                       <div className="text-xs text-slate-500 flex gap-2 truncate">
                         {part.part_number && <span>{part.part_number}</span>}
                         {part.brands?.name && <span>• {part.brands.name}</span>}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 min-w-[60px]">
                       <div className="text-[10px] uppercase text-slate-400 font-bold tracking-wider leading-tight">Stock</div>
                       <div className={`text-sm font-semibold leading-tight ${part.stock_quantity > 0 ? 'text-green-600' : 'text-slate-400'}`}>
                         {part.stock_quantity}
@@ -246,7 +249,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                     </div>
                   </div>
                 ))}
-              </>
+              </div>
             )}
           </div>
           
@@ -260,7 +263,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
                   setIsOpen(false)
                   setShowAddModal(true)
                 }}
-                className="w-full text-center py-2 text-sm text-blue-700 bg-white border border-blue-200 hover:bg-blue-50 rounded font-medium flex items-center justify-center gap-2 transition shadow-sm"
+                className="w-full text-center py-2.5 text-sm text-blue-700 bg-white border border-blue-200 hover:bg-blue-50 rounded-md font-medium flex items-center justify-center gap-2 transition shadow-sm"
               >
                 <Plus size={16} /> Add New Product
               </button>
