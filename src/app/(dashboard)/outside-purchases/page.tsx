@@ -1,36 +1,48 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { Plus, Search, Settings, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { createPortal } from 'react-dom'
+import { Pagination } from '@/components/ui/Pagination'
 
-const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
+const PAGE_SIZE = 25
+
+// Simple Modal Component
+function ItemsModal({ transaction, onClose }: { transaction: any, onClose: () => void }) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   if (!mounted) return null
 
   const totalAmount = Number(transaction.total_amount) || 0
 
   return createPortal(
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h2 className="text-xl font-bold text-slate-800">Items in {transaction.reference_number}</h2>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
-            <X size={24} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-800 text-lg">Transaction Items</h3>
+            <p className="text-sm text-slate-500 font-mono mt-0.5">{transaction.reference_number}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition">
+            <X size={20} />
           </button>
         </div>
-        <div className="p-0 max-h-[60vh] overflow-y-auto">
+        
+        <div className="overflow-y-auto p-0 flex-1">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
-                <th className="px-6 py-3 font-medium">Item</th>
-                <th className="px-6 py-3 font-medium text-right">Qty</th>
-                <th className="px-6 py-3 font-medium text-right">Unit Cost</th>
-                <th className="px-6 py-3 font-medium text-right">Amount</th>
+              <tr className="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider sticky top-0 shadow-sm">
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Item</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Qty</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Unit Cost</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -55,7 +67,7 @@ const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () =>
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-right">
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-right shrink-0">
           <span className="text-slate-600 font-medium mr-4">Total Amount:</span>
           <span className="text-xl font-bold text-slate-800">
             ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -75,31 +87,65 @@ export default function OutsidePurchasesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null)
 
-  useEffect(() => {
-    fetchPurchases()
-  }, [])
+  // Pagination State
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = useCallback(async () => {
     setIsLoading(true)
-    const { data } = await supabase
+    
+    let query = supabase
       .from('outside_purchases')
-      .select('*, suppliers(name), outside_purchase_items(quantity, unit_cost, total_amount, parts(name))')
+      .select('*, suppliers(name), outside_purchase_items(quantity, unit_cost, total_amount, parts(name))', { count: 'exact' })
       .order('purchase_date', { ascending: false })
       .order('created_at', { ascending: false })
-      
-    if (data) setPurchases(data)
-    setIsLoading(false)
-  }
 
-  const filtered = purchases.filter(p => {
-    const q = searchQuery.toLowerCase()
-    return (
-      (p.reference_number && p.reference_number.toLowerCase().includes(q)) ||
-      (p.receipt_number && p.receipt_number.toLowerCase().includes(q)) ||
-      (p.suppliers?.name && p.suppliers.name.toLowerCase().includes(q)) ||
-      (p.notes && p.notes.toLowerCase().includes(q))
-    )
-  })
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim()
+      let orParts = [
+        `reference_number.ilike.%${q}%`,
+        `receipt_number.ilike.%${q}%`,
+        `notes.ilike.%${q}%`
+      ]
+
+      const { data: suppliers } = await supabase.from('suppliers').select('id').ilike('name', `%${q}%`)
+      if (suppliers && suppliers.length > 0) {
+        orParts.push(`supplier_id.in.(${suppliers.map(s => s.id).join(',')})`)
+      }
+
+      query = query.or(orParts.join(','))
+    }
+
+    // Apply Pagination Range
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    query = query.range(from, to)
+      
+    const { data, count, error } = await query
+    
+    if (!error && data) {
+      setPurchases(data)
+      setTotalCount(count || 0)
+    } else {
+      console.error("Failed to fetch outside purchases:", error)
+      setPurchases([])
+      setTotalCount(0)
+    }
+    
+    setIsLoading(false)
+  }, [supabase, searchQuery, page])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPurchases()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [fetchPurchases])
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery])
 
   return (
     <div className="pb-12">
@@ -117,8 +163,8 @@ export default function OutsidePurchasesPage() {
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col mb-6">
+        <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 shrink-0 rounded-t-lg">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -131,77 +177,90 @@ export default function OutsidePurchasesPage() {
           </div>
         </div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-3 font-medium">REFERENCE NO.</th>
-                <th className="px-6 py-3 font-medium">DATE</th>
-                <th className="px-6 py-3 font-medium">SUPPLIER</th>
-                <th className="px-6 py-3 font-medium text-right">ITEMS</th>
-                <th className="px-6 py-3 font-medium text-right">TOTAL AMOUNT</th>
-                <th className="px-6 py-3 font-medium">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                    <div className="flex justify-center mb-2"><Settings className="animate-pulse text-slate-300" size={32} /></div>
-                    Loading outside purchases...
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                    <div className="flex justify-center mb-2"><Settings className="text-slate-300" size={32} /></div>
-                    No outside purchases found.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(p => {
-                  const items = p.outside_purchase_items || []
-                  const numItems = items.length
-                  const totalAmount = Number(p.total_amount) || 0
-                  
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                      <td className="px-6 py-4 font-bold text-slate-800">
-                        {p.reference_number}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                        {format(new Date(p.purchase_date || p.created_at), 'MMM d, yyyy')}
-                      </td>
-                      <td className="px-6 py-4 text-slate-700 font-medium">
-                        {p.suppliers?.name || 'Unknown Supplier'}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); setSelectedTransaction(p); }}
-                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
-                        >
-                          {numItems}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-800">
-                        ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <Link 
-                          href={`/outside-purchases/${p.id}`}
-                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                        >
-                          View
-                        </Link>
+        {isLoading ? (
+          <div className="py-16 flex justify-center items-center">
+            <div className="flex flex-col items-center text-slate-500 gap-3">
+              <Settings className="animate-pulse text-slate-300" size={40} />
+              <span className="font-medium">Loading outside purchases...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                    <th className="px-6 py-3 font-medium">REFERENCE NO.</th>
+                    <th className="px-6 py-3 font-medium">DATE</th>
+                    <th className="px-6 py-3 font-medium">SUPPLIER</th>
+                    <th className="px-6 py-3 font-medium text-right">ITEMS</th>
+                    <th className="px-6 py-3 font-medium text-right">TOTAL AMOUNT</th>
+                    <th className="px-6 py-3 font-medium">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {purchases.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                        <div className="flex justify-center mb-3"><Settings className="text-slate-300" size={40} /></div>
+                        <p className="text-base font-medium">No outside purchases found.</p>
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    purchases.map(p => {
+                      const items = p.outside_purchase_items || []
+                      const numItems = items.length
+                      const totalAmount = Number(p.total_amount) || 0
+                      
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                          <td className="px-6 py-4 font-bold text-slate-800">
+                            {p.reference_number}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                            {format(new Date(p.purchase_date || p.created_at), 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-6 py-4 text-slate-700 font-medium">
+                            {p.suppliers?.name || 'Unknown Supplier'}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); setSelectedTransaction(p); }}
+                              className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
+                            >
+                              {numItems}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-slate-800">
+                            ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4">
+                            <Link 
+                              href={`/outside-purchases/${p.id}`}
+                              className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                            >
+                              View
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {totalCount > 0 && (
+              <Pagination 
+                totalCount={totalCount}
+                pageSize={PAGE_SIZE}
+                currentPage={page}
+                onPageChange={(p) => setPage(p)}
+              />
+            )}
+          </div>
+        )}
       </div>
       
       {selectedTransaction && (
