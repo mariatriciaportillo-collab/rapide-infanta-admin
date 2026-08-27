@@ -17,7 +17,6 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const [packageCode, setPackageCode] = useState(initialData?.package_code || '')
   const [category, setCategory] = useState(initialData?.category || '')
   const [description, setDescription] = useState(initialData?.description || '')
-  const [packagePrice, setPackagePrice] = useState(initialData?.package_price?.toString() || '')
   const [isActive, setIsActive] = useState(initialData?.is_active ?? true)
   
   // Print Options
@@ -35,7 +34,8 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     record: item.item_type === 'LABOR' ? item.labor_services : item.parts,
     category_id: item.part_category_id,
     category_record: item.part_categories,
-    quantity: item.quantity?.toString() || '1'
+    quantity: item.quantity?.toString() || '1',
+    price: item.price?.toString() || '0'
   })) || [])
   
   // Lookups
@@ -97,7 +97,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   }, [categorySearch, supabase])
 
   const addItem = (type: 'LABOR' | 'PART') => {
-    setItems([...items, { id: crypto.randomUUID(), item_type: type, is_category: false, record_id: null, record: null, category_id: null, category_record: null, quantity: '1' }])
+    setItems([...items, { id: crypto.randomUUID(), item_type: type, is_category: false, record_id: null, record: null, category_id: null, category_record: null, quantity: '1', price: '' }])
   }
 
   const removeItem = (id: string) => {
@@ -111,7 +111,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const toggleCategoryMode = (id: string, useCategory: boolean) => {
     setItems(items.map(item => {
       if (item.id === id) {
-        return { ...item, is_category: useCategory, record_id: null, record: null, category_id: null, category_record: null }
+        return { ...item, is_category: useCategory, record_id: null, record: null, category_id: null, category_record: null, price: '' }
       }
       return item
     }))
@@ -125,8 +125,16 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       alert(`This ${type === 'LABOR' ? 'labor service' : 'part'} is already included in the package.`)
       return
     }
-    updateItem(id, 'record_id', record.id)
-    updateItem(id, 'record', record)
+    
+    const initialPrice = type === 'LABOR' ? (record.rate || 0) : (record.selling_price || 0)
+    
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return { ...item, record_id: record.id, record: record, price: initialPrice.toString() }
+      }
+      return item
+    }))
+
     if (type === 'LABOR') setLaborSearch('')
     if (type === 'PART') setPartSearch('')
   }
@@ -137,39 +145,39 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       alert(`This category is already included in the package.`)
       return
     }
-    updateItem(id, 'category_id', record.id)
-    updateItem(id, 'category_record', record)
+    
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return { ...item, category_id: record.id, category_record: record, price: '' }
+      }
+      return item
+    }))
+    
     setCategorySearch('')
+  }
+
+  const handlePriceInput = (id: string, val: string) => {
+    if (val === '') {
+      updateItem(id, 'price', '')
+      return
+    }
+    updateItem(id, 'price', Number(val).toString())
   }
 
   const laborItems = items.filter(i => i.item_type === 'LABOR')
   const partItems = items.filter(i => i.item_type === 'PART')
 
   const calcLaborValue = () => {
-    return laborItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (item.record ? Number(item.record.rate) || 0 : 0)), 0)
+    return laborItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0)
   }
 
   const calcPartsValue = () => {
-    return partItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (!item.is_category && item.record ? Number(item.record.selling_price) || 0 : 0)), 0)
+    return partItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (Number(item.price) || 0)), 0)
   }
 
-  const laborRegularValue = calcLaborValue()
-  const partsRegularValue = calcPartsValue()
-  const regularValue = laborRegularValue + partsRegularValue
-  
-  const hasCategoryParts = partItems.some(i => i.is_category)
-  
-  const price = Number(packagePrice) || 0
-  const savings = Math.max(0, regularValue - price)
-
-  const handlePriceChange = (val: string) => {
-    if (val === '') {
-      setPackagePrice('')
-      return
-    }
-    const num = Number(val)
-    setPackagePrice(num.toString())
-  }
+  const laborTotal = calcLaborValue()
+  const partsTotal = calcPartsValue()
+  const packageTotal = laborTotal + partsTotal
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -179,6 +187,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       return alert("Please select a specific item or category for all rows")
     }
     if (items.some(i => Number(i.quantity) <= 0)) return alert("Quantity must be greater than 0")
+    if (items.some(i => i.price === '' || Number(i.price) < 0)) return alert("Price/Rate must be a valid number for all rows")
 
     setLoading(true)
 
@@ -187,7 +196,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       package_code: packageCode.trim(),
       category: category.trim(),
       description: description.trim(),
-      package_price: Number(packagePrice),
+      package_price: packageTotal,
       is_active: isActive,
       hide_labor: hideLabor,
       hide_parts: hideParts,
@@ -231,7 +240,8 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
         labor_service_id: item.item_type === 'LABOR' ? item.record_id : null,
         part_id: item.item_type === 'PART' && !item.is_category ? item.record_id : null,
         part_category_id: item.item_type === 'PART' && item.is_category ? item.category_id : null,
-        quantity: Number(item.quantity)
+        quantity: Number(item.quantity),
+        price: Number(item.price)
       }))
 
       const { error: itemsErr } = await supabase.from('package_items').insert(itemsPayload)
@@ -419,7 +429,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                     </tr>
                   ) : (
                     laborItems.map(item => {
-                      const rate = item.record ? Number(item.record.rate) || 0 : 0
+                      const rate = Number(item.price) || 0
                       const qty = Number(item.quantity) || 0
                       const amount = rate * qty
                       return (
@@ -462,8 +472,19 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                               </div>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm text-slate-500">
-                            {item.record ? `₱${rate.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                          <td className="px-4 py-3 text-right">
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₱</span>
+                              <input 
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.price}
+                                onChange={e => handlePriceInput(item.id, e.target.value)}
+                                disabled={!item.record}
+                                className="w-full pl-6 p-1.5 text-sm border border-slate-300 rounded text-right font-medium focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-400"
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <input 
@@ -476,7 +497,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                             />
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-slate-800">
-                            {item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                            ₱{amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition" title="Delete">
@@ -513,9 +534,9 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                     <th className="px-4 py-3 font-bold">Part / Category</th>
                     <th className="px-4 py-3 font-bold">Part No.</th>
                     <th className="px-4 py-3 font-bold">Brand</th>
-                    <th className="px-4 py-3 font-bold text-right w-24">Price</th>
-                    <th className="px-4 py-3 font-bold text-right w-20">Qty</th>
-                    <th className="px-4 py-3 font-bold text-right w-28">Amount</th>
+                    <th className="px-4 py-3 font-bold text-right w-28">Price</th>
+                    <th className="px-4 py-3 font-bold text-right w-24">Qty</th>
+                    <th className="px-4 py-3 font-bold text-right w-32">Amount</th>
                     <th className="px-4 py-3 font-bold text-center w-12"></th>
                   </tr>
                 </thead>
@@ -528,7 +549,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                     </tr>
                   ) : (
                     partItems.map(item => {
-                      const price = !item.is_category && item.record ? Number(item.record.selling_price) || 0 : 0
+                      const price = Number(item.price) || 0
                       const qty = Number(item.quantity) || 0
                       const amount = price * qty
                       return (
@@ -628,8 +649,19 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                           <td className="px-4 py-3 text-sm text-slate-600">
                             {item.is_category ? '—' : (item.record ? (item.record.brands?.name || '—') : '—')}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm text-slate-500">
-                            {item.is_category ? '—' : (item.record ? `₱${price.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—')}
+                          <td className="px-4 py-3 text-right">
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₱</span>
+                              <input 
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={item.price}
+                                onChange={e => handlePriceInput(item.id, e.target.value)}
+                                disabled={!item.is_category && !item.record}
+                                className="w-full pl-6 p-1.5 text-sm border border-slate-300 rounded text-right font-medium focus:ring-2 focus:ring-emerald-500 disabled:bg-slate-50 disabled:text-slate-400"
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <input 
@@ -642,7 +674,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                             />
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-slate-800">
-                            {item.is_category ? '—' : (item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—')}
+                            ₱{amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition" title="Delete">
@@ -672,53 +704,26 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
             <div className="p-6 flex flex-col gap-4">
               
               <div className="flex justify-between items-center text-slate-600 text-sm">
-                <span>Labor Regular Value</span>
-                <span className="font-medium">
-                  ₱{laborRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-slate-600 text-sm">
-                <span>Parts Regular Value</span>
-                <span className="font-medium">
-                  ₱{partsRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 pt-4">
-                <span className="font-bold">Regular Value</span>
-                <span className="font-bold text-lg flex items-center gap-2">
-                  ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  {hasCategoryParts && (
-                    <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded tracking-wide">+ Variable</span>
-                  )}
+                <span>Labor Total</span>
+                <span className="font-medium text-lg text-slate-800">
+                  ₱{laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
               
-              <div className="border-t border-slate-200 pt-4 mt-2">
-                <label className="block text-sm font-bold text-slate-700 mb-2">Package Price *</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-500">₱</span>
-                  <input 
-                    type="number" 
-                    step="0.01"
-                    min="0"
-                    value={packagePrice} 
-                    onChange={e => handlePriceChange(e.target.value)} 
-                    required
-                    className="w-full pl-8 pr-4 py-3 bg-blue-50 border-2 border-blue-200 text-blue-900 rounded-lg font-black text-xl focus:outline-none focus:ring-0 focus:border-blue-400 transition" 
-                  />
-                </div>
+              <div className="flex justify-between items-center text-slate-600 text-sm">
+                <span>Parts & Materials Total</span>
+                <span className="font-medium text-lg text-slate-800">
+                  ₱{partsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
               </div>
 
-              {savings > 0 && !hasCategoryParts && (
-                <div className="flex justify-between items-center text-emerald-600 bg-emerald-50 p-3 rounded-md border border-emerald-100 mt-2">
-                  <span className="font-bold text-sm">Customer Savings</span>
-                  <span className="font-black text-lg">
-                    ₱{savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-
+              <div className="flex justify-between items-center text-slate-900 border-t border-slate-200 pt-4 mt-2">
+                <span className="font-bold text-sm uppercase tracking-wide">Total Package Amount</span>
+                <span className="font-black text-2xl text-blue-700">
+                  ₱{packageTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              
             </div>
             <div className="p-6 border-t border-slate-200 bg-slate-50 rounded-b-lg">
               <button 

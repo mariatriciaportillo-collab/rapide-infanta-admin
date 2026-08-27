@@ -45,31 +45,27 @@ export default function ViewPackagePage() {
   const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
   const partItems = items.filter((i: any) => i.item_type === 'PART')
 
-  let laborRegularValue = 0
-  let partsRegularValue = 0
+  let laborTotal = 0
+  let partsTotal = 0
   let productCost = 0
-  let hasCategoryParts = false
 
   laborItems.forEach((item: any) => {
     const qty = Number(item.quantity) || 1
-    const sellingPrice = Number(item.labor_services?.rate) || 0
-    laborRegularValue += (sellingPrice * qty)
+    const price = Number(item.price) || 0
+    laborTotal += (price * qty)
   })
 
   partItems.forEach((item: any) => {
-    if (item.is_category) {
-      hasCategoryParts = true
-      return
-    }
     const qty = Number(item.quantity) || 1
-    const sellingPrice = Number(item.parts?.selling_price) || 0
-    partsRegularValue += (sellingPrice * qty)
-    productCost += (Number(item.parts?.cost) || 0) * qty
+    const price = Number(item.price) || 0
+    partsTotal += (price * qty)
+    
+    if (!item.is_category) {
+      productCost += (Number(item.parts?.cost) || 0) * qty
+    }
   })
 
-  const regularValue = laborRegularValue + partsRegularValue
-  const pkgPrice = Number(pkg.package_price) || 0
-  const savings = Math.max(0, regularValue - pkgPrice)
+  const packageTotal = laborTotal + partsTotal
 
   return (
     <div className="pb-12 max-w-5xl mx-auto">
@@ -152,43 +148,24 @@ export default function ViewPackagePage() {
           <div className="flex flex-col gap-4">
             
             <div className="flex justify-between items-center text-slate-600 text-sm">
-              <span>Labor Regular Value</span>
-              <span className="font-medium">
-                ₱{laborRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span>Labor Total</span>
+              <span className="font-medium text-lg text-slate-800">
+                ₱{laborTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between items-center text-slate-600 text-sm">
-              <span>Parts Regular Value</span>
-              <span className="font-medium">
-                ₱{partsRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 pt-4 mt-2">
-              <span className="font-bold">Regular Value</span>
-              <span className="font-bold text-lg flex items-center gap-2">
-                ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {hasCategoryParts && (
-                  <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded tracking-wide">+ Variable</span>
-                )}
+              <span>Parts & Materials Total</span>
+              <span className="font-medium text-lg text-slate-800">
+                ₱{partsTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             
-            <div className="flex justify-between items-center text-slate-900 border-t border-slate-200 pt-4">
-              <span className="font-bold">Package Price</span>
+            <div className="flex justify-between items-center text-slate-900 border-t border-slate-200 pt-4 mt-2">
+              <span className="font-bold text-sm uppercase tracking-wide">Total Package Amount</span>
               <span className="font-black text-2xl text-blue-700">
-                ₱{pkgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₱{packageTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
-
-            {savings > 0 && !hasCategoryParts && (
-              <div className="flex justify-between items-center text-emerald-600 bg-emerald-50 p-3 rounded-md border border-emerald-100">
-                <span className="font-bold text-sm">Customer Savings</span>
-                <span className="font-black text-lg">
-                  ₱{savings.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            )}
             
             {productCost > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
@@ -225,8 +202,8 @@ export default function ViewPackagePage() {
                 laborItems.map((item: any, i: number) => {
                   const name = item.labor_services?.name || 'Unknown Item'
                   const qty = Number(item.quantity) || 1
-                  const sellingPrice = Number(item.labor_services?.rate) || 0
-                  const amount = sellingPrice * qty
+                  const price = Number(item.price) || 0
+                  const amount = price * qty
 
                   return (
                     <tr key={i} className="hover:bg-slate-50 transition">
@@ -234,7 +211,7 @@ export default function ViewPackagePage() {
                         <div className="font-bold text-slate-900">{name}</div>
                       </td>
                       <td className="px-6 py-4 text-right text-slate-500">
-                        ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₱{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-800">
@@ -274,6 +251,8 @@ export default function ViewPackagePage() {
               ) : (
                 partItems.map((item: any, i: number) => {
                   const qty = Number(item.quantity) || 1
+                  const price = Number(item.price) || 0
+                  const amount = price * qty
                   
                   if (item.is_category) {
                     const name = item.part_categories?.name || 'Unknown Category'
@@ -286,14 +265,16 @@ export default function ViewPackagePage() {
                           <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">Category-based</span>
                         </td>
                         <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
-                        <td className="px-6 py-4 text-right text-slate-400">—</td>
-                        <td className="px-6 py-4 text-right font-bold text-slate-400">—</td>
+                        <td className="px-6 py-4 text-right text-slate-500">
+                          ₱{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-slate-800">
+                          ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
                       </tr>
                     )
                   } else {
                     const name = item.parts?.name || 'Unknown Item'
-                    const sellingPrice = Number(item.parts?.selling_price) || 0
-                    const amount = sellingPrice * qty
                     return (
                       <tr key={i} className="hover:bg-slate-50 transition">
                         <td className="px-6 py-4">
@@ -305,7 +286,7 @@ export default function ViewPackagePage() {
                         </td>
                         <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                         <td className="px-6 py-4 text-right text-slate-500">
-                          ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ₱{price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="px-6 py-4 text-right font-bold text-slate-800">
                           ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
