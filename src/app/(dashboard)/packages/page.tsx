@@ -103,7 +103,7 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col items-end shrink-0">
           <div className="flex justify-between w-64 text-slate-900 font-black text-xl">
             <span>Total:</span>
-            <span>₱{packageTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>₱{Number(pkg.package_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </div>
@@ -246,14 +246,7 @@ export default function PackagesListPage() {
                       
 
 
-                      let packageTotal = 0;
-                      items.forEach((item: any) => {
-                        const qty = Number(item.quantity) || 1
-                        const price = Number(item.price) || 0
-                        packageTotal += (price * qty)
-                      })
-                      
-                      const pkgPrice = packageTotal // Since they are identical now
+                      const pkgPrice = Number(pkg.package_price) || 0
 
 
 
@@ -275,7 +268,7 @@ export default function PackagesListPage() {
                           </td>
 
                           <td className="px-6 py-4 text-right text-slate-500 font-medium">
-                            <span className="font-bold text-slate-800">₱{packageTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-slate-800">₱{Number(pkg.package_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
