@@ -1,4 +1,6 @@
-'use client'
+import re
+
+content = """'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
@@ -15,7 +17,6 @@ type Part = {
   stock_quantity: number
   unit: string
   cost: number
-  selling_price?: number | null
   brands: any
 }
 
@@ -25,10 +26,9 @@ type Props = {
   onSelectPart?: (part: Part | null) => void
   error?: boolean
   disabled?: boolean
-  categoryIdFilter?: string | null
 }
 
-export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelectPart, error, disabled, categoryIdFilter }: Props) {
+export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelectPart, error, disabled }: Props) {
   const supabase = createClient()
   
   const [parts, setParts] = useState<Part[]>([])
@@ -40,7 +40,9 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
   
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  const { x, y, strategy, refs, placement } = useFloating({
+  const { refs, floatingStyles, placement } = useFloating({
+    open: isOpen,
+    onOpenChange: setIsOpen,
     placement: 'bottom-start',
     middleware: [
       flip({ padding: 10 }),
@@ -90,16 +92,11 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
 
   const fetchParts = async () => {
     setIsLoading(true)
-    let query: any = supabase
+    const { data } = await supabase
       .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, selling_price, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
       .eq('is_active', true)
       .order('name')
-    
-    if (categoryIdFilter) {
-      query = query.eq('category_id', categoryIdFilter)
-    }
-    const { data } = await query
     
     if (data) setParts(data)
     setIsLoading(false)
@@ -124,7 +121,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     setSelectedPartId(newPartId)
     const { data } = await supabase
       .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, selling_price, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
       .eq('id', newPartId)
       .single()
       
@@ -198,11 +195,9 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
             isFlipped ? 'rounded-t-md border-b-0' : 'rounded-b-md border-t-0'
           }`} 
           style={{ 
-            position: strategy,
-            top: y ?? 0,
-            left: x ?? 0,
+            ...floatingStyles,
             maxHeight: '350px',
-            marginTop: isFlipped ? '1px' : '-1px',
+            marginTop: isFlipped ? '1px' : '-1px', // Seamless overlap
             zIndex: 99999
           }}
         >
@@ -289,3 +284,8 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     </>
   )
 }
+"""
+
+with open('src/components/parts/PartSearchSelector.tsx', 'w') as f:
+    f.write(content)
+

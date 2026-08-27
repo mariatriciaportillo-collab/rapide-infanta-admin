@@ -1,0 +1,301 @@
+              <div>
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleYear || <span className="text-slate-400">None</span>}</div>
+                  </>
+                ) : (
+                  <YearSelector selectedYear={vehicleYear} setSelectedYear={setVehicleYear} disabled={false} />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+                {selectedVehicleId && !isEditingVehicle ? (
+                  <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleTransmission || <span className="text-slate-400">None</span>}</div>
+                ) : (
+                  <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                    <option value="">Select...</option>
+                    <option value="Automatic">Automatic</option>
+                    <option value="Manual">Manual</option>
+                  </select>
+                )}
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km) <span className="text-xs text-slate-500 font-normal ml-2">(Updates latest vehicle mileage on save)</span></label>
+                <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="50000" />
+              </div>
+
+              {(isEditingVehicle || isAddingVehicle) && (
+                <div className="col-span-2 flex gap-3 justify-end mt-4 pt-4 border-t border-slate-100">
+                  <button type="button" onClick={() => {
+                    if (isAddingVehicle) {
+                      setIsAddingVehicle(false)
+                      // Re-select previous if it existed, or just keep it null
+                      if (customerVehicles.length > 0) {
+                        handleSelectVehicle(customerVehicles[0])
+                      }
+                    } else {
+                      setIsEditingVehicle(false)
+                      const orig = customerVehicles.find(v => v.id === selectedVehicleId)
+                      if (orig) handleSelectVehicle(orig)
+                    }
+                  }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                    {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Line Items */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
+        <div className="flex justify-between items-center mb-4 border-b pb-2">
+          <h3 className="text-lg font-semibold text-slate-800">Labor & Services</h3>
+          <div className="flex items-center gap-2">
+            <a href="/labor-lookup" target="_blank" className="text-xs text-blue-500 hover:underline">
+              View Labor Lookup ↗
+            </a>
+          </div>
+        </div>
+
+        {/* SEARCH BAR — single search at top */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <SearchableCombobox
+            options={laborServices.map(s => ({
+              id: s.id,
+              name: s.name,
+              subtext: `${s.labor_groups?.name || 'No Group'} • ${s.labor_categories?.name || 'No Category'} • ₱${s.rate?.toLocaleString() || '0'}`
+            }))}
+            value=""
+            onChange={(laborId) => {
+              const service = laborServices.find(s => s.id === laborId)
+              if (service) {
+                const alreadyAdded = items.some(i => i.labor_service_id === service.id)
+                if (alreadyAdded) {
+                  setError(`"${service.name}" is already added to this quotation.`)
+                  setTimeout(() => setError(null), 3000)
+                  return
+                }
+                setItems(prev => [...prev, {
+                  id: Math.random().toString(36).substr(2, 9),
+                  item_type: 'MANUAL',
+                  description: service.name,
+                  quantity: 1,
+                  unit_price: service.rate ?? '',
+                  is_section_header: false,
+                  labor_service_id: service.id,
+                  group_id: service.group_id,
+                  category_id: service.category_id,
+                  group_name_snapshot: service.labor_groups?.name,
+                  category_name_snapshot: service.labor_categories?.name,
+                  standard_hour_snapshot: service.standard_hours,
+                }])
+              }
+            }}
+            placeholder="Search labor / service to add..."
+            searchPlaceholder="Search by service, group, or category..."
+            onAddNew={(query) => {
+              setNewLaborSearchQuery(query)
+              setActiveItemIndexForModal(null)
+              setIsNewLaborModalOpen(true)
+            }}
+            addNewLabel="+ Add New Labor"
+          />
+          
+          <SearchableCombobox
+            options={packages.map(p => ({
+              id: p.id,
+              name: p.name,
+              subtext: `${p.category || 'No Category'} • ${p.package_items?.length || 0} items • ₱${p.package_price?.toLocaleString() || '0'}`
+            }))}
+            value=""
+            onChange={(pkgId) => {
+              const pkg = packages.find(p => p.id === pkgId)
+              if (pkg) {
+                const newItem: LineItem = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  item_type: 'PACKAGE',
+                  package_id: pkg.id,
+                  description: pkg.name,
+                  quantity: 1,
+                  unit_price: pkg.package_price,
+                  is_section_header: false,
+                  package_items: (pkg.package_items || []).map((pi: any) => ({
+                    id: Math.random().toString(36).substr(2, 9),
+                    item_type: 'PACKAGE_ITEM',
+                    description: pi.item_type === 'LABOR' 
+                      ? pi.labor_services?.name 
+                      : (pi.is_category ? pi.part_categories?.name : pi.parts?.name),
+                    quantity: pi.quantity,
+                    unit_price: 0,
+                    is_section_header: false,
+                    labor_service_id: pi.labor_service_id,
+                    part_id: pi.part_id,
+                    is_category: pi.is_category,
+                    part_category_id: pi.part_category_id,
+                    resolved_part_id: null,
+                    internal_price_snapshot: pi.price,
+                    internal_amount_snapshot: Number(pi.price) * Number(pi.quantity)
+                  }))
+                }
+                setItems(prev => [...prev, newItem])
+              }
+            }}
+            placeholder="Search package to add..."
+            searchPlaceholder="Search packages by name or category..."
+          />
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="flex gap-2 mb-4">
+          <button type="button" onClick={() => addItem(false)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
+            + Add Manual Labor
+          </button>
+          <button type="button" onClick={() => addItem(true)} className="text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded font-medium transition">
+            + Add Section Header
+          </button>
+        </div>
+
+        {/* TABLE HEADER */}
+        {items.length > 0 && (
+          <div className="flex gap-3 items-center text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">
+            <div className="flex-1">Description</div>
+            <div className="w-24 text-center">Qty</div>
+            <div className="w-32 text-right">Unit Price</div>
+            <div className="w-32 text-right">Amount</div>
+            <div className="w-10"></div>
+          </div>
+        )}
+
+        {/* ITEM ROWS */}
+        <div className="space-y-2">
+          {items.map((item, index) => (
+            <div key={item.id} className={`flex gap-3 items-center ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : 'py-1'}`}>
+              <div className="flex-1">
+                {item.is_section_header ? (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="e.g. LABOR CHARGES"
+                    className="w-full border border-slate-300 rounded-md p-2 font-bold bg-transparent"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="Item description..."
+                    className={`w-full border border-slate-300 rounded-md p-2 ${item.labor_service_id ? 'bg-blue-50 font-medium text-blue-900' : ''}`}
+                  />
+                )}
+              </div>
+
+              {!item.is_section_header && (
+                <>
+                  <div className="w-24">
+                    <input
+                      type="number"
+                      min="0.1" step="0.1"
+                      value={item.quantity}
+                      onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                      placeholder="Qty"
+                      className="w-full border border-slate-300 rounded-md p-2 text-center"
+                    />
+                  </div>
+                  <div className="w-32">
+                    <input
+                      type="number"
+                      min="0" step="0.01"
+                      value={item.unit_price}
+                      onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                      placeholder="Unit Price"
+                      className="w-full border border-slate-300 rounded-md p-2 text-right"
+                    />
+                  </div>
+                  <div className="w-32 py-2 text-right font-medium text-slate-700">
+                    ₱{((Number(item.quantity)||0) * (Number(item.unit_price)||0)).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                  </div>
+                </>
+              )}
+
+              {item.is_section_header && (
+                <>
+                  <div className="w-24"></div>
+                  <div className="w-32"></div>
+                  <div className="w-32"></div>
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={() => removeItem(item.id)}
+                className="p-2 text-slate-400 hover:text-red-500 transition w-10 flex justify-center"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <p className="text-center text-slate-400 py-8">No items added yet. Use the search above to add labor services.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Footer / Totals */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Additional Information</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Warranty Terms</label>
+              <input type="text" value={warranty} onChange={e => setWarranty(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Prepared By</label>
+              <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Notes / Remarks</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full border border-slate-300 rounded-md p-2" placeholder="Any additional notes..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-800 text-white rounded-lg shadow-sm p-6 flex flex-col justify-end">
+          <div className="space-y-3 mb-6">
+            <div className="flex justify-between text-slate-300">
+              <span>Subtotal</span>
+              <span>₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            </div>
+            <div className="flex justify-between items-center text-slate-300">
+              <span>Discount</span>
+              <div className="w-32 flex items-center">
+                <span className="mr-2">₱</span>
+                <input 
+                  type="number" 
+                  value={discount} 
+                  onChange={e => setDiscount(Number(e.target.value))} 
+                  className="w-full bg-slate-700 border-none rounded p-1 text-white text-right" 
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className="h-px bg-slate-600 my-4"></div>
+            <div className="flex justify-between text-2xl font-bold text-yellow-400">
+              <span>Grand Total</span>
+              <span>₱{grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <NewLaborModal 
+        isOpen={isNewLaborModalOpen} 
+        onClose={() => setIsNewLaborModalOpen(false)}
+        initialName={newLaborSearchQuery}
+        onSuccess={(newLabor) => {
