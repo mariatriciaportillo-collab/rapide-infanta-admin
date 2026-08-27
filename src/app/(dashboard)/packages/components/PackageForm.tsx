@@ -273,7 +273,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
               </h2>
             </div>
             
-            <div className="p-0 overflow-x-auto flex-1">
+            <div className="p-0 overflow-visible">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
@@ -380,7 +380,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
               </h2>
             </div>
             
-            <div className="p-0 overflow-x-auto flex-1">
+            <div className="p-0 overflow-visible">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
