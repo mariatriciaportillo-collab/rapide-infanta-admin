@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Printer, Download, CheckCircle2, FileText, User as UserIcon, Building2, Car } from 'lucide-react'
+import { ArrowLeft, Printer, Download, CheckCircle2, FileText, User as UserIcon, Building2, Car, Edit } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default async function ViewQuotationPage({

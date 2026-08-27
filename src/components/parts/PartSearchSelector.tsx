@@ -24,9 +24,10 @@ type Props = {
   onSelectPart?: (part: Part | null) => void
   error?: boolean
   disabled?: boolean
+  categoryIdFilter?: string | null
 }
 
-export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelectPart, error, disabled }: Props) {
+export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelectPart, error, disabled, categoryIdFilter }: Props) {
   const supabase = createClient()
   
   const [parts, setParts] = useState<Part[]>([])
@@ -88,11 +89,16 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
 
   const fetchParts = async () => {
     setIsLoading(true)
-    const { data } = await supabase
+    let query: any = supabase
       .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, selling_price, brands(name)')
       .eq('is_active', true)
       .order('name')
+    
+    if (categoryIdFilter) {
+      query = query.eq('category_id', categoryIdFilter)
+    }
+    const { data } = await query
     
     if (data) setParts(data)
     setIsLoading(false)
@@ -117,7 +123,7 @@ export function PartSearchSelector({ selectedPartId, setSelectedPartId, onSelect
     setSelectedPartId(newPartId)
     const { data } = await supabase
       .from('parts')
-      .select('id, name, display_name, part_number, stock_quantity, unit, cost, brands(name)')
+      .select('id, name, display_name, part_number, stock_quantity, unit, cost, selling_price, brands(name)')
       .eq('id', newPartId)
       .single()
       
