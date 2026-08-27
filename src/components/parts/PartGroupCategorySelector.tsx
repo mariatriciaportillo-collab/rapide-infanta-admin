@@ -178,7 +178,7 @@ export function PartGroupCategorySelector({
         </div>
 
         {isGroupOpen && !disabled && (
-          <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg flex flex-col">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg flex flex-col">
             <div className="p-2 border-b border-slate-100">
               <input 
                 type="text"
@@ -229,7 +229,7 @@ export function PartGroupCategorySelector({
         </div>
 
         {isCategoryOpen && !disabled && selectedGroupId && (
-          <div className="absolute z-20 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg flex flex-col">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg flex flex-col">
             <div className="p-2 border-b border-slate-100">
               <input 
                 type="text"

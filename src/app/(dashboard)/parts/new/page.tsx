@@ -119,8 +119,8 @@ export default function AddPartPage() {
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-6">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
             <h3 className="font-semibold text-slate-800">PRODUCT INFORMATION</h3>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,8 +201,8 @@ export default function AddPartPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-6">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
             <h3 className="font-semibold text-slate-800">PRICING</h3>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -241,8 +241,8 @@ export default function AddPartPage() {
           </div>
         </div>
         
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-6">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
             <h3 className="font-semibold text-slate-800">INVENTORY</h3>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,7 +270,7 @@ export default function AddPartPage() {
           </div>
         </div>
         
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-8">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-8">
           <div className="p-6 space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
