@@ -132,6 +132,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
 
   // Inline Edit State
+  const [isAddingCustomer, setIsAddingCustomer] = useState(false)
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
   const [isAddingVehicle, setIsAddingVehicle] = useState(false)
   const [isEditingVehicle, setIsEditingVehicle] = useState(false)
@@ -320,6 +321,77 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       setMileage('')
       setVehicleSearch('')
     }
+  }
+
+    const handleCreateNewCustomer = async () => {
+    setError(null)
+    
+    const cleanFirstName = firstName.trim()
+    const cleanLastName = lastName.trim()
+    const cleanCompanyName = companyName.trim()
+    
+    if (customerType === 'individual' && (!cleanFirstName || !cleanLastName)) {
+      setError("First Name and Last Name are required.")
+      return
+    }
+    if (customerType === 'company' && !cleanCompanyName) {
+      setError("Company Name is required.")
+      return
+    }
+
+    const normalizedPlate = vehiclePlate.replace(/[^A-Z0-9]/ig, '').toUpperCase()
+    if (!normalizedPlate && (vehicleMake || vehicleModel || vehicleYear)) {
+      setError("Plate Number is required to create the vehicle.")
+      return
+    }
+
+    const payload = {
+      customer_type: customerType,
+      name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
+      first_name: customerType === 'individual' ? cleanFirstName : null,
+      last_name: customerType === 'individual' ? cleanLastName : null,
+      contact_person: customerType === 'company' ? buildLegacyName('individual', contactFirstName.trim(), contactLastName.trim(), '') : null,
+      contact_first_name: customerType === 'company' ? contactFirstName.trim() : null,
+      contact_last_name: customerType === 'company' ? contactLastName.trim() : null,
+      mobile: customerMobile || null,
+      telephone: customerTelephone || null,
+      email: customerEmail || null,
+      address: customerAddress || null,
+      tin: customerTin || null
+    }
+    
+    const { data: newCust, error: custErr } = await supabase.from('customers').insert([payload]).select().single()
+    
+    if (custErr) {
+      setError(`Failed to create customer: ${custErr.message}`)
+      return
+    }
+    
+    let newVeh = null;
+    if (normalizedPlate) {
+      const vPayload = {
+        customer_id: newCust.id,
+        plate_number: normalizedPlate,
+        make: vehicleMake || null,
+        model: vehicleModel || null,
+        year: vehicleYear ? parseInt(vehicleYear) : null,
+        transmission: vehicleTransmission || null
+      }
+      const { data: vData, error: vErr } = await supabase.from('vehicles').insert([vPayload]).select().single()
+      if (vErr) {
+        // Still proceed, just log error for vehicle
+        console.error("Failed to create vehicle:", vErr)
+      } else {
+        newVeh = vData;
+      }
+    }
+    
+    await handleSelectCustomer(newCust)
+    if (newVeh) {
+      handleSelectVehicle(newVeh)
+    }
+    
+    setIsAddingCustomer(false)
   }
 
   const handleSaveCustomerChanges = async () => {
@@ -953,9 +1025,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             type="button"
             onClick={() => {
               handleClearCustomer()
-              setShowDropdown(false)
-            }}
-            className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2"
+                setIsAddingCustomer(true)
+                setShowDropdown(false)
+              }}
+              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2"
           >
             <Plus size={18} /> Add New Customer
           </button>
@@ -1078,10 +1151,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
       )}
 
-      {(!selectedCustomerId || isEditingCustomer || !selectedVehicleId || isEditingVehicle || isAddingVehicle) && (
+      {(isAddingCustomer || isEditingCustomer || isAddingVehicle || isEditingVehicle) && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Customer Details */}
-        {(!selectedCustomerId || isEditingCustomer) && (
+        {(isAddingCustomer || isEditingCustomer) && (
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -1239,7 +1312,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         )}
 
         {/* Vehicle Details */}
-        {(!selectedCustomerId || !selectedVehicleId || isEditingVehicle || isAddingVehicle) && (
+        {(isAddingCustomer || isAddingVehicle || isEditingVehicle) && (
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
