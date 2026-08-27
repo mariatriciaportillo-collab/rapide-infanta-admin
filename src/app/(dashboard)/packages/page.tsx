@@ -15,13 +15,19 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
   useEffect(() => setMounted(true), [])
   if (!mounted) return null
 
+
   const items = pkg.package_items || []
   
   const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
   const partItems = items.filter((i: any) => i.item_type === 'PART')
   
   let regularValue = 0;
+  let hasCategoryParts = false;
   items.forEach((item: any) => {
+    if (item.item_type === 'PART' && item.is_category) {
+      hasCategoryParts = true;
+      return;
+    }
     const isLabor = item.item_type === 'LABOR'
     const qty = Number(item.quantity) || 1
     const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
@@ -30,7 +36,7 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
             <h3 className="font-bold text-slate-800 text-lg">Items in {pkg.name}</h3>
@@ -42,81 +48,55 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
         </div>
         
         <div className="overflow-y-auto p-0 flex-1">
-          {laborItems.length > 0 && (
-            <div className="mb-4">
-              <div className="px-6 py-2 bg-indigo-50 border-y border-indigo-100 font-bold text-indigo-800 text-sm">
-                Labor
-              </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                    <th className="px-6 py-2 font-bold">Labor / Service</th>
-                    <th className="px-6 py-2 font-bold text-right">Qty</th>
-                    <th className="px-6 py-2 font-bold text-right">Regular Rate</th>
-                    <th className="px-6 py-2 font-bold text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {laborItems.map((item: any, i: number) => {
-                    const rate = Number(item.labor_services?.rate) || 0
-                    const qty = Number(item.quantity) || 1
-                    return (
-                      <tr key={i} className="hover:bg-slate-50">
-                        <td className="px-6 py-2 text-sm text-slate-800 font-bold">{item.labor_services?.name || 'Unknown Item'}</td>
-                        <td className="px-6 py-2 text-sm text-right text-slate-600 font-medium">{qty}</td>
-                        <td className="px-6 py-2 text-sm text-right text-slate-500">₱{rate.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                        <td className="px-6 py-2 text-sm text-right font-bold text-slate-800">₱{(rate * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-200">
+                <th className="px-6 py-3 font-bold">Type</th>
+                <th className="px-6 py-3 font-bold">Requirement</th>
+                <th className="px-6 py-3 font-bold text-right">Qty</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {laborItems.map((item: any, i: number) => (
+                <tr key={`labor-${i}`} className="hover:bg-slate-50">
+                  <td className="px-6 py-3 text-sm text-indigo-600 font-bold">Labor</td>
+                  <td className="px-6 py-3 text-sm text-slate-800 font-medium">{item.labor_services?.name || 'Unknown Item'}</td>
+                  <td className="px-6 py-3 text-sm text-right text-slate-600 font-medium">{Number(item.quantity) || 1}</td>
+                </tr>
+              ))}
+              
+              {partItems.map((item: any, i: number) => (
+                <tr key={`part-${i}`} className="hover:bg-slate-50">
+                  <td className="px-6 py-3 text-sm font-bold">
+                    {item.is_category ? (
+                      <span className="text-amber-600">Part Category</span>
+                    ) : (
+                      <span className="text-emerald-600">Fixed Part</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-slate-800 font-medium">
+                    {item.is_category ? item.part_categories?.name || 'Unknown Category' : item.parts?.name || 'Unknown Item'}
+                  </td>
+                  <td className="px-6 py-3 text-sm text-right text-slate-600 font-medium">{Number(item.quantity) || 1}</td>
+                </tr>
+              ))}
 
-          {partItems.length > 0 && (
-            <div>
-              <div className="px-6 py-2 bg-emerald-50 border-y border-emerald-100 font-bold text-emerald-800 text-sm">
-                Parts & Materials
-              </div>
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                    <th className="px-6 py-2 font-bold">Part / Product</th>
-                    <th className="px-6 py-2 font-bold">Part No.</th>
-                    <th className="px-6 py-2 font-bold text-right">Qty</th>
-                    <th className="px-6 py-2 font-bold text-right">Regular Price</th>
-                    <th className="px-6 py-2 font-bold text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {partItems.map((item: any, i: number) => {
-                    const price = Number(item.parts?.selling_price) || 0
-                    const qty = Number(item.quantity) || 1
-                    return (
-                      <tr key={i} className="hover:bg-slate-50">
-                        <td className="px-6 py-2 text-sm text-slate-800 font-bold">{item.parts?.name || 'Unknown Item'}</td>
-                        <td className="px-6 py-2 text-sm text-slate-500 font-mono">{item.parts?.part_number || '—'}</td>
-                        <td className="px-6 py-2 text-sm text-right text-slate-600 font-medium">{qty}</td>
-                        <td className="px-6 py-2 text-sm text-right text-slate-500">₱{price.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                        <td className="px-6 py-2 text-sm text-right font-bold text-slate-800">₱{(price * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {items.length === 0 && (
-            <div className="p-8 text-center text-slate-500">No items found.</div>
-          )}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="p-8 text-center text-slate-500">No items found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
         
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-1 items-end shrink-0">
           <div className="flex justify-between w-64 text-slate-600">
             <span>Regular Value:</span>
-            <span className="font-medium">₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-medium flex items-center gap-2">
+              ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {hasCategoryParts && <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1 rounded">+ Variable</span>}
+            </span>
           </div>
           <div className="flex justify-between w-64 text-slate-900 font-bold text-lg border-t border-slate-200 pt-1 mt-1">
             <span>Package Price:</span>
@@ -128,6 +108,7 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
     document.body
   )
 }
+
 
 export default function PackagesListPage() {
   const supabase = createClient()
@@ -146,7 +127,7 @@ export default function PackagesListPage() {
     setIsLoading(true)
     let query = supabase
       .from('packages')
-      .select('*, package_items(item_type, quantity, labor_services(rate, name), parts(selling_price, name, part_number))', { count: 'exact' })
+      .select('*, package_items(item_type, is_category, quantity, labor_services(rate, name), parts(selling_price, name, part_number), part_categories(name))', { count: 'exact' })
       .order('name')
       
     if (filterActive === 'active') query = query.eq('is_active', true)
@@ -260,8 +241,14 @@ export default function PackagesListPage() {
                       const items = pkg.package_items || []
                       const numItems = items.length
                       
+
                       let regularValue = 0;
+                      let hasCategoryParts = false;
                       items.forEach((item: any) => {
+                        if (item.item_type === 'PART' && item.is_category) {
+                          hasCategoryParts = true;
+                          return;
+                        }
                         const isLabor = item.item_type === 'LABOR'
                         const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
                         const qty = Number(item.quantity) || 1
@@ -269,6 +256,7 @@ export default function PackagesListPage() {
                       })
                       
                       const pkgPrice = Number(pkg.package_price) || 0
+
 
                       return (
                         <tr key={pkg.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
@@ -286,9 +274,14 @@ export default function PackagesListPage() {
                               {numItems}
                             </button>
                           </td>
+
                           <td className="px-6 py-4 text-right text-slate-500 font-medium">
-                            ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div className="flex flex-col items-end">
+                              <span>₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              {hasCategoryParts && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1 rounded mt-0.5 border border-amber-100">+ Variable</span>}
+                            </div>
                           </td>
+
                           <td className="px-6 py-4 text-right font-bold text-slate-800">
                             ₱{pkgPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>

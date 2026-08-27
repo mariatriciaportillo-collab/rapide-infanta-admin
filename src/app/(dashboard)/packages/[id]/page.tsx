@@ -17,7 +17,7 @@ export default function ViewPackagePage() {
       if (!params.id) return
       const { data } = await supabase
         .from('packages')
-        .select('*, package_items(*, labor_services(*), parts(*, brands(name)))')
+        .select('*, package_items(*, labor_services(*), parts(*, brands(name)), part_categories(name))')
         .eq('id', params.id)
         .single()
       
@@ -48,6 +48,7 @@ export default function ViewPackagePage() {
   let laborRegularValue = 0
   let partsRegularValue = 0
   let productCost = 0
+  let hasCategoryParts = false
 
   laborItems.forEach((item: any) => {
     const qty = Number(item.quantity) || 1
@@ -56,6 +57,10 @@ export default function ViewPackagePage() {
   })
 
   partItems.forEach((item: any) => {
+    if (item.is_category) {
+      hasCategoryParts = true
+      return
+    }
     const qty = Number(item.quantity) || 1
     const sellingPrice = Number(item.parts?.selling_price) || 0
     partsRegularValue += (sellingPrice * qty)
@@ -161,8 +166,11 @@ export default function ViewPackagePage() {
 
             <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 pt-4 mt-2">
               <span className="font-bold">Regular Value</span>
-              <span className="font-bold text-lg">
+              <span className="font-bold text-lg flex items-center gap-2">
                 ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {hasCategoryParts && (
+                  <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded tracking-wide">+ Variable</span>
+                )}
               </span>
             </div>
             
@@ -173,7 +181,7 @@ export default function ViewPackagePage() {
               </span>
             </div>
 
-            {savings > 0 && (
+            {savings > 0 && !hasCategoryParts && (
               <div className="flex justify-between items-center text-emerald-600 bg-emerald-50 p-3 rounded-md border border-emerald-100">
                 <span className="font-bold text-sm">Customer Savings</span>
                 <span className="font-black text-lg">
@@ -184,7 +192,7 @@ export default function ViewPackagePage() {
             
             {productCost > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-400">
-                <span>Est. Product Cost (Internal)</span>
+                <span>Est. Fixed Product Cost</span>
                 <span className="font-mono">₱{productCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             )}
@@ -250,45 +258,61 @@ export default function ViewPackagePage() {
             <thead>
               <tr className="bg-emerald-50/50 text-emerald-800 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-bold border-b border-slate-200">Part / Product</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Part No.</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Brand</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-28">Price</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Type</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Qty</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-28">Price</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {partItems.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                     No parts or materials added yet.
                   </td>
                 </tr>
               ) : (
                 partItems.map((item: any, i: number) => {
-                  const name = item.parts?.name || 'Unknown Item'
-                  const partNumber = item.parts?.part_number || '—'
-                  const brandName = item.parts?.brands?.name || '—'
                   const qty = Number(item.quantity) || 1
-                  const sellingPrice = Number(item.parts?.selling_price) || 0
-                  const amount = sellingPrice * qty
-
-                  return (
-                    <tr key={i} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">{name}</div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-500 font-mono text-sm">{partNumber}</td>
-                      <td className="px-6 py-4 text-slate-600 text-sm">{brandName}</td>
-                      <td className="px-6 py-4 text-right text-slate-500">
-                        ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
-                      <td className="px-6 py-4 text-right font-bold text-slate-800">
-                        ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                    </tr>
-                  )
+                  
+                  if (item.is_category) {
+                    const name = item.part_categories?.name || 'Unknown Category'
+                    return (
+                      <tr key={i} className="hover:bg-slate-50 transition">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900">{name}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">Category-based</span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
+                        <td className="px-6 py-4 text-right text-slate-400">—</td>
+                        <td className="px-6 py-4 text-right font-bold text-slate-400">—</td>
+                      </tr>
+                    )
+                  } else {
+                    const name = item.parts?.name || 'Unknown Item'
+                    const sellingPrice = Number(item.parts?.selling_price) || 0
+                    const amount = sellingPrice * qty
+                    return (
+                      <tr key={i} className="hover:bg-slate-50 transition">
+                        <td className="px-6 py-4">
+                          <div className="font-bold text-slate-900">{name}</div>
+                          <div className="text-xs text-slate-500 mt-1">{item.parts?.part_number || 'No PN'} • {item.parts?.brands?.name || 'No Brand'}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">Fixed Product</span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
+                        <td className="px-6 py-4 text-right text-slate-500">
+                          ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-6 py-4 text-right font-bold text-slate-800">
+                          ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    )
+                  }
                 })
               )}
             </tbody>

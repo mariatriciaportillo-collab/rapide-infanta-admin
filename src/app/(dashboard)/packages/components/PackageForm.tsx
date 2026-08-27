@@ -30,19 +30,26 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const [items, setItems] = useState<any[]>(initialData?.package_items?.map((item: any) => ({
     id: item.id || crypto.randomUUID(),
     item_type: item.item_type,
+    is_category: item.is_category || false,
     record_id: item.item_type === 'LABOR' ? item.labor_service_id : item.part_id,
     record: item.item_type === 'LABOR' ? item.labor_services : item.parts,
+    category_id: item.part_category_id,
+    category_record: item.part_categories,
     quantity: item.quantity?.toString() || '1'
   })) || [])
   
   // Lookups
   const [laborSearch, setLaborSearch] = useState('')
   const [partSearch, setPartSearch] = useState('')
+  const [categorySearch, setCategorySearch] = useState('')
   
   const [laborResults, setLaborResults] = useState<any[]>([])
   const [partResults, setPartResults] = useState<any[]>([])
+  const [categoryResults, setCategoryResults] = useState<any[]>([])
+  
   const [isSearchingLabor, setIsSearchingLabor] = useState(false)
   const [isSearchingPart, setIsSearchingPart] = useState(false)
+  const [isSearchingCategory, setIsSearchingCategory] = useState(false)
 
   // Searching Labor
   useEffect(() => {
@@ -74,8 +81,23 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     return () => clearTimeout(timer)
   }, [partSearch, supabase])
 
+  // Searching Categories
+  useEffect(() => {
+    if (!categorySearch.trim()) {
+      setCategoryResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingCategory(true)
+      const { data } = await supabase.from('part_categories').select('id, name').ilike('name', `%${categorySearch}%`).limit(15)
+      setCategoryResults(data || [])
+      setIsSearchingCategory(false)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [categorySearch, supabase])
+
   const addItem = (type: 'LABOR' | 'PART') => {
-    setItems([...items, { id: crypto.randomUUID(), item_type: type, record_id: null, record: null, quantity: '1' }])
+    setItems([...items, { id: crypto.randomUUID(), item_type: type, is_category: false, record_id: null, record: null, category_id: null, category_record: null, quantity: '1' }])
   }
 
   const removeItem = (id: string) => {
@@ -86,8 +108,19 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item))
   }
 
+  const toggleCategoryMode = (id: string, useCategory: boolean) => {
+    setItems(items.map(item => {
+      if (item.id === id) {
+        return { ...item, is_category: useCategory, record_id: null, record: null, category_id: null, category_record: null }
+      }
+      return item
+    }))
+    setPartSearch('')
+    setCategorySearch('')
+  }
+
   const selectItemRecord = (id: string, record: any, type: 'LABOR' | 'PART') => {
-    const isDuplicate = items.some(i => i.id !== id && i.item_type === type && i.record_id === record.id)
+    const isDuplicate = items.some(i => i.id !== id && i.item_type === type && !i.is_category && i.record_id === record.id)
     if (isDuplicate) {
       alert(`This ${type === 'LABOR' ? 'labor service' : 'part'} is already included in the package.`)
       return
@@ -98,6 +131,17 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     if (type === 'PART') setPartSearch('')
   }
 
+  const selectCategoryRecord = (id: string, record: any) => {
+    const isDuplicate = items.some(i => i.id !== id && i.item_type === 'PART' && i.is_category && i.category_id === record.id)
+    if (isDuplicate) {
+      alert(`This category is already included in the package.`)
+      return
+    }
+    updateItem(id, 'category_id', record.id)
+    updateItem(id, 'category_record', record)
+    setCategorySearch('')
+  }
+
   const laborItems = items.filter(i => i.item_type === 'LABOR')
   const partItems = items.filter(i => i.item_type === 'PART')
 
@@ -106,12 +150,14 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   }
 
   const calcPartsValue = () => {
-    return partItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (item.record ? Number(item.record.selling_price) || 0 : 0)), 0)
+    return partItems.reduce((sum, item) => sum + ((Number(item.quantity) || 0) * (!item.is_category && item.record ? Number(item.record.selling_price) || 0 : 0)), 0)
   }
 
   const laborRegularValue = calcLaborValue()
   const partsRegularValue = calcPartsValue()
   const regularValue = laborRegularValue + partsRegularValue
+  
+  const hasCategoryParts = partItems.some(i => i.is_category)
   
   const price = Number(packagePrice) || 0
   const savings = Math.max(0, regularValue - price)
@@ -129,7 +175,9 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     e.preventDefault()
     if (!name.trim()) return alert("Package Name is required")
     if (items.length === 0) return alert("At least one item (Labor or Part) is required")
-    if (items.some(i => !i.record_id)) return alert("Please select a specific item for all rows")
+    if (items.some(i => (i.item_type === 'LABOR' && !i.record_id) || (i.item_type === 'PART' && !i.is_category && !i.record_id) || (i.item_type === 'PART' && i.is_category && !i.category_id))) {
+      return alert("Please select a specific item or category for all rows")
+    }
     if (items.some(i => Number(i.quantity) <= 0)) return alert("Quantity must be greater than 0")
 
     setLoading(true)
@@ -179,8 +227,10 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       const itemsPayload = items.map(item => ({
         package_id: pkgId,
         item_type: item.item_type,
+        is_category: item.is_category || false,
         labor_service_id: item.item_type === 'LABOR' ? item.record_id : null,
-        part_id: item.item_type === 'PART' ? item.record_id : null,
+        part_id: item.item_type === 'PART' && !item.is_category ? item.record_id : null,
+        part_category_id: item.item_type === 'PART' && item.is_category ? item.category_id : null,
         quantity: Number(item.quantity)
       }))
 
@@ -459,78 +509,127 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
-                    <th className="px-6 py-3 font-bold">Part / Product</th>
+                    <th className="px-4 py-3 font-bold w-32">Category?</th>
+                    <th className="px-4 py-3 font-bold">Part / Category</th>
                     <th className="px-4 py-3 font-bold">Part No.</th>
                     <th className="px-4 py-3 font-bold">Brand</th>
-                    <th className="px-4 py-3 font-bold text-right w-28">Price</th>
-                    <th className="px-4 py-3 font-bold text-right w-24">Quantity</th>
-                    <th className="px-4 py-3 font-bold text-right w-32">Amount</th>
-                    <th className="px-4 py-3 font-bold text-center w-16">Action</th>
+                    <th className="px-4 py-3 font-bold text-right w-24">Price</th>
+                    <th className="px-4 py-3 font-bold text-right w-20">Qty</th>
+                    <th className="px-4 py-3 font-bold text-right w-28">Amount</th>
+                    <th className="px-4 py-3 font-bold text-center w-12"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {partItems.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500 bg-slate-50/50">
+                      <td colSpan={8} className="px-6 py-8 text-center text-slate-500 bg-slate-50/50">
                         No parts or materials added yet.
                       </td>
                     </tr>
                   ) : (
                     partItems.map(item => {
-                      const price = item.record ? Number(item.record.selling_price) || 0 : 0
+                      const price = !item.is_category && item.record ? Number(item.record.selling_price) || 0 : 0
                       const qty = Number(item.quantity) || 0
                       const amount = price * qty
                       return (
                         <tr key={item.id} className="hover:bg-slate-50 transition">
-                          <td className="px-6 py-3">
-                            {item.record ? (
-                              <div className="flex justify-between items-center group">
-                                <span className="font-bold text-slate-800">{item.record.name}</span>
-                              </div>
-                            ) : (
-                              <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                                <input 
-                                  type="text"
-                                  placeholder="Search part/product..."
-                                  onChange={e => setPartSearch(e.target.value)}
-                                  className="w-full pl-8 p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
-                                  autoFocus
-                                />
-                                {partSearch && (
-                                  <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded shadow-xl z-50 max-h-60 overflow-y-auto min-w-[300px]">
-                                    {isSearchingPart ? (
-                                      <div className="p-2 text-xs text-slate-500">Searching...</div>
-                                    ) : partResults.length === 0 ? (
-                                      <div className="p-2 text-xs text-slate-500">No results found.</div>
-                                    ) : (
-                                      partResults.map(res => (
-                                        <div 
-                                          key={res.id} 
-                                          className="p-2 hover:bg-emerald-50 cursor-pointer border-b border-slate-50 last:border-0"
-                                          onClick={() => selectItemRecord(item.id, res, 'PART')}
-                                        >
-                                          <div className="font-bold text-slate-800 text-sm">{res.name}</div>
-                                          <div className="text-xs text-slate-500 flex justify-between mt-1">
-                                            <span>{res.part_number || 'No PN'} • {res.brands?.name || 'No Brand'}</span>
-                                            <span className="font-bold text-emerald-700">₱{Number(res.selling_price).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                          <td className="px-4 py-3">
+                            <select 
+                              value={item.is_category ? 'yes' : 'no'}
+                              onChange={e => toggleCategoryMode(item.id, e.target.value === 'yes')}
+                              className="w-full p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 font-medium"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            {item.is_category ? (
+                              item.category_record ? (
+                                <div className="flex justify-between items-center group">
+                                  <span className="font-bold text-slate-800">{item.category_record.name}</span>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                  <input 
+                                    type="text"
+                                    placeholder="Search category..."
+                                    onChange={e => setCategorySearch(e.target.value)}
+                                    className="w-full pl-8 p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 bg-amber-50"
+                                    autoFocus
+                                  />
+                                  {categorySearch && (
+                                    <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded shadow-xl z-50 max-h-60 overflow-y-auto min-w-[250px]">
+                                      {isSearchingCategory ? (
+                                        <div className="p-2 text-xs text-slate-500">Searching...</div>
+                                      ) : categoryResults.length === 0 ? (
+                                        <div className="p-2 text-xs text-slate-500">No results found.</div>
+                                      ) : (
+                                        categoryResults.map(res => (
+                                          <div 
+                                            key={res.id} 
+                                            className="p-2 hover:bg-amber-100 cursor-pointer border-b border-slate-50 last:border-0"
+                                            onClick={() => selectCategoryRecord(item.id, res)}
+                                          >
+                                            <div className="font-bold text-slate-800 text-sm">{res.name}</div>
                                           </div>
-                                        </div>
-                                      ))
-                                    )}
-                                  </div>
-                                )}
-                              </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            ) : (
+                              item.record ? (
+                                <div className="flex justify-between items-center group">
+                                  <span className="font-bold text-slate-800">{item.record.name}</span>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                  <input 
+                                    type="text"
+                                    placeholder="Search product..."
+                                    onChange={e => setPartSearch(e.target.value)}
+                                    className="w-full pl-8 p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-emerald-500"
+                                    autoFocus
+                                  />
+                                  {partSearch && (
+                                    <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded shadow-xl z-50 max-h-60 overflow-y-auto min-w-[300px]">
+                                      {isSearchingPart ? (
+                                        <div className="p-2 text-xs text-slate-500">Searching...</div>
+                                      ) : partResults.length === 0 ? (
+                                        <div className="p-2 text-xs text-slate-500">No results found.</div>
+                                      ) : (
+                                        partResults.map(res => (
+                                          <div 
+                                            key={res.id} 
+                                            className="p-2 hover:bg-emerald-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                            onClick={() => selectItemRecord(item.id, res, 'PART')}
+                                          >
+                                            <div className="font-bold text-slate-800 text-sm">{res.name}</div>
+                                            <div className="text-xs text-slate-500 flex justify-between mt-1">
+                                              <span>{res.part_number || 'No PN'} • {res.brands?.name || 'No Brand'}</span>
+                                              <span className="font-bold text-emerald-700">₱{Number(res.selling_price).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                                            </div>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              )
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-500 font-mono">
-                            {item.record ? (item.record.part_number || '—') : '—'}
+                            {item.is_category ? '—' : (item.record ? (item.record.part_number || '—') : '—')}
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-600">
-                            {item.record ? (item.record.brands?.name || '—') : '—'}
+                            {item.is_category ? '—' : (item.record ? (item.record.brands?.name || '—') : '—')}
                           </td>
                           <td className="px-4 py-3 text-right text-sm text-slate-500">
-                            {item.record ? `₱${price.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                            {item.is_category ? '—' : (item.record ? `₱${price.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—')}
                           </td>
                           <td className="px-4 py-3">
                             <input 
@@ -543,7 +642,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                             />
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-slate-800">
-                            {item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                            {item.is_category ? '—' : (item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—')}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition" title="Delete">
@@ -587,8 +686,11 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
 
               <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 pt-4">
                 <span className="font-bold">Regular Value</span>
-                <span className="font-bold text-lg">
+                <span className="font-bold text-lg flex items-center gap-2">
                   ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {hasCategoryParts && (
+                    <span className="text-xs font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded tracking-wide">+ Variable</span>
+                  )}
                 </span>
               </div>
               
@@ -608,7 +710,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                 </div>
               </div>
 
-              {savings > 0 && (
+              {savings > 0 && !hasCategoryParts && (
                 <div className="flex justify-between items-center text-emerald-600 bg-emerald-50 p-3 rounded-md border border-emerald-100 mt-2">
                   <span className="font-bold text-sm">Customer Savings</span>
                   <span className="font-black text-lg">
