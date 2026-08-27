@@ -10,7 +10,7 @@ import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 import { YearSelector } from '@/components/vehicles/YearSelector'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
 import { NewLaborModal } from '@/components/quotations/NewLaborModal'
-import { ResolvePartModal } from '@/components/quotations/ResolvePartModal'
+import { PackageResolveModal } from '@/components/quotations/PackageResolveModal'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
 
 type LineItem = {
@@ -101,7 +101,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   
   // Resolve Part Modal State
   const [isResolvePartModalOpen, setIsResolvePartModalOpen] = useState(false)
-  const [resolvePartInfo, setResolvePartInfo] = useState<{parentItemId: string, childItemId: string, categoryId: string} | null>(null)
+  const [pendingPackage, setPendingPackage] = useState<any>(null)
 
   
   // Modal State
@@ -137,53 +137,30 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       }
 
       if (initialData.quotation_items) {
-        // Reconstruct nested structure
-        const topLevelItems: LineItem[] = []
-        const packageItemsMap: Record<string, LineItem[]> = {}
-        
-        // First pass: sort and group
         const sortedItems = [...initialData.quotation_items].sort((a, b) => a.sort_order - b.sort_order)
-        
-        sortedItems.forEach(item => {
-          if (item.parent_item_id) {
-            if (!packageItemsMap[item.parent_item_id]) packageItemsMap[item.parent_item_id] = []
-            packageItemsMap[item.parent_item_id].push({
-              id: item.id,
-              description: item.description || '',
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              is_section_header: item.is_section_header,
-              item_type: item.item_type,
-              labor_service_id: item.labor_service_id,
-              part_id: item.part_id,
-              is_category: item.is_category,
-              part_category_id: item.part_category_id,
-              resolved_part_id: item.resolved_part_id,
-              internal_price_snapshot: item.internal_price_snapshot,
-              internal_amount_snapshot: item.internal_amount_snapshot
-            })
-          } else {
-            topLevelItems.push({
-              id: item.id,
-              description: item.description || '',
-              quantity: item.quantity,
-              unit_price: item.unit_price,
-              is_section_header: item.is_section_header,
-              item_type: item.item_type || 'MANUAL',
-              package_id: item.package_id,
-              labor_service_id: item.labor_service_id,
-              package_items: [] // Will populate next
-            })
-          }
-        })
-        
-        topLevelItems.forEach(item => {
-          if (packageItemsMap[item.id]) {
-            item.package_items = packageItemsMap[item.id]
-          }
-        })
-        
-        setItems(topLevelItems)
+        const flatItems: LineItem[] = sortedItems.map(item => ({
+          id: item.id,
+          description: item.description || '',
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          is_section_header: item.is_section_header,
+          item_type: item.item_type || 'MANUAL',
+          package_id: item.package_id,
+          parent_item_id: item.parent_item_id,
+          labor_service_id: item.labor_service_id,
+          part_id: item.part_id,
+          is_category: item.is_category,
+          part_category_id: item.part_category_id,
+          resolved_part_id: item.resolved_part_id,
+          internal_price_snapshot: item.internal_price_snapshot,
+          internal_amount_snapshot: item.internal_amount_snapshot,
+          group_id: item.group_id,
+          category_id: item.category_id,
+          group_name_snapshot: item.group_name_snapshot,
+          category_name_snapshot: item.category_name_snapshot,
+          standard_hour_snapshot: item.standard_hour_snapshot
+        }))
+        setItems(flatItems)
       }
     }
   }, [initialData])
@@ -470,11 +447,50 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   
   const grandTotal = Math.max(0, subtotal - (Number(discount) || 0))
 
+    const addPackageToItems = (pkg: any, resolvedParts: Record<string, any> = {}) => {
+    const headerId = crypto.randomUUID()
+    const newItem: LineItem = {
+      id: headerId,
+      item_type: 'PACKAGE',
+      package_id: pkg.id,
+      description: pkg.name,
+      quantity: 1,
+      unit_price: pkg.package_price,
+      is_section_header: false,
+    }
+    
+    const childItems: LineItem[] = (pkg.package_items || []).map((pi: any) => {
+      const resolved = resolvedParts[pi.id]
+      return {
+        id: crypto.randomUUID(),
+        item_type: 'PACKAGE_ITEM',
+        parent_item_id: headerId,
+        description: pi.item_type === 'LABOR' 
+          ? pi.labor_services?.name 
+          : (pi.is_category ? (resolved?.name || pi.part_categories?.name) : pi.parts?.name),
+        quantity: pi.quantity,
+        unit_price: 0,
+        is_section_header: false,
+        labor_service_id: pi.labor_service_id,
+        part_id: resolved ? resolved.id : pi.part_id,
+        is_category: pi.is_category,
+        part_category_id: pi.part_category_id,
+        resolved_part_id: resolved ? resolved.id : null,
+        resolved_part_name: resolved ? resolved.name : null,
+        internal_price_snapshot: pi.price,
+        internal_amount_snapshot: Number(pi.price) * Number(pi.quantity)
+      }
+    })
+    
+    setItems(prev => [...prev, newItem, ...childItems])
+    setPendingPackage(null)
+  }
+
   const addItem = (isHeader: boolean, type: 'MANUAL' | 'LABOR' | 'PART' | 'PACKAGE' | 'PACKAGE_ITEM' = 'MANUAL') => {
     setItems([
       ...items, 
       { 
-        id: Math.random().toString(36).substr(2, 9), 
+        id: crypto.randomUUID(), 
         description: '', 
         quantity: isHeader ? '' : 1, 
         unit_price: isHeader ? '' : '', 
@@ -1169,7 +1185,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               const pkg = packages.find(p => p.id === pkgId)
               if (pkg) {
                 const newItem: LineItem = {
-                  id: Math.random().toString(36).substr(2, 9),
+                  id: crypto.randomUUID(),
                   item_type: 'PACKAGE',
                   package_id: pkg.id,
                   description: pkg.name,
@@ -1177,7 +1193,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                   unit_price: pkg.package_price,
                   is_section_header: false,
                   package_items: (pkg.package_items || []).map((pi: any) => ({
-                    id: Math.random().toString(36).substr(2, 9),
+                    id: crypto.randomUUID(),
                     item_type: 'PACKAGE_ITEM',
                     description: pi.item_type === 'LABOR' 
                       ? pi.labor_services?.name 
@@ -1202,97 +1218,41 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-2">
           {items.filter(i => i.item_type === 'PACKAGE').map((item, index) => (
-            <div key={item.id} className="bg-slate-50 border border-slate-200 p-4 rounded-md">
-              <div className="flex gap-3 items-center mb-3">
-                <div className="flex-1 font-bold text-blue-900 text-lg flex items-center gap-2">
-                  {item.description}
-                  <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded uppercase tracking-wide">Package</span>
-                </div>
-                <div className="w-24">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 text-center">Qty</label>
-                  <input
-                    type="number"
-                    min="1" step="1"
-                    value={item.quantity}
-                    onChange={e => updateItem(item.id, 'quantity', e.target.value)}
-                    className="w-full border border-slate-300 rounded-md p-2 text-center"
-                  />
-                </div>
-                <div className="w-32">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1 text-right">Package Price</label>
-                  <input
-                    type="number"
-                    min="0" step="0.01"
-                    value={item.unit_price}
-                    onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
-                    className="w-full border border-slate-300 rounded-md p-2 text-right bg-white"
-                    disabled
-                  />
-                </div>
-                <div className="w-32 text-right pr-2">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Amount</label>
-                  <span className="font-bold text-slate-800 text-lg">
-                    ₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="w-10 text-center flex items-center justify-center mt-5">
-                  <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+            <div key={item.id} className="bg-slate-50 border border-slate-200 p-3 rounded-md flex gap-3 items-center">
+              <div className="flex-1 font-bold text-blue-900 text-lg flex items-center gap-2">
+                {item.description}
+                <span className="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded uppercase tracking-wide">Package</span>
               </div>
-              
-              {/* Package Items details */}
-              {item.package_items && item.package_items.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Labor & Services Included</h4>
-                    <div className="space-y-1">
-                      {item.package_items.filter(child => child.labor_service_id).map(child => (
-                        <div key={child.id} className="text-sm flex gap-2 items-center text-slate-600 py-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
-                          <span className="flex-1">{child.description}</span>
-                        </div>
-                      ))}
-                      {item.package_items.filter(child => child.labor_service_id).length === 0 && (
-                        <div className="text-sm text-slate-400 italic">No labor included.</div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-2">Parts & Materials Included</h4>
-                    <div className="space-y-1">
-                      {item.package_items.filter(child => child.part_id || child.is_category).map(child => (
-                        <div key={child.id} className="text-sm flex gap-2 items-center text-slate-600 py-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                          <div className="flex-1 flex items-center gap-2">
-                            {child.is_category ? (
-                              <>
-                                <span className="text-amber-600 font-bold flex items-center gap-1">⚠ {child.description}</span>
-                                <button 
-                                  type="button" 
-                                  onClick={() => setResolvePartInfo({ parentItemId: item.id, childItemId: child.id, categoryId: child.part_category_id || '' })}
-                                  className={`px-2 py-0.5 rounded text-xs font-bold border transition ${child.resolved_part_id ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50 shadow-sm'}`}
-                                >
-                                  {child.resolved_part_id ? `Selected: ${child.resolved_part_name || 'Item'}` : 'Select Part'}
-                                </button>
-                              </>
-                            ) : (
-                              <span className="font-medium">{child.description}</span>
-                            )}
-                          </div>
-                          <span className="text-slate-400 text-xs shrink-0">Qty: {child.quantity}</span>
-                        </div>
-                      ))}
-                      {item.package_items.filter(child => child.part_id || child.is_category).length === 0 && (
-                        <div className="text-sm text-slate-400 italic">No parts included.</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <div className="w-24">
+                <input
+                  type="number"
+                  min="1" step="1"
+                  value={item.quantity}
+                  onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                  className="w-full border border-slate-300 rounded-md p-2 text-center"
+                />
+              </div>
+              <div className="w-32">
+                <input
+                  type="number"
+                  min="0" step="0.01"
+                  value={item.unit_price}
+                  onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                  className="w-full border border-slate-300 rounded-md p-2 text-right bg-white"
+                />
+              </div>
+              <div className="w-32 text-right pr-2">
+                <span className="font-bold text-slate-800 text-lg">
+                  ₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="w-10 text-center flex items-center justify-center">
+                <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </div>
           ))}
           {items.filter(i => i.item_type === 'PACKAGE').length === 0 && (
@@ -1333,7 +1293,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                   return
                 }
                 setItems(prev => [...prev, {
-                  id: Math.random().toString(36).substr(2, 9),
+                  id: crypto.randomUUID(),
                   item_type: 'LABOR',
                   description: service.name,
                   quantity: 1,
@@ -1360,7 +1320,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
 
         <div className="space-y-2">
-          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR').map((item, index) => (
+          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR' || (i.item_type === 'PACKAGE_ITEM' && i.labor_service_id)).map((item, index) => (
             <div key={item.id} className={`flex gap-3 items-center ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : 'py-1'}`}>
               <div className="flex-1">
                 {item.is_section_header ? (
@@ -1372,13 +1332,21 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                     className="w-full border border-slate-300 rounded-md p-2 font-bold bg-transparent"
                   />
                 ) : (
-                  <input
-                    type="text"
-                    value={item.description}
-                    onChange={e => updateItem(item.id, 'description', e.target.value)}
-                    placeholder="Labor description..."
-                    className={`w-full border border-slate-300 rounded-md p-2 ${item.labor_service_id ? 'bg-blue-50 font-medium text-blue-900' : ''}`}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={item.description}
+                      onChange={e => updateItem(item.id, 'description', e.target.value)}
+                      placeholder="Labor description..."
+                      className={`w-full border border-slate-300 rounded-md p-2 ${item.labor_service_id ? 'bg-blue-50 font-medium text-blue-900' : ''} ${item.item_type === 'PACKAGE_ITEM' ? 'pl-8' : ''}`}
+                      disabled={item.item_type === 'PACKAGE_ITEM'}
+                    />
+                    {item.item_type === 'PACKAGE_ITEM' && (
+                      <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                         <span className="w-4 h-4 bg-blue-200 text-blue-700 flex items-center justify-center rounded-full text-[10px] font-bold" title="Package Component">P</span>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -1395,17 +1363,27 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                     />
                   </div>
                   <div className="w-32">
-                    <input
-                      type="number"
-                      min="0" step="0.01"
-                      value={item.unit_price}
-                      onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
-                      placeholder="Price"
-                      className="w-full border border-slate-300 rounded-md p-2 text-right"
-                    />
+                    {item.item_type === 'PACKAGE_ITEM' ? (
+                      <div className="w-full p-2 text-right text-slate-400 text-sm italic">
+                        Inc. in Pkg
+                      </div>
+                    ) : (
+                      <input
+                        type="number"
+                        min="0" step="0.01"
+                        value={item.unit_price}
+                        onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                        placeholder="Price"
+                        className="w-full border border-slate-300 rounded-md p-2 text-right"
+                      />
+                    )}
                   </div>
                   <div className="w-32 text-right font-medium text-slate-800 pr-2">
-                    ₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {item.item_type === 'PACKAGE_ITEM' ? (
+                       <span className="text-slate-400 italic">₱0.00</span>
+                    ) : (
+                       <span>₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    )}
                   </div>
                 </>
               )}
@@ -1419,7 +1397,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               </div>
             </div>
           ))}
-          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR').length === 0 && (
+          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR' || (i.item_type === 'PACKAGE_ITEM' && i.labor_service_id)).length === 0 && (
             <p className="text-center text-slate-400 py-4">No labor added.</p>
           )}
         </div>
@@ -1444,7 +1422,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                   return
                 }
                 setItems(prev => [...prev, {
-                  id: Math.random().toString(36).substr(2, 9),
+                  id: crypto.randomUUID(),
                   item_type: 'PART',
                   description: part.name,
                   quantity: 1,
@@ -1458,16 +1436,24 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
 
         <div className="space-y-2">
-          {items.filter(i => i.item_type === 'PART').map((item, index) => (
+          {items.filter(i => i.item_type === 'PART' || (i.item_type === 'PACKAGE_ITEM' && (i.part_id || i.is_category))).map((item, index) => (
             <div key={item.id} className="flex gap-3 items-center py-1">
               <div className="flex-1">
-                <input
-                  type="text"
-                  value={item.description}
-                  onChange={e => updateItem(item.id, 'description', e.target.value)}
-                  placeholder="Part description..."
-                  className="w-full border border-slate-300 rounded-md p-2 bg-emerald-50/50 font-medium text-emerald-900"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="Part description..."
+                    className={`w-full border border-slate-300 rounded-md p-2 bg-emerald-50/50 font-medium text-emerald-900 ${item.item_type === 'PACKAGE_ITEM' ? 'pl-8' : ''}`}
+                    disabled={item.item_type === 'PACKAGE_ITEM'}
+                  />
+                  {item.item_type === 'PACKAGE_ITEM' && (
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                       <span className="w-4 h-4 bg-emerald-200 text-emerald-700 flex items-center justify-center rounded-full text-[10px] font-bold" title="Package Component">P</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="w-24">
@@ -1481,17 +1467,27 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                 />
               </div>
               <div className="w-32">
-                <input
-                  type="number"
-                  min="0" step="0.01"
-                  value={item.unit_price}
-                  onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
-                  placeholder="Price"
-                  className="w-full border border-slate-300 rounded-md p-2 text-right"
-                />
+                {item.item_type === 'PACKAGE_ITEM' ? (
+                  <div className="w-full p-2 text-right text-slate-400 text-sm italic">
+                    Inc. in Pkg
+                  </div>
+                ) : (
+                  <input
+                    type="number"
+                    min="0" step="0.01"
+                    value={item.unit_price}
+                    onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                    placeholder="Price"
+                    className="w-full border border-slate-300 rounded-md p-2 text-right"
+                  />
+                )}
               </div>
-              <div className="w-32 text-right font-medium text-slate-800 pr-2">
-                ₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <div className="w-32 text-right font-medium text-slate-800 pr-2 flex items-center justify-end h-full">
+                {item.item_type === 'PACKAGE_ITEM' ? (
+                   <span className="text-slate-400 italic mt-2">₱0.00</span>
+                ) : (
+                   <span className="mt-2">₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                )}
               </div>
               <div className="w-10 text-center flex items-center justify-center">
                 <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
@@ -1500,7 +1496,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               </div>
             </div>
           ))}
-          {items.filter(i => i.item_type === 'PART').length === 0 && (
+          {items.filter(i => i.item_type === 'PART' || (i.item_type === 'PACKAGE_ITEM' && (i.part_id || i.is_category))).length === 0 && (
             <p className="text-center text-slate-400 py-4">No individual parts added.</p>
           )}
         </div>
@@ -1563,7 +1559,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           
           // Add the new labor as a new row
           setItems(prev => [...prev, {
-            id: Math.random().toString(36).substr(2, 9),
+            id: crypto.randomUUID(),
             description: newLabor.name,
             quantity: 1,
             unit_price: newLabor.rate ?? '',
@@ -1578,34 +1574,12 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         }}
       />
 
-      {/* RESOLVE PART MODAL */}
-      {resolvePartInfo && (
-        <ResolvePartModal
-          categoryId={resolvePartInfo.categoryId}
-          parentItemId={resolvePartInfo.parentItemId}
-          childItemId={resolvePartInfo.childItemId}
-          onClose={() => setResolvePartInfo(null)}
-          onResolve={(part) => {
-            setItems(prev => prev.map(item => {
-              if (item.id === resolvePartInfo.parentItemId && item.package_items) {
-                return {
-                  ...item,
-                  package_items: item.package_items.map(child => {
-                    if (child.id === resolvePartInfo.childItemId) {
-                      return {
-                        ...child,
-                        resolved_part_id: part.id,
-                        resolved_part_name: part.name
-                      }
-                    }
-                    return child;
-                  })
-                }
-              }
-              return item;
-            }))
-            setResolvePartInfo(null)
-          }}
+      {/* RESOLVE PACKAGE MODAL */}
+      {pendingPackage && (
+        <PackageResolveModal
+          pkg={pendingPackage}
+          onClose={() => setPendingPackage(null)}
+          onApply={(resolvedParts) => addPackageToItems(pendingPackage, resolvedParts)}
         />
       )}
     </form>

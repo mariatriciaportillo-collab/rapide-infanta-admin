@@ -1,0 +1,181 @@
+              + Add Section Header
+            </button>
+          </div>
+        </div>
+        
+        <div className="mb-4">
+          <SearchableCombobox
+            options={laborServices.map(s => ({
+              id: s.id,
+              name: s.name,
+              subtext: `${s.labor_groups?.name || 'No Group'} • ${s.labor_categories?.name || 'No Category'} • ₱${s.rate?.toLocaleString() || '0'}`
+            }))}
+            value=""
+            onChange={(laborId) => {
+              const service = laborServices.find(s => s.id === laborId)
+              if (service) {
+                const alreadyAdded = items.some(i => i.labor_service_id === service.id)
+                if (alreadyAdded) {
+                  setError(`"${service.name}" is already added to this quotation.`)
+                  setTimeout(() => setError(null), 3000)
+                  return
+                }
+                setItems(prev => [...prev, {
+                  id: crypto.randomUUID(),
+                  item_type: 'LABOR',
+                  description: service.name,
+                  quantity: 1,
+                  unit_price: service.rate ?? '',
+                  is_section_header: false,
+                  labor_service_id: service.id,
+                  group_id: service.group_id,
+                  category_id: service.category_id,
+                  group_name_snapshot: service.labor_groups?.name,
+                  category_name_snapshot: service.labor_categories?.name,
+                  standard_hour_snapshot: service.standard_hours,
+                }])
+              }
+            }}
+            placeholder="Search labor / service to add..."
+            searchPlaceholder="Search by service, group, or category..."
+            onAddNew={(query) => {
+              setNewLaborSearchQuery(query)
+              setActiveItemIndexForModal(null)
+              setIsNewLaborModalOpen(true)
+            }}
+            addNewLabel="+ Add New Labor"
+          />
+        </div>
+
+        <div className="space-y-2">
+          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR').map((item, index) => (
+            <div key={item.id} className={`flex gap-3 items-center ${item.is_section_header ? 'bg-slate-50 p-2 rounded -mx-2' : 'py-1'}`}>
+              <div className="flex-1">
+                {item.is_section_header ? (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="e.g. LABOR CHARGES"
+                    className="w-full border border-slate-300 rounded-md p-2 font-bold bg-transparent"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={e => updateItem(item.id, 'description', e.target.value)}
+                    placeholder="Labor description..."
+                    className={`w-full border border-slate-300 rounded-md p-2 ${item.labor_service_id ? 'bg-blue-50 font-medium text-blue-900' : ''}`}
+                  />
+                )}
+              </div>
+
+              {!item.is_section_header && (
+                <>
+                  <div className="w-24">
+                    <input
+                      type="number"
+                      min="0.1" step="0.1"
+                      value={item.quantity}
+                      onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                      placeholder="Qty"
+                      className="w-full border border-slate-300 rounded-md p-2 text-center"
+                    />
+                  </div>
+                  <div className="w-32">
+                    <input
+                      type="number"
+                      min="0" step="0.01"
+                      value={item.unit_price}
+                      onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                      placeholder="Price"
+                      className="w-full border border-slate-300 rounded-md p-2 text-right"
+                    />
+                  </div>
+                  <div className="w-32 text-right font-medium text-slate-800 pr-2">
+                    ₱{((Number(item.quantity) || 0) * (Number(item.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </>
+              )}
+              {item.is_section_header && (
+                <div className="w-[304px]"></div>
+              )}
+              <div className="w-10 text-center flex items-center justify-center">
+                <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            </div>
+          ))}
+          {items.filter(i => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR').length === 0 && (
+            <p className="text-center text-slate-400 py-4">No labor added.</p>
+          )}
+        </div>
+      </div>
+
+      {/* SECTION 3: PARTS & MATERIALS */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
+        <div className="flex justify-between items-center mb-4 border-b pb-2">
+          <h3 className="text-lg font-semibold text-slate-800">Parts & Materials</h3>
+        </div>
+        
+        <div className="mb-4">
+          <PartSearchSelector 
+            selectedPartId={""}
+            setSelectedPartId={() => {}}
+            onSelectPart={(part) => {
+              if (part) {
+                const alreadyAdded = items.some(i => i.part_id === part.id && i.item_type === 'PART')
+                if (alreadyAdded) {
+                  setError(`"${part.name}" is already added to this quotation.`)
+                  setTimeout(() => setError(null), 3000)
+                  return
+                }
+                setItems(prev => [...prev, {
+                  id: crypto.randomUUID(),
+                  item_type: 'PART',
+                  description: part.name,
+                  quantity: 1,
+                  unit_price: part.selling_price ?? 0,
+                  is_section_header: false,
+                  part_id: part.id,
+                }])
+              }
+            }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          {items.filter(i => i.item_type === 'PART').map((item, index) => (
+            <div key={item.id} className="flex gap-3 items-center py-1">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={item.description}
+                  onChange={e => updateItem(item.id, 'description', e.target.value)}
+                  placeholder="Part description..."
+                  className="w-full border border-slate-300 rounded-md p-2 bg-emerald-50/50 font-medium text-emerald-900"
+                />
+              </div>
+
+              <div className="w-24">
+                <input
+                  type="number"
+                  min="0.1" step="0.1"
+                  value={item.quantity}
+                  onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                  placeholder="Qty"
+                  className="w-full border border-slate-300 rounded-md p-2 text-center"
+                />
+              </div>
+              <div className="w-32">
+                <input
+                  type="number"
+                  min="0" step="0.01"
+                  value={item.unit_price}
+                  onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
+                  placeholder="Price"
+                  className="w-full border border-slate-300 rounded-md p-2 text-right"
+                />
+              </div>
+              <div className="w-32 text-right font-medium text-slate-800 pr-2">
