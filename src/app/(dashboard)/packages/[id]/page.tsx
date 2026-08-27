@@ -17,7 +17,7 @@ export default function ViewPackagePage() {
       if (!params.id) return
       const { data } = await supabase
         .from('packages')
-        .select('*, package_items(*, labor_charges(*), parts(*, brands(name)))')
+        .select('*, package_items(*, labor_services(*), parts(*, brands(name)))')
         .eq('id', params.id)
         .single()
       
@@ -47,7 +47,7 @@ export default function ViewPackagePage() {
   items.forEach((item: any) => {
     const isLabor = item.item_type === 'LABOR'
     const qty = Number(item.quantity) || 1
-    const sellingPrice = isLabor ? Number(item.labor_charges?.rate) || 0 : Number(item.parts?.selling_price) || 0
+    const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
     regularValue += (sellingPrice * qty)
     
     if (!isLabor) {
@@ -168,11 +168,11 @@ export default function ViewPackagePage() {
                   const title = isLabor ? 'Labor' : 'Part'
                   const color = isLabor ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   
-                  const name = isLabor ? item.labor_charges?.service_name : item.parts?.name
-                  const subtext = isLabor ? item.labor_charges?.category : `${item.parts?.part_number || 'No PN'} • ${item.parts?.brands?.name || 'No Brand'}`
+                  const name = isLabor ? item.labor_services?.service_name : item.parts?.name
+                  const subtext = isLabor ? item.labor_services?.category : `${item.parts?.part_number || 'No PN'} • ${item.parts?.brands?.name || 'No Brand'}`
                   
                   const qty = Number(item.quantity) || 1
-                  const sellingPrice = isLabor ? Number(item.labor_charges?.rate) || 0 : Number(item.parts?.selling_price) || 0
+                  const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
                   const amount = sellingPrice * qty
 
                   return (

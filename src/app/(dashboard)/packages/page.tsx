@@ -21,11 +21,11 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
   
   const renderItems = items.map((item: any, i: number) => {
     const isLabor = item.item_type === 'LABOR'
-    const name = isLabor ? item.labor_charges?.service_name : item.parts?.name
+    const name = isLabor ? item.labor_services?.service_name : item.parts?.name
     const qty = Number(item.quantity) || 1
     
     // Selling price for regular value calculation
-    const sellingPrice = isLabor ? Number(item.labor_charges?.rate) || 0 : Number(item.parts?.selling_price) || 0
+    const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
     const regularAmount = sellingPrice * qty
     regularValue += regularAmount
 
@@ -105,7 +105,7 @@ export default function PackagesListPage() {
     setIsLoading(true)
     let query = supabase
       .from('packages')
-      .select('*, package_items(item_type, quantity, labor_charges(rate, service_name), parts(selling_price, name))', { count: 'exact' })
+      .select('*, package_items(item_type, quantity, labor_services(rate, service_name), parts(selling_price, name))', { count: 'exact' })
       .order('name')
       
     if (filterActive === 'active') query = query.eq('is_active', true)
@@ -222,7 +222,7 @@ export default function PackagesListPage() {
                       let regularValue = 0;
                       items.forEach((item: any) => {
                         const isLabor = item.item_type === 'LABOR'
-                        const sellingPrice = isLabor ? Number(item.labor_charges?.rate) || 0 : Number(item.parts?.selling_price) || 0
+                        const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
                         const qty = Number(item.quantity) || 1
                         regularValue += (sellingPrice * qty)
                       })

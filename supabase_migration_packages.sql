@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.package_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     package_id UUID NOT NULL REFERENCES public.packages(id) ON DELETE CASCADE,
     item_type TEXT NOT NULL CHECK (item_type IN ('LABOR', 'PART')),
-    labor_charge_id UUID REFERENCES public.labor_charges(id),
+    labor_service_id UUID REFERENCES public.labor_services(id),
     part_id UUID REFERENCES public.parts(id),
     quantity NUMERIC(10, 2) NOT NULL DEFAULT 1,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())

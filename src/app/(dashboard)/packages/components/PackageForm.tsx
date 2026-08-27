@@ -23,8 +23,8 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const [items, setItems] = useState<any[]>(initialData?.package_items?.map((item: any) => ({
     id: item.id || crypto.randomUUID(),
     item_type: item.item_type,
-    record_id: item.item_type === 'LABOR' ? item.labor_charge_id : item.part_id,
-    record: item.item_type === 'LABOR' ? item.labor_charges : item.parts,
+    record_id: item.item_type === 'LABOR' ? item.labor_service_id : item.part_id,
+    record: item.item_type === 'LABOR' ? item.labor_services : item.parts,
     quantity: item.quantity?.toString() || '1'
   })) || [])
   
@@ -45,7 +45,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     }
     const timer = setTimeout(async () => {
       setIsSearchingLabor(true)
-      const { data } = await supabase.from('labor_charges').select('*').ilike('service_name', `%${laborSearch}%`).limit(15)
+      const { data } = await supabase.from('labor_services').select('*').ilike('service_name', `%${laborSearch}%`).limit(15)
       setLaborResults(data || [])
       setIsSearchingLabor(false)
     }, 300)
@@ -151,7 +151,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       const itemsPayload = items.map(item => ({
         package_id: pkgId,
         item_type: item.item_type,
-        labor_charge_id: item.item_type === 'LABOR' ? item.record_id : null,
+        labor_service_id: item.item_type === 'LABOR' ? item.record_id : null,
         part_id: item.item_type === 'PART' ? item.record_id : null,
         quantity: Number(item.quantity)
       }))

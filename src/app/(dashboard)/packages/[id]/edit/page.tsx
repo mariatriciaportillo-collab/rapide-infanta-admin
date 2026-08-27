@@ -17,7 +17,7 @@ export default function EditPackagePage() {
       if (!params.id) return
       const { data: pkg } = await supabase
         .from('packages')
-        .select('*, package_items(*, labor_charges(*), parts(*, brands(name)))')
+        .select('*, package_items(*, labor_services(*), parts(*, brands(name)))')
         .eq('id', params.id)
         .single()
       
