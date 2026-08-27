@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2 } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2, Edit, X } from 'lucide-react'
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
@@ -926,6 +926,29 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             )}
           </div>
           
+          {selectedCustomerId && !isEditingCustomer && (
+            <button
+              type="button"
+              onClick={() => setIsEditingCustomer(true)}
+              className="p-3 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors flex-shrink-0"
+              title="Edit Customer"
+            >
+              <Edit size={20} />
+            </button>
+          )}
+          {selectedCustomerId && (
+            <button
+              type="button"
+              onClick={() => {
+                handleClearCustomer()
+                setShowDropdown(false)
+              }}
+              className="p-3 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors flex-shrink-0"
+              title="Clear Customer"
+            >
+              <X size={20} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -1001,7 +1024,39 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               )}
             </div>
             
+            {selectedVehicleId && !isEditingVehicle && (
             <button
+              type="button"
+              onClick={() => setIsEditingVehicle(true)}
+              className="p-3 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors flex-shrink-0"
+              title="Edit Vehicle"
+            >
+              <Edit size={20} />
+            </button>
+          )}
+          {selectedVehicleId && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedVehicleId(null)
+                setVehiclePlate('')
+                setVehicleMake('')
+                setVehicleModel('')
+                setVehicleYear('')
+                setVehicleTransmission('')
+                setMileage('')
+                setVehicleSearch('')
+                setIsAddingVehicle(false)
+                setIsEditingVehicle(false)
+                setShowVehicleDropdown(false)
+              }}
+              className="p-3 text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors flex-shrink-0"
+              title="Clear Vehicle"
+            >
+              <X size={20} />
+            </button>
+          )}
+          <button
               type="button"
               onClick={() => {
                 setSelectedVehicleId(null)
@@ -1023,8 +1078,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
       )}
 
+      {(!selectedCustomerId || isEditingCustomer || !selectedVehicleId || isEditingVehicle || isAddingVehicle) && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Customer Details */}
+        {(!selectedCustomerId || isEditingCustomer) && (
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -1179,8 +1236,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             )}
           </div>
         </div>
+        )}
 
         {/* Vehicle Details */}
+        {(!selectedCustomerId || !selectedVehicleId || isEditingVehicle || isAddingVehicle) && (
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
@@ -1289,7 +1348,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             )}
           </div>
         </div>
+        )}
       </div>
+      )}
 
       {/* SECTION 1: PACKAGES */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
