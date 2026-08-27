@@ -156,70 +156,61 @@ export default async function ViewQuotationPage({
         </div>
 
         {/* Line Items Table */}
-        <div className="p-8 pb-0 space-y-8">
-          {/* Helper variables */}
+        <div className="p-8 pb-4">
           {(() => {
             const sortedItems = [...items].sort((a: any, b: any) => a.sort_order - b.sort_order);
-                      const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
-          const isPrt = (i: any) => i.item_type === 'PART' || (!i.parent_item_id && i.part_id && !i.package_id) || (i.parent_item_id && (i.part_id || i.is_category));
-          const isLbr = (i: any) => !isPkg(i) && !isPrt(i);
+            const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
+            const isPrt = (i: any) => i.item_type === 'PART' || (!i.parent_item_id && i.part_id && !i.package_id) || (i.parent_item_id && (i.part_id || i.is_category));
+            const isLbr = (i: any) => !isPkg(i) && !isPrt(i);
 
-          const packages = sortedItems.filter(isPkg);
-          const partItems = sortedItems.filter(isPrt);
-          const laborItems = sortedItems.filter(isLbr);
-
-            const getParentPackageName = (parentId: string) => {
-              return sortedItems.find((p: any) => p.id === parentId)?.description || 'Package';
-            };
+            const packages = sortedItems.filter(isPkg);
+            const partItems = sortedItems.filter(isPrt);
+            const laborItems = sortedItems.filter(isLbr);
 
             return (
-              <>
-                {/* PACKAGES */}
-                {packages.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-3">Packages</h3>
-                    <table className="w-full text-left text-sm">
-                      <thead className="text-slate-500 font-bold text-xs uppercase">
-                        <tr>
-                          <th className="py-2 w-3/5 font-normal">Description</th>
-                          <th className="py-2 text-center w-1/12 font-normal">Qty</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Unit Price</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Amount</th>
+              <div className="border border-slate-200 rounded-md overflow-hidden bg-white shadow-sm">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-800 text-white font-bold text-xs uppercase tracking-wider">
+                    <tr>
+                      <th className="py-2.5 px-4 w-[55%] font-semibold">Description</th>
+                      <th className="py-2.5 px-4 text-center w-[10%] font-semibold">Qty</th>
+                      <th className="py-2.5 px-4 text-right w-[15%] font-semibold">Unit Price</th>
+                      <th className="py-2.5 px-4 text-right w-[20%] font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {/* PACKAGES */}
+                    {packages.length > 0 && (
+                      <>
+                        <tr className="bg-slate-100/80">
+                          <td colSpan={4} className="py-1.5 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-widest">
+                            Packages
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
                         {packages.map((item: any) => (
                           <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 pr-4 text-slate-800 font-bold">{item.description}</td>
-                            <td className="py-3 text-center text-slate-600">{item.quantity}</td>
-                            <td className="py-3 text-right text-slate-600">₱{Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                            <td className="py-3 text-right font-bold text-slate-800">₱{Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td className="py-2 px-4 text-slate-800 font-bold">{item.description}</td>
+                            <td className="py-2 px-4 text-center text-slate-600">{item.quantity}</td>
+                            <td className="py-2 px-4 text-right text-slate-600">₱{Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td className="py-2 px-4 text-right font-bold text-slate-800">₱{Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      </>
+                    )}
 
-                {/* LABOR & SERVICES */}
-                {laborItems.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-3">Labor & Services</h3>
-                    <table className="w-full text-left text-sm">
-                      <thead className="text-slate-500 font-bold text-xs uppercase">
-                        <tr>
-                          <th className="py-2 w-3/5 font-normal">Description</th>
-                          <th className="py-2 text-center w-1/12 font-normal">Qty</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Unit Price</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Amount</th>
+                    {/* LABOR & SERVICES */}
+                    {laborItems.length > 0 && (
+                      <>
+                        <tr className="bg-slate-100/80">
+                          <td colSpan={4} className="py-1.5 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-widest">
+                            Labor & Services
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
                         {laborItems.map((item: any) => {
                           if (item.is_section_header) {
                             return (
                               <tr key={item.id} className="bg-slate-50">
-                                <td colSpan={4} className="py-3 px-2 font-bold text-slate-800 uppercase tracking-wider text-xs">
+                                <td colSpan={4} className="py-2 px-4 font-bold text-slate-800 uppercase tracking-wider text-xs">
                                   {item.description}
                                 </td>
                               </tr>
@@ -228,25 +219,18 @@ export default async function ViewQuotationPage({
                           
                           return (
                             <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 pr-4">
-                                <div className="text-slate-800 font-medium">{item.description}</div>
-                                {!!item.parent_item_id && (
-                                  <div className="text-[11px] text-slate-500 italic mt-0.5">
-                                    Included in: {getParentPackageName(item.parent_item_id)}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="py-3 text-center text-slate-600 align-top">{item.quantity}</td>
-                              <td className="py-3 text-right text-slate-600 align-top">
+                              <td className="py-2 px-4 text-slate-800 font-medium">{item.description}</td>
+                              <td className="py-2 px-4 text-center text-slate-600 align-top">{item.quantity}</td>
+                              <td className="py-2 px-4 text-right text-slate-600 align-top">
                                 {!!item.parent_item_id ? (
-                                  <span className="text-slate-400 italic text-sm">Included in Package</span>
+                                  <span className="text-slate-500 italic text-sm">Included</span>
                                 ) : (
                                   `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                                 )}
                               </td>
-                              <td className="py-3 text-right font-medium text-slate-800 align-top">
+                              <td className="py-2 px-4 text-right font-medium text-slate-800 align-top">
                                 {!!item.parent_item_id ? (
-                                  <span className="text-slate-400 italic text-sm">—</span>
+                                  <span className="text-slate-500 italic text-sm">—</span>
                                 ) : (
                                   `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                                 )}
@@ -254,63 +238,48 @@ export default async function ViewQuotationPage({
                             </tr>
                           )
                         })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                      </>
+                    )}
 
-                {/* PARTS & MATERIALS */}
-                {partItems.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest border-b-2 border-slate-800 pb-2 mb-3">Parts & Materials</h3>
-                    <table className="w-full text-left text-sm">
-                      <thead className="text-slate-500 font-bold text-xs uppercase">
-                        <tr>
-                          <th className="py-2 w-3/5 font-normal">Description</th>
-                          <th className="py-2 text-center w-1/12 font-normal">Qty</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Unit Price</th>
-                          <th className="py-2 text-right w-1/6 font-normal">Amount</th>
+                    {/* PARTS & MATERIALS */}
+                    {partItems.length > 0 && (
+                      <>
+                        <tr className="bg-slate-100/80">
+                          <td colSpan={4} className="py-1.5 px-4 text-[11px] font-bold text-slate-700 uppercase tracking-widest">
+                            Parts & Materials
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
                         {partItems.map((item: any) => (
                           <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 pr-4">
-                              <div className="text-slate-800 font-medium">{item.description}</div>
-                              {!!item.parent_item_id && (
-                                <div className="text-[11px] text-slate-500 italic mt-0.5">
-                                  Included in: {getParentPackageName(item.parent_item_id)}
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-3 text-center text-slate-600 align-top">{item.quantity}</td>
-                            <td className="py-3 text-right text-slate-600 align-top">
+                            <td className="py-2 px-4 text-slate-800 font-medium">{item.description}</td>
+                            <td className="py-2 px-4 text-center text-slate-600 align-top">{item.quantity}</td>
+                            <td className="py-2 px-4 text-right text-slate-600 align-top">
                               {!!item.parent_item_id ? (
-                                <span className="text-slate-400 italic text-sm">Included in Package</span>
+                                <span className="text-slate-500 italic text-sm">Included</span>
                               ) : (
                                 `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                               )}
                             </td>
-                            <td className="py-3 text-right font-medium text-slate-800 align-top">
+                            <td className="py-2 px-4 text-right font-medium text-slate-800 align-top">
                               {!!item.parent_item_id ? (
-                                <span className="text-slate-400 italic text-sm">—</span>
+                                <span className="text-slate-500 italic text-sm">—</span>
                               ) : (
                                 `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                               )}
                             </td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </>
+                      </>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             );
           })()}
         </div>
 
         {/* Totals Section */}
-        <div className="p-8 flex justify-end">
+        <div className="px-8 pb-8 pt-2 flex justify-end">
           <div className="w-1/2 min-w-[300px]">
             <div className="space-y-3">
               <div className="flex justify-between text-slate-600 text-sm">
