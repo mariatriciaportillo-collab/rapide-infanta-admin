@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Edit, Package, Loader2 } from 'lucide-react'
+import { ArrowLeft, Edit, Package, Loader2, Printer } from 'lucide-react'
 
 export default function ViewPackagePage() {
   const params = useParams()
@@ -45,20 +45,24 @@ export default function ViewPackagePage() {
   const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
   const partItems = items.filter((i: any) => i.item_type === 'PART')
 
-  let regularValue = 0
+  let laborRegularValue = 0
+  let partsRegularValue = 0
   let productCost = 0
 
-  items.forEach((item: any) => {
-    const isLabor = item.item_type === 'LABOR'
+  laborItems.forEach((item: any) => {
     const qty = Number(item.quantity) || 1
-    const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
-    regularValue += (sellingPrice * qty)
-    
-    if (!isLabor) {
-      productCost += (Number(item.parts?.cost) || 0) * qty
-    }
+    const sellingPrice = Number(item.labor_services?.rate) || 0
+    laborRegularValue += (sellingPrice * qty)
   })
 
+  partItems.forEach((item: any) => {
+    const qty = Number(item.quantity) || 1
+    const sellingPrice = Number(item.parts?.selling_price) || 0
+    partsRegularValue += (sellingPrice * qty)
+    productCost += (Number(item.parts?.cost) || 0) * qty
+  })
+
+  const regularValue = laborRegularValue + partsRegularValue
   const pkgPrice = Number(pkg.package_price) || 0
   const savings = Math.max(0, regularValue - pkgPrice)
 
@@ -87,33 +91,77 @@ export default function ViewPackagePage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="md:col-span-2 bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <Package size={20} className="text-blue-600" /> Package Information
-          </h2>
-          <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
-            <div>
-              <div className="text-xs font-bold text-slate-500 mb-1">CATEGORY</div>
-              <div className="text-slate-800 font-medium">{pkg.category || '—'}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2 flex flex-col gap-6">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Package size={20} className="text-blue-600" /> Package Information
+            </h2>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-6">
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">CATEGORY</div>
+                <div className="text-slate-800 font-medium">{pkg.category || '—'}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">CREATED</div>
+                <div className="text-slate-800 font-medium">{new Date(pkg.created_at).toLocaleDateString()}</div>
+              </div>
+              <div className="col-span-2">
+                <div className="text-xs font-bold text-slate-500 mb-1">DESCRIPTION / NOTES</div>
+                <div className="text-slate-700 whitespace-pre-wrap">{pkg.description || '—'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Printer size={20} className="text-slate-600" /> Line Items Printout Options
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">HIDE LABOR</div>
+                <div className="text-slate-800 font-medium">{pkg.hide_labor ? 'Yes' : 'No'}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">HIDE PARTS</div>
+                <div className="text-slate-800 font-medium">{pkg.hide_parts ? 'Yes' : 'No'}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">SHOW CODE</div>
+                <div className="text-slate-800 font-medium">{pkg.display_package_code ? 'Yes' : 'No'}</div>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-500 mb-1">HIDE AMOUNTS</div>
+                <div className="text-slate-800 font-medium">{pkg.hide_amounts ? 'Yes' : 'No'}</div>
+              </div>
             </div>
             <div>
-              <div className="text-xs font-bold text-slate-500 mb-1">CREATED</div>
-              <div className="text-slate-800 font-medium">{new Date(pkg.created_at).toLocaleDateString()}</div>
-            </div>
-            <div className="col-span-2">
-              <div className="text-xs font-bold text-slate-500 mb-1">DESCRIPTION / NOTES</div>
-              <div className="text-slate-700 whitespace-pre-wrap">{pkg.description || '—'}</div>
+              <div className="text-xs font-bold text-slate-500 mb-1">REPLACEMENT TEXT</div>
+              <div className="text-slate-800 font-medium">{pkg.replacement_text || '—'}</div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 lg:col-span-1">
           <h2 className="text-lg font-bold text-slate-800 mb-4">Pricing Summary</h2>
           <div className="flex flex-col gap-4">
-            <div className="flex justify-between items-center text-slate-600">
-              <span className="font-medium">Regular Value</span>
-              <span className="font-bold text-slate-800 text-lg">
+            
+            <div className="flex justify-between items-center text-slate-600 text-sm">
+              <span>Labor Regular Value</span>
+              <span className="font-medium">
+                ₱{laborRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-slate-600 text-sm">
+              <span>Parts Regular Value</span>
+              <span className="font-medium">
+                ₱{partsRegularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-slate-800 border-t border-slate-200 pt-4 mt-2">
+              <span className="font-bold">Regular Value</span>
+              <span className="font-bold text-lg">
                 ₱{regularValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -153,8 +201,8 @@ export default function ViewPackagePage() {
             <thead>
               <tr className="bg-indigo-50/50 text-indigo-800 text-xs uppercase tracking-wider">
                 <th className="px-6 py-3 font-bold border-b border-slate-200">Labor / Service</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Qty</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Regular Rate</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Rate</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Hours / Qty</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Amount</th>
               </tr>
             </thead>
@@ -177,10 +225,10 @@ export default function ViewPackagePage() {
                       <td className="px-6 py-4">
                         <div className="font-bold text-slate-900">{name}</div>
                       </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right text-slate-500">
                         ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-800">
                         ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
@@ -204,8 +252,8 @@ export default function ViewPackagePage() {
                 <th className="px-6 py-3 font-bold border-b border-slate-200">Part / Product</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200">Part No.</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200">Brand</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-28">Price</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Qty</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Regular Price</th>
                 <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Amount</th>
               </tr>
             </thead>
@@ -232,10 +280,10 @@ export default function ViewPackagePage() {
                       </td>
                       <td className="px-6 py-4 text-slate-500 font-mono text-sm">{partNumber}</td>
                       <td className="px-6 py-4 text-slate-600 text-sm">{brandName}</td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right text-slate-500">
                         ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right font-bold text-slate-800">
                         ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
