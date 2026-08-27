@@ -136,9 +136,13 @@ export default function QuotationPrintPage({
         {/* Helper variables */}
         {(() => {
           const sortedItems = [...items].sort((a: any, b: any) => a.sort_order - b.sort_order);
-          const packages = sortedItems.filter((i: any) => i.item_type === 'PACKAGE');
-          const laborItems = sortedItems.filter((i: any) => !i.item_type || i.item_type === 'MANUAL' || i.item_type === 'LABOR' || (i.item_type === 'PACKAGE_ITEM' && i.labor_service_id));
-          const partItems = sortedItems.filter((i: any) => i.item_type === 'PART' || (i.item_type === 'PACKAGE_ITEM' && (i.part_id || i.is_category)));
+                    const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
+          const isPrt = (i: any) => i.item_type === 'PART' || (!i.parent_item_id && i.part_id && !i.package_id) || (i.parent_item_id && (i.part_id || i.is_category));
+          const isLbr = (i: any) => !isPkg(i) && !isPrt(i);
+
+          const packages = sortedItems.filter(isPkg);
+          const partItems = sortedItems.filter(isPrt);
+          const laborItems = sortedItems.filter(isLbr);
 
           const getParentPackageName = (parentId: string) => {
             return sortedItems.find((p: any) => p.id === parentId)?.description || 'Package';
@@ -202,7 +206,7 @@ export default function QuotationPrintPage({
                           <tr key={item.id}>
                             <td className="py-1.5 pr-4">
                               <div className="text-slate-800 font-medium">{item.description}</div>
-                              {item.item_type === 'PACKAGE_ITEM' && (
+                              {!!item.parent_item_id && (
                                 <div className="text-[10px] text-slate-500 italic mt-0.5">
                                   Included in: {getParentPackageName(item.parent_item_id)}
                                 </div>
@@ -210,14 +214,14 @@ export default function QuotationPrintPage({
                             </td>
                             <td className="py-1.5 text-center text-slate-600 align-top">{item.quantity}</td>
                             <td className="py-1.5 text-right text-slate-600 align-top">
-                              {item.item_type === 'PACKAGE_ITEM' ? (
+                              {!!item.parent_item_id ? (
                                 <span className="text-slate-400 italic text-xs">Included in Package</span>
                               ) : (
                                 `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                               )}
                             </td>
                             <td className="py-1.5 text-right font-medium text-slate-800 align-top">
-                              {item.item_type === 'PACKAGE_ITEM' ? (
+                              {!!item.parent_item_id ? (
                                 <span className="text-slate-400 italic text-xs">—</span>
                               ) : (
                                 `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
@@ -249,7 +253,7 @@ export default function QuotationPrintPage({
                         <tr key={item.id}>
                           <td className="py-1.5 pr-4">
                             <div className="text-slate-800 font-medium">{item.description}</div>
-                            {item.item_type === 'PACKAGE_ITEM' && (
+                            {!!item.parent_item_id && (
                               <div className="text-[10px] text-slate-500 italic mt-0.5">
                                 Included in: {getParentPackageName(item.parent_item_id)}
                               </div>
@@ -257,14 +261,14 @@ export default function QuotationPrintPage({
                           </td>
                           <td className="py-1.5 text-center text-slate-600 align-top">{item.quantity}</td>
                           <td className="py-1.5 text-right text-slate-600 align-top">
-                            {item.item_type === 'PACKAGE_ITEM' ? (
+                            {!!item.parent_item_id ? (
                               <span className="text-slate-400 italic text-xs">Included in Package</span>
                             ) : (
                               `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
                             )}
                           </td>
                           <td className="py-1.5 text-right font-medium text-slate-800 align-top">
-                            {item.item_type === 'PACKAGE_ITEM' ? (
+                            {!!item.parent_item_id ? (
                               <span className="text-slate-400 italic text-xs">—</span>
                             ) : (
                               `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
