@@ -1,45 +1,59 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Search, Filter, X, Printer, Eye } from 'lucide-react'
+import { Plus, Search, X, Eye, Printer, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { createPortal } from 'react-dom'
+import { Pagination } from '@/components/ui/Pagination'
 
-const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () => void }) => {
+const PAGE_SIZE = 25
+
+// Simple Modal Component
+function ItemsModal({ transaction, onClose }: { transaction: any, onClose: () => void }) {
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   if (!mounted) return null
 
   const items = transaction.purchase_order_items || []
   const rawSubtotal = items.reduce((sum: number, item: any) => sum + ((Number(item.qty_ordered) || 0) * (Number(item.unit_cost) || 0)), 0)
-  const hasVehicle = transaction.has_vehicle_details === true
-  
   const tax = transaction.tax_treatment || 'NON_VAT'
   let displayTotal = rawSubtotal
   if (tax === 'VAT_EXCLUSIVE') {
     displayTotal = rawSubtotal * 1.12
   }
 
+  // Determine if this PO has vehicle specific columns
+  const hasVehicles = items.some((i: any) => i.manual_vehicle || i.chassis_number)
+
   return createPortal(
-    <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-[100] p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h2 className="text-xl font-bold text-slate-800">Items in {transaction.po_number}</h2>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
-            <X size={24} />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-800 text-lg">PO Items Overview</h3>
+            <p className="text-sm text-slate-500 font-mono mt-0.5">{transaction.po_number}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition">
+            <X size={20} />
           </button>
         </div>
-        <div className="p-0 max-h-[60vh] overflow-y-auto">
+        
+        <div className="overflow-y-auto p-0 flex-1">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
-                {hasVehicle && <th className="px-6 py-3 font-medium">Vehicle / Unit</th>}
-                <th className="px-6 py-3 font-medium">Item / Description</th>
-                <th className="px-6 py-3 font-medium">Part No.</th>
-                <th className="px-6 py-3 font-medium text-right">Qty</th>
-                <th className="px-6 py-3 font-medium text-right">Unit Cost</th>
+              <tr className="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider sticky top-0 shadow-sm">
+                {hasVehicles && <th className="px-6 py-3 font-bold border-b border-slate-200">Vehicle</th>}
+                {hasVehicles && <th className="px-6 py-3 font-bold border-b border-slate-200">Chassis No.</th>}
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Item</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Part No.</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Qty</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Unit Cost</th>
                 <th className="px-6 py-3 font-medium text-right">Amount</th>
               </tr>
             </thead>
@@ -47,17 +61,14 @@ const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () =>
               {items.map((item: any, i: number) => {
                 const qty = Number(item.qty_ordered) || 0
                 const cost = Number(item.unit_cost) || 0
-                const amount = Number(item.total_amount) || (qty * cost)
+                const amount = qty * cost
                 
                 return (
                   <tr key={i} className="hover:bg-slate-50">
-                    {hasVehicle && (
-                      <td className="px-6 py-3 text-sm text-slate-800 font-bold">
-                        {item.manual_vehicle || '—'}
-                      </td>
-                    )}
+                    {hasVehicles && <td className="px-6 py-3 text-sm text-slate-700">{item.manual_vehicle || '—'}</td>}
+                    {hasVehicles && <td className="px-6 py-3 text-sm text-slate-500 font-mono">{item.chassis_number || '—'}</td>}
                     <td className="px-6 py-3 text-sm text-slate-800 font-medium">{item.parts?.name || 'Unknown Item'}</td>
-                    <td className="px-6 py-3 text-xs text-slate-500 font-mono">{item.parts?.part_number || '—'}</td>
+                    <td className="px-6 py-3 text-sm text-slate-500 font-mono">{item.parts?.part_number || '—'}</td>
                     <td className="px-6 py-3 text-sm text-right text-slate-800">{qty}</td>
                     <td className="px-6 py-3 text-sm text-right text-slate-600">
                       ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -71,7 +82,7 @@ const ItemsModal = ({ transaction, onClose }: { transaction: any, onClose: () =>
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-right">
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 text-right shrink-0">
           <span className="text-slate-600 font-medium mr-4">Total Amount:</span>
           <span className="text-xl font-bold text-slate-800">
             ₱{displayTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -91,28 +102,60 @@ export default function PurchaseOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null)
 
-  useEffect(() => {
-    fetchPurchaseOrders()
-  }, [])
+  // Pagination State
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
 
-  const fetchPurchaseOrders = async () => {
+  const fetchPurchaseOrders = useCallback(async () => {
     setIsLoading(true)
-    const { data } = await supabase
+    
+    let query = supabase
       .from('purchase_orders')
-      .select('*, suppliers(name), purchase_order_items(qty_ordered, unit_cost, total_amount, manual_vehicle, chassis_number, parts(name, part_number))')
+      .select('*, suppliers(name), purchase_order_items(qty_ordered, unit_cost, total_amount, manual_vehicle, chassis_number, parts(name, part_number))', { count: 'exact' })
       .order('created_at', { ascending: false })
       
-    if (data) setPurchaseOrders(data)
-    setIsLoading(false)
-  }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      let orParts = [`po_number.ilike.%${q}%`]
+      
+      const { data: suppliers } = await supabase.from('suppliers').select('id').ilike('name', `%${q}%`)
+      if (suppliers && suppliers.length > 0) {
+        orParts.push(`supplier_id.in.(${suppliers.map(s => s.id).join(',')})`)
+      }
+      
+      query = query.or(orParts.join(','))
+    }
 
-  const filtered = purchaseOrders.filter(po => {
-    const q = searchQuery.toLowerCase()
-    return (
-      (po.po_number && po.po_number.toLowerCase().includes(q)) ||
-      (po.suppliers?.name && po.suppliers.name.toLowerCase().includes(q))
-    )
-  })
+    // Apply Pagination Range
+    const from = (page - 1) * PAGE_SIZE
+    const to = from + PAGE_SIZE - 1
+    query = query.range(from, to)
+
+    const { data, count, error } = await query
+    
+    if (!error && data) {
+      setPurchaseOrders(data)
+      setTotalCount(count || 0)
+    } else {
+      console.error("Failed to fetch purchase orders:", error)
+      setPurchaseOrders([])
+      setTotalCount(0)
+    }
+    
+    setIsLoading(false)
+  }, [supabase, searchQuery, page])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchPurchaseOrders()
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [fetchPurchaseOrders])
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery])
 
   return (
     <div className="pb-12">
@@ -129,8 +172,8 @@ export default function PurchaseOrdersPage() {
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="p-4 border-b border-slate-200 bg-slate-50 flex gap-4 shrink-0">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col mb-6">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex gap-4 shrink-0 rounded-t-lg">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
@@ -143,105 +186,117 @@ export default function PurchaseOrdersPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                <th className="px-6 py-3 font-medium">PO NUMBER</th>
-                <th className="px-6 py-3 font-medium">SUPPLIER</th>
-                <th className="px-6 py-3 font-medium">ORDER DATE</th>
-                <th className="px-6 py-3 font-medium">STATUS</th>
-                <th className="px-6 py-3 font-medium text-right">ITEMS</th>
-                <th className="px-6 py-3 font-medium text-right">AMOUNT</th>
-                <th className="px-6 py-3 font-medium">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    <div className="animate-pulse flex flex-col items-center">
-                      <div className="h-6 w-24 bg-slate-200 rounded mb-4"></div>
-                      <div className="text-sm">Loading purchase orders...</div>
-                    </div>
-                  </td>
-                </tr>
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
-                    No purchase orders found.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map(po => {
-                  const items = po.purchase_order_items || []
-                  const numItems = items.length
-                  
-                  const rawSubtotal = items.reduce((sum: number, item: any) => sum + ((Number(item.qty_ordered) || 0) * (Number(item.unit_cost) || 0)), 0)
-                  const tax = po.tax_treatment || 'NON_VAT'
-                  let totalAmount = rawSubtotal
-                  if (tax === 'VAT_EXCLUSIVE') {
-                    totalAmount = rawSubtotal * 1.12
-                  }
-
-                  return (
-                    <tr key={po.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                      <td className="px-6 py-4 font-bold text-slate-800">
-                        {po.po_number}
-                      </td>
-                      <td className="px-6 py-4 font-medium text-slate-800">
-                        {po.suppliers?.name || 'Unknown Supplier'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
-                        {format(new Date(po.order_date || po.created_at), 'MMM d, yyyy')}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-bold ${
-                          po.status === 'RECEIVED' ? 'bg-green-100 text-green-700' :
-                          po.status === 'PARTIALLY RECEIVED' ? 'bg-blue-100 text-blue-700' :
-                          po.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                          'bg-orange-100 text-orange-700'
-                        }`}>
-                          {po.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button 
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedTransaction(po); }}
-                          className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
-                        >
-                          {numItems}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-800">
-                        ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Link 
-                            href={`/purchase-orders/${po.id}`}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Eye size={16} /> View
-                          </Link>
-                          <Link 
-                            href={`/print/purchase-orders/${po.id}`}
-                            className="text-sm font-medium text-slate-600 hover:text-slate-800 flex items-center gap-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Printer size={16} /> Print
-                          </Link>
-                        </div>
+        {isLoading ? (
+          <div className="py-16 flex justify-center items-center">
+            <div className="flex flex-col items-center text-slate-500 gap-3">
+              <FileText className="animate-pulse text-slate-300" size={40} />
+              <span className="font-medium">Loading purchase orders...</span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col flex-1">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                    <th className="px-6 py-3 font-medium">PO NUMBER</th>
+                    <th className="px-6 py-3 font-medium">SUPPLIER</th>
+                    <th className="px-6 py-3 font-medium">ORDER DATE</th>
+                    <th className="px-6 py-3 font-medium">STATUS</th>
+                    <th className="px-6 py-3 font-medium text-right">ITEMS</th>
+                    <th className="px-6 py-3 font-medium text-right">AMOUNT</th>
+                    <th className="px-6 py-3 font-medium">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {purchaseOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                        <div className="flex justify-center mb-3"><FileText className="text-slate-300" size={40} /></div>
+                        <p className="text-base font-medium">No purchase orders found.</p>
                       </td>
                     </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  ) : (
+                    purchaseOrders.map(po => {
+                      const items = po.purchase_order_items || []
+                      const numItems = items.length
+                      
+                      const rawSubtotal = items.reduce((sum: number, item: any) => sum + ((Number(item.qty_ordered) || 0) * (Number(item.unit_cost) || 0)), 0)
+                      const tax = po.tax_treatment || 'NON_VAT'
+                      let totalAmount = rawSubtotal
+                      if (tax === 'VAT_EXCLUSIVE') {
+                        totalAmount = rawSubtotal * 1.12
+                      }
+
+                      return (
+                        <tr key={po.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                          <td className="px-6 py-4 font-bold text-slate-800">
+                            {po.po_number}
+                          </td>
+                          <td className="px-6 py-4 font-medium text-slate-800">
+                            {po.suppliers?.name || 'Unknown Supplier'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                            {format(new Date(po.order_date || po.created_at), 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
+                              po.status === 'RECEIVED' ? 'bg-green-50 text-green-700 border-green-200' :
+                              po.status === 'PARTIALLY RECEIVED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                              po.status === 'CANCELLED' ? 'bg-red-50 text-red-700 border-red-200' :
+                              'bg-orange-50 text-orange-700 border-orange-200'
+                            }`}>
+                              {po.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button 
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedTransaction(po); }}
+                              className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
+                            >
+                              {numItems}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-slate-800">
+                            ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <Link 
+                                href={`/purchase-orders/${po.id}`}
+                                className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Eye size={16} /> View
+                              </Link>
+                              <Link 
+                                href={`/print/purchase-orders/${po.id}`}
+                                className="text-sm font-bold text-slate-600 hover:text-slate-800 flex items-center gap-1.5 hover:bg-slate-100 px-3 py-1.5 rounded-md transition"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Printer size={16} /> Print
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {totalCount > 0 && (
+              <Pagination 
+                totalCount={totalCount}
+                pageSize={PAGE_SIZE}
+                currentPage={page}
+                onPageChange={(p) => setPage(p)}
+              />
+            )}
+          </div>
+        )}
       </div>
       
       {selectedTransaction && (
