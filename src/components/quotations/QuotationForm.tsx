@@ -466,8 +466,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         item_type: 'PACKAGE_ITEM',
         parent_item_id: headerId,
         description: pi.item_type === 'LABOR' 
-          ? pi.labor_services?.name 
-          : (pi.is_category ? (resolved?.name || pi.part_categories?.name) : pi.parts?.name),
+          ? (pi.labor_services?.name || 'Unknown Labor') 
+          : (pi.is_category ? (resolved?.name || pi.part_categories?.name || 'Unknown Category') : (pi.parts?.name || 'Unknown Part')),
         quantity: pi.quantity,
         unit_price: 0,
         is_section_header: false,
@@ -565,7 +565,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
     for (const item of validItems) {
       if (!item.is_section_header) {
-        if (!item.description.trim() && !item.labor_service_id) {
+        if (!item.description?.trim() && !item.labor_service_id) {
           setError("Description is required for all non-header items.")
           setIsSubmitting(false)
           return
@@ -1184,33 +1184,12 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             onChange={(pkgId) => {
               const pkg = packages.find(p => p.id === pkgId)
               if (pkg) {
-                const newItem: LineItem = {
-                  id: crypto.randomUUID(),
-                  item_type: 'PACKAGE',
-                  package_id: pkg.id,
-                  description: pkg.name,
-                  quantity: 1,
-                  unit_price: pkg.package_price,
-                  is_section_header: false,
-                  package_items: (pkg.package_items || []).map((pi: any) => ({
-                    id: crypto.randomUUID(),
-                    item_type: 'PACKAGE_ITEM',
-                    description: pi.item_type === 'LABOR' 
-                      ? pi.labor_services?.name 
-                      : (pi.is_category ? pi.part_categories?.name : pi.parts?.name),
-                    quantity: pi.quantity,
-                    unit_price: 0,
-                    is_section_header: false,
-                    labor_service_id: pi.labor_service_id,
-                    part_id: pi.part_id,
-                    is_category: pi.is_category,
-                    part_category_id: pi.part_category_id,
-                    resolved_part_id: null,
-                    internal_price_snapshot: pi.price,
-                    internal_amount_snapshot: Number(pi.price) * Number(pi.quantity)
-                  }))
+                const needsResolution = (pkg.package_items || []).some((pi: any) => pi.is_category)
+                if (needsResolution) {
+                  setPendingPackage(pkg)
+                } else {
+                  addPackageToItems(pkg)
                 }
-                setItems(prev => [...prev, newItem])
               }
             }}
             placeholder="Search package to add..."
@@ -1241,6 +1220,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                   value={item.unit_price}
                   onChange={e => updateItem(item.id, 'unit_price', e.target.value)}
                   className="w-full border border-slate-300 rounded-md p-2 text-right bg-white"
+                  disabled
                 />
               </div>
               <div className="w-32 text-right pr-2">
