@@ -43,6 +43,20 @@ type LineItem = {
   internal_amount_snapshot?: number
 }
 
+
+const formatVehicleName = (v: any) => {
+  if (!v) return '';
+  const make = v.make || '';
+  const model = v.model || '';
+  const year = v.year ? ` ${v.year}` : '';
+  const plate = v.plate_number || '';
+  
+  const base = `${make} ${model}${year}`.trim();
+  if (base && plate) return `${base.toUpperCase()} — ${plate.toUpperCase()}`;
+  if (plate) return plate.toUpperCase();
+  return base.toUpperCase();
+}
+
 export function QuotationForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
   const supabase = createClient()
@@ -51,6 +65,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null)
   const [customerSearch, setCustomerSearch] = useState('')
+  const [vehicleSearch, setVehicleSearch] = useState('')
+  const [showVehicleDropdown, setShowVehicleDropdown] = useState(false)
+  const vehicleSearchRef = useRef<HTMLDivElement>(null)
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [customerVehicles, setCustomerVehicles] = useState<any[]>([])
@@ -194,6 +211,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowDropdown(false)
       }
+      if (vehicleSearchRef.current && !vehicleSearchRef.current.contains(event.target as Node)) {
+        setShowVehicleDropdown(false)
+      }
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -298,6 +318,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       setVehicleYear('')
       setVehicleTransmission('')
       setMileage('')
+      setVehicleSearch('')
     }
   }
 
@@ -361,6 +382,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setVehicleModel(vehicle.model || '')
     setVehicleYear(vehicle.year ? vehicle.year.toString() : '')
     setVehicleTransmission(vehicle.transmission || '')
+    setVehicleSearch(formatVehicleName(vehicle))
+    setShowVehicleDropdown(false)
   }
 
   const handleSaveVehicleChanges = async () => {
@@ -916,6 +939,90 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
       </div>
 
+      {/* Enhanced Vehicle Search UI */}
+      {selectedCustomerId && (
+        <div className="mb-6" ref={vehicleSearchRef}>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-slate-800">Vehicle</h3>
+          </div>
+          <div className="flex gap-4 items-start">
+            <div className="flex-1 relative">
+              <div className="relative">
+                <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search or select vehicle..."
+                  value={vehicleSearch}
+                  onChange={(e) => {
+                    setVehicleSearch(e.target.value)
+                    if (selectedVehicleId) {
+                      setSelectedVehicleId(null)
+                    }
+                    setShowVehicleDropdown(true)
+                  }}
+                  onClick={() => {
+                    if (vehicleSearch === '') setShowVehicleDropdown(true)
+                    else setShowVehicleDropdown(!showVehicleDropdown)
+                  }}
+                  onFocus={() => setShowVehicleDropdown(true)}
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+                />
+              </div>
+              
+              {showVehicleDropdown && (
+                <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-lg shadow-xl overflow-hidden max-h-[350px] overflow-y-auto">
+                  {(() => {
+                     const searchLower = vehicleSearch.toLowerCase();
+                     const filteredVehicles = customerVehicles.filter(v => {
+                       if (!searchLower) return true;
+                       const str = `${v.plate_number || ''} ${v.make || ''} ${v.model || ''} ${v.year || ''}`.toLowerCase();
+                       return str.includes(searchLower);
+                     });
+                     
+                     if (filteredVehicles.length === 0) {
+                       return <div className="p-4 text-center text-slate-500">No vehicles found for this customer.</div>
+                     }
+                     
+                     return filteredVehicles.map(v => (
+                       <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => handleSelectVehicle(v)}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-0 flex justify-between items-center transition-colors"
+                       >
+                         <div>
+                           <div className="font-semibold text-slate-900">{formatVehicleName(v)}</div>
+                         </div>
+                         <Car size={16} className="text-slate-400" />
+                       </button>
+                     ))
+                  })()}
+                </div>
+              )}
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedVehicleId(null)
+                setVehiclePlate('')
+                setVehicleMake('')
+                setVehicleModel('')
+                setVehicleYear('')
+                setVehicleTransmission('')
+                setMileage('')
+                setVehicleSearch('')
+                setIsAddingVehicle(true)
+                setShowVehicleDropdown(false)
+              }}
+              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-3 rounded-lg font-medium whitespace-nowrap transition-colors flex items-center gap-2"
+            >
+              <Plus size={18} /> Add New Vehicle
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Customer Details */}
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
@@ -1085,137 +1192,102 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                 </span>
               )}
             </h3>
-            {selectedCustomerId && (
-              <div className="flex items-center gap-3">
-                {selectedVehicleId && !isEditingVehicle && (
-                  <>
-                    <button type="button" onClick={() => setIsEditingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline">
-                      Edit Vehicle
-                    </button>
-                    <button type="button" onClick={() => {
-                      setSelectedVehicleId(null)
-                      setVehiclePlate('')
-                      setVehicleMake('')
-                      setVehicleModel('')
-                      setVehicleYear('')
-                      setVehicleTransmission('')
-                      setMileage('')
-                      setIsAddingVehicle(true)
-                    }} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
-                      <Plus size={14} /> Add Vehicle
-                    </button>
-                  </>
-                )}
-                {!selectedVehicleId && customerVehicles.length > 0 && !isAddingVehicle && (
-                   <button type="button" onClick={() => setIsAddingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1">
-                      <Plus size={14} /> Add Vehicle
-                   </button>
-                )}
-              </div>
+            {selectedCustomerId && selectedVehicleId && !isEditingVehicle && (
+              <button type="button" onClick={() => setIsEditingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline">
+                Edit Vehicle
+              </button>
             )}
           </div>
 
-          {!selectedVehicleId && customerVehicles.length > 0 && !isAddingVehicle && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Select from Fleet</label>
-              <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2">
-                {customerVehicles.map(v => (
-                  <button 
-                    key={v.id} 
-                    type="button" 
-                    onClick={() => handleSelectVehicle(v)}
-                    className="flex justify-between items-center p-3 border border-slate-200 rounded-md hover:bg-blue-50 hover:border-blue-300 transition text-left"
-                  >
-                    <div>
-                      <div className="font-bold text-slate-800">{v.plate_number}</div>
-                      <div className="text-sm text-slate-500">{v.make} {v.model} {v.year}</div>
-                    </div>
-                    <Car size={18} className="text-slate-400" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {(!selectedVehicleId && customerVehicles.length === 0) || isAddingVehicle || isEditingVehicle || selectedVehicleId ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-                {selectedVehicleId && !isEditingVehicle ? (
-                  <div className="w-full border border-slate-200 rounded-md p-2 font-bold bg-slate-50 text-slate-900 uppercase">{vehiclePlate}</div>
-                ) : (
-                  <input required type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase font-bold" placeholder="ABC 1234" />
-                )}
-              </div>
-              <div className="col-span-2">
-                {selectedVehicleId && !isEditingVehicle ? (
-                  <>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Make & Model</label>
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">
-                      {vehicleMake} {vehicleModel}
-                    </div>
-                  </>
-                ) : (
-                  <MakeModelSelector 
-                    selectedMake={vehicleMake} 
-                    setSelectedMake={setVehicleMake} 
-                    selectedModel={vehicleModel} 
-                    setSelectedModel={setVehicleModel}
-                    disabled={false}
-                  />
-                )}
-              </div>
-              <div>
-                {selectedVehicleId && !isEditingVehicle ? (
-                  <>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleYear || <span className="text-slate-400">None</span>}</div>
-                  </>
-                ) : (
-                  <YearSelector selectedYear={vehicleYear} setSelectedYear={setVehicleYear} disabled={false} />
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-                {selectedVehicleId && !isEditingVehicle ? (
-                  <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900 min-h-[42px]">{vehicleTransmission || <span className="text-slate-400">None</span>}</div>
-                ) : (
-                  <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
-                    <option value="">Select...</option>
-                    <option value="Automatic">Automatic</option>
-                    <option value="Manual">Manual</option>
-                  </select>
-                )}
-              </div>
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km) <span className="text-xs text-slate-500 font-normal ml-2">(Updates latest vehicle mileage on save)</span></label>
-                <input type="number" value={mileage} onChange={e => setMileage(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="50000" />
-              </div>
-
-              {(isEditingVehicle || isAddingVehicle) && (
-                <div className="col-span-2 flex gap-3 justify-end mt-4 pt-4 border-t border-slate-100">
-                  <button type="button" onClick={() => {
-                    if (isAddingVehicle) {
-                      setIsAddingVehicle(false)
-                      // Re-select previous if it existed, or just keep it null
-                      if (customerVehicles.length > 0) {
-                        handleSelectVehicle(customerVehicles[0])
-                      }
-                    } else {
-                      setIsEditingVehicle(false)
-                      const orig = customerVehicles.find(v => v.id === selectedVehicleId)
-                      if (orig) handleSelectVehicle(orig)
-                    }
-                  }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                    {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
-                  </button>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
+              {selectedVehicleId && !isEditingVehicle ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 font-bold bg-slate-50 text-slate-900 uppercase">{vehiclePlate}</div>
+              ) : (
+                <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
               )}
             </div>
-          ) : null}
+            
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
+              {selectedVehicleId && !isEditingVehicle ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleMake || '-'}</div>
+              ) : (
+                <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
+              )}
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
+              {selectedVehicleId && !isEditingVehicle ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleModel || '-'}</div>
+              ) : (
+                <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
+              )}
+            </div>
+
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+              {selectedVehicleId && !isEditingVehicle ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleYear || '-'}</div>
+              ) : (
+                <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
+              )}
+            </div>
+            <div className="col-span-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+              {selectedVehicleId && !isEditingVehicle ? (
+                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleTransmission || '-'}</div>
+              ) : (
+                <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                  <option value="">Select...</option>
+                  <option value="Automatic">Automatic</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              )}
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
+              <input type="text" value={mileage} onChange={e => setMileage(e.target.value.replace(/[^0-9]/g, ''))} className="w-full border border-slate-300 rounded-md p-2" placeholder="10500" />
+              <p className="text-xs text-slate-500 mt-1">Mileage is always editable for current service</p>
+            </div>
+            
+            {(isAddingVehicle || isEditingVehicle) && !selectedVehicleId && selectedCustomerId && (
+              <div className="col-span-2 mt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => {
+                  if (isAddingVehicle) {
+                    setIsAddingVehicle(false)
+                    if (customerVehicles.length > 0) handleSelectVehicle(customerVehicles[0])
+                  } else {
+                    setIsEditingVehicle(false)
+                    const orig = customerVehicles.find(v => v.id === selectedVehicleId)
+                    if (orig) handleSelectVehicle(orig)
+                  }
+                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                  {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
+                </button>
+              </div>
+            )}
+            
+            {isEditingVehicle && selectedVehicleId && selectedCustomerId && (
+              <div className="col-span-2 mt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => {
+                  setIsEditingVehicle(false)
+                  const orig = customerVehicles.find(v => v.id === selectedVehicleId)
+                  if (orig) handleSelectVehicle(orig)
+                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                  Save Vehicle Changes
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
