@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { ArrowLeft, Save, Plus, Trash2, Search, Package } from 'lucide-react'
+import { ArrowLeft, Save, Plus, Trash2, Search, Package, Wrench, Box } from 'lucide-react'
 
 export default function PackageForm({ initialData = null }: { initialData?: any }) {
   const router = useRouter()
@@ -17,7 +17,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const [packageCode, setPackageCode] = useState(initialData?.package_code || '')
   const [category, setCategory] = useState(initialData?.category || '')
   const [description, setDescription] = useState(initialData?.description || '')
-  const [packagePrice, setPackagePrice] = useState(initialData?.package_price?.toString() || '0')
+  const [packagePrice, setPackagePrice] = useState(initialData?.package_price?.toString() || '')
   const [isActive, setIsActive] = useState(initialData?.is_active ?? true)
   
   const [items, setItems] = useState<any[]>(initialData?.package_items?.map((item: any) => ({
@@ -45,7 +45,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     }
     const timer = setTimeout(async () => {
       setIsSearchingLabor(true)
-      const { data } = await supabase.from('labor_services').select('*').ilike('service_name', `%${laborSearch}%`).limit(15)
+      const { data, error } = await supabase.from('labor_services').select('id, name, rate, is_active').ilike('name', `%${laborSearch}%`).limit(15)
       setLaborResults(data || [])
       setIsSearchingLabor(false)
     }, 300)
@@ -60,7 +60,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     }
     const timer = setTimeout(async () => {
       setIsSearchingPart(true)
-      const { data } = await supabase.from('parts').select('*, brands(name)').or(`name.ilike.%${partSearch}%,part_number.ilike.%${partSearch}%`).limit(15)
+      const { data, error } = await supabase.from('parts').select('id, name, part_number, selling_price, brands(name)').or(`name.ilike.%${partSearch}%,part_number.ilike.%${partSearch}%`).limit(15)
       setPartResults(data || [])
       setIsSearchingPart(false)
     }, 300)
@@ -83,13 +83,13 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
     // Check duplicates
     const isDuplicate = items.some(i => i.id !== id && i.item_type === type && i.record_id === record.id)
     if (isDuplicate) {
-      alert("This item is already added to the package.")
+      alert(`This ${type === 'LABOR' ? 'labor service' : 'part'} is already included in the package.`)
       return
     }
     updateItem(id, 'record_id', record.id)
     updateItem(id, 'record', record)
-    setLaborSearch('')
-    setPartSearch('')
+    if (type === 'LABOR') setLaborSearch('')
+    if (type === 'PART') setPartSearch('')
   }
 
   const calcRegularValue = () => {
@@ -107,7 +107,7 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
 
   const handlePriceChange = (val: string) => {
     if (val === '') {
-      setPackagePrice('0')
+      setPackagePrice('')
       return
     }
     const num = Number(val)
@@ -117,17 +117,17 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return alert("Package Name is required")
-    if (items.length === 0) return alert("At least one item is required")
+    if (items.length === 0) return alert("At least one item (Labor or Part) is required")
     if (items.some(i => !i.record_id)) return alert("Please select a specific item for all rows")
     if (items.some(i => Number(i.quantity) <= 0)) return alert("Quantity must be greater than 0")
 
     setLoading(true)
 
     const payload = {
-      name,
-      package_code: packageCode,
-      category,
-      description,
+      name: name.trim(),
+      package_code: packageCode.trim(),
+      category: category.trim(),
+      description: description.trim(),
       package_price: Number(packagePrice),
       is_active: isActive
     }
@@ -136,12 +136,28 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       let pkgId = initialData?.id
 
       if (isEditing) {
+        // Check duplicate name exclusion
+        const { data: dupData } = await supabase.from('packages').select('id').eq('name', payload.name).neq('id', pkgId).limit(1)
+        if (dupData && dupData.length > 0) {
+          alert("A package with this name already exists.")
+          setLoading(false)
+          return
+        }
+
         const { error } = await supabase.from('packages').update(payload).eq('id', pkgId)
         if (error) throw error
         
         // Remove old items
         await supabase.from('package_items').delete().eq('package_id', pkgId)
       } else {
+        // Check duplicate name
+        const { data: dupData } = await supabase.from('packages').select('id').eq('name', payload.name).limit(1)
+        if (dupData && dupData.length > 0) {
+          alert("A package with this name already exists.")
+          setLoading(false)
+          return
+        }
+
         const { data, error } = await supabase.from('packages').insert([payload]).select().single()
         if (error) throw error
         pkgId = data.id
@@ -167,6 +183,9 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
       setLoading(false)
     }
   }
+
+  const laborItems = items.filter(i => i.item_type === 'LABOR')
+  const partItems = items.filter(i => i.item_type === 'PART')
 
   return (
     <form onSubmit={handleSubmit} className="pb-12 max-w-6xl mx-auto">
@@ -246,115 +265,229 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-slate-800">Package Items</h2>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => addItem('LABOR')} className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-sm font-bold transition flex items-center gap-1">
-                  <Plus size={16} /> Labor
-                </button>
-                <button type="button" onClick={() => addItem('PART')} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-sm font-bold transition flex items-center gap-1">
-                  <Plus size={16} /> Part
-                </button>
-              </div>
+          {/* LABOR SECTION */}
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible flex flex-col">
+            <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Wrench size={20} className="text-indigo-600" /> Labor
+              </h2>
             </div>
-
-            {items.length === 0 ? (
-              <div className="p-8 border-2 border-dashed border-slate-200 rounded-lg text-center bg-slate-50">
-                <p className="text-slate-500 font-medium">No items added to this package yet.</p>
-                <p className="text-sm text-slate-400 mt-1">Click the buttons above to add labor or parts.</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {items.map((item, index) => {
-                  const isLabor = item.item_type === 'LABOR'
-                  const title = isLabor ? 'Labor / Service' : 'Part / Product'
-                  const color = isLabor ? 'bg-indigo-50 border-indigo-200 text-indigo-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  
-                  return (
-                    <div key={item.id} className="border border-slate-200 rounded-lg bg-slate-50 p-4 flex flex-col md:flex-row gap-4 items-start md:items-center">
-                      <div className={`px-2 py-1 rounded text-xs font-bold border shrink-0 ${color}`}>
-                        {title}
-                      </div>
-                      
-                      <div className="flex-1 w-full relative">
-                        {item.record ? (
-                          <div className="bg-white border border-slate-300 p-2.5 rounded-md flex justify-between items-center w-full shadow-sm">
-                            <div>
-                              <div className="font-bold text-slate-800">{isLabor ? item.record.service_name : item.record.name}</div>
-                              {!isLabor && <div className="text-xs text-slate-500 font-mono mt-0.5">{item.record.part_number} • {item.record.brands?.name}</div>}
-                            </div>
-                            <button type="button" onClick={() => { updateItem(item.id, 'record_id', null); updateItem(item.id, 'record', null); }} className="text-blue-600 hover:underline text-sm font-bold">
-                              Change
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="relative">
-                            <div className="relative">
-                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                              <input 
-                                type="text"
-                                placeholder={`Search ${title.toLowerCase()}...`}
-                                onChange={e => isLabor ? setLaborSearch(e.target.value) : setPartSearch(e.target.value)}
-                                className="w-full pl-9 p-2.5 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                            
-                            {/* Search Dropdown */}
-                            {((isLabor && laborSearch) || (!isLabor && partSearch)) && (
-                              <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-                                {(isLabor ? isSearchingLabor : isSearchingPart) ? (
-                                  <div className="p-3 text-sm text-slate-500">Searching...</div>
-                                ) : (isLabor ? laborResults : partResults).length === 0 ? (
-                                  <div className="p-3 text-sm text-slate-500">No results found</div>
-                                ) : (
-                                  (isLabor ? laborResults : partResults).map(res => (
-                                    <div 
-                                      key={res.id} 
-                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b border-slate-100 last:border-0"
-                                      onClick={() => selectItemRecord(item.id, res, item.item_type)}
-                                    >
-                                      <div className="font-bold text-slate-800">{isLabor ? res.service_name : res.name}</div>
-                                      <div className="text-sm text-slate-500 flex justify-between mt-1">
-                                        <span>{isLabor ? res.category : res.part_number}</span>
-                                        <span className="font-bold text-blue-700">₱{Number(isLabor ? res.rate : res.selling_price).toLocaleString()}</span>
-                                      </div>
-                                    </div>
-                                  ))
+            
+            <div className="p-0 overflow-x-auto flex-1">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                    <th className="px-6 py-3 font-bold">Labor / Service</th>
+                    <th className="px-4 py-3 font-bold text-right w-24">Qty</th>
+                    <th className="px-4 py-3 font-bold text-right w-32">Regular Rate</th>
+                    <th className="px-4 py-3 font-bold text-right w-32">Amount</th>
+                    <th className="px-4 py-3 font-bold text-center w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {laborItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-slate-500 bg-slate-50/50">
+                        No labor added yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    laborItems.map(item => {
+                      const rate = item.record ? Number(item.record.rate) || 0 : 0
+                      const qty = Number(item.quantity) || 0
+                      const amount = rate * qty
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50 transition">
+                          <td className="px-6 py-3">
+                            {item.record ? (
+                              <div className="flex justify-between items-center group">
+                                <span className="font-bold text-slate-800">{item.record.name}</span>
+                                <button type="button" onClick={() => { updateItem(item.id, 'record_id', null); updateItem(item.id, 'record', null); }} className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition">Change</button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <input 
+                                  type="text"
+                                  placeholder="Search labor/service..."
+                                  onChange={e => setLaborSearch(e.target.value)}
+                                  className="w-full pl-8 p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                                  autoFocus
+                                />
+                                {laborSearch && (
+                                  <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded shadow-xl z-50 max-h-60 overflow-y-auto">
+                                    {isSearchingLabor ? (
+                                      <div className="p-2 text-xs text-slate-500">Searching...</div>
+                                    ) : laborResults.length === 0 ? (
+                                      <div className="p-2 text-xs text-slate-500">No results found.</div>
+                                    ) : (
+                                      laborResults.map(res => (
+                                        <div 
+                                          key={res.id} 
+                                          className="p-2 hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                          onClick={() => selectItemRecord(item.id, res, 'LABOR')}
+                                        >
+                                          <div className="font-bold text-slate-800 text-sm">{res.name}</div>
+                                          <div className="text-xs font-bold text-blue-700 mt-0.5">₱{Number(res.rate).toLocaleString()}</div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="w-24 shrink-0">
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Qty</label>
-                        <input 
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={item.quantity}
-                          onChange={e => updateItem(item.id, 'quantity', e.target.value)}
-                          className="w-full p-2 border border-slate-300 rounded-md text-right font-medium"
-                        />
-                      </div>
-                      
-                      <div className="w-28 shrink-0 text-right">
-                        <label className="block text-xs font-bold text-slate-500 mb-1">Regular</label>
-                        <div className="p-2 text-slate-800 font-bold">
-                          ₱{((Number(item.quantity) || 0) * (item.record ? Number(isLabor ? item.record.rate : item.record.selling_price) : 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </div>
-                      </div>
-                      
-                      <button type="button" onClick={() => removeItem(item.id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition shrink-0 mt-5">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={item.quantity}
+                              onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                              className="w-full p-1.5 text-sm border border-slate-300 rounded text-right font-bold focus:ring-2 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-500">
+                            {item.record ? `₱${rate.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-800">
+                            {item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
+              <button type="button" onClick={() => addItem('LABOR')} className="px-3 py-1.5 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-md text-sm font-bold transition flex items-center gap-1 shadow-sm">
+                <Plus size={16} /> Add Labor
+              </button>
+            </div>
+          </div>
+
+          {/* PARTS & MATERIALS SECTION */}
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible flex flex-col mt-2">
+            <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Box size={20} className="text-emerald-600" /> Parts & Materials
+              </h2>
+            </div>
+            
+            <div className="p-0 overflow-x-auto flex-1">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200">
+                    <th className="px-6 py-3 font-bold">Part / Product</th>
+                    <th className="px-4 py-3 font-bold">Part No.</th>
+                    <th className="px-4 py-3 font-bold">Brand</th>
+                    <th className="px-4 py-3 font-bold text-right w-24">Qty</th>
+                    <th className="px-4 py-3 font-bold text-right w-32">Regular Price</th>
+                    <th className="px-4 py-3 font-bold text-right w-32">Amount</th>
+                    <th className="px-4 py-3 font-bold text-center w-16"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {partItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500 bg-slate-50/50">
+                        No parts or materials added yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    partItems.map(item => {
+                      const price = item.record ? Number(item.record.selling_price) || 0 : 0
+                      const qty = Number(item.quantity) || 0
+                      const amount = price * qty
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50 transition">
+                          <td className="px-6 py-3">
+                            {item.record ? (
+                              <div className="flex justify-between items-center group">
+                                <span className="font-bold text-slate-800">{item.record.name}</span>
+                                <button type="button" onClick={() => { updateItem(item.id, 'record_id', null); updateItem(item.id, 'record', null); }} className="text-xs font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition ml-2">Change</button>
+                              </div>
+                            ) : (
+                              <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                                <input 
+                                  type="text"
+                                  placeholder="Search part/product..."
+                                  onChange={e => setPartSearch(e.target.value)}
+                                  className="w-full pl-8 p-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                                  autoFocus
+                                />
+                                {partSearch && (
+                                  <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded shadow-xl z-50 max-h-60 overflow-y-auto min-w-[300px]">
+                                    {isSearchingPart ? (
+                                      <div className="p-2 text-xs text-slate-500">Searching...</div>
+                                    ) : partResults.length === 0 ? (
+                                      <div className="p-2 text-xs text-slate-500">No results found.</div>
+                                    ) : (
+                                      partResults.map(res => (
+                                        <div 
+                                          key={res.id} 
+                                          className="p-2 hover:bg-emerald-50 cursor-pointer border-b border-slate-50 last:border-0"
+                                          onClick={() => selectItemRecord(item.id, res, 'PART')}
+                                        >
+                                          <div className="font-bold text-slate-800 text-sm">{res.name}</div>
+                                          <div className="text-xs text-slate-500 flex justify-between mt-1">
+                                            <span>{res.part_number || 'No PN'} • {res.brands?.name || 'No Brand'}</span>
+                                            <span className="font-bold text-emerald-700">₱{Number(res.selling_price).toLocaleString()}</span>
+                                          </div>
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-500 font-mono">
+                            {item.record ? (item.record.part_number || '—') : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-600">
+                            {item.record ? (item.record.brands?.name || '—') : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={item.quantity}
+                              onChange={e => updateItem(item.id, 'quantity', e.target.value)}
+                              className="w-full p-1.5 text-sm border border-slate-300 rounded text-right font-bold focus:ring-2 focus:ring-emerald-500"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-slate-500">
+                            {item.record ? `₱${price.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-800">
+                            {item.record ? `₱${amount.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition">
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div className="p-4 border-t border-slate-200 bg-white rounded-b-lg">
+              <button type="button" onClick={() => addItem('PART')} className="px-3 py-1.5 bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-md text-sm font-bold transition flex items-center gap-1 shadow-sm">
+                <Plus size={16} /> Add Part / Material
+              </button>
+            </div>
           </div>
         </div>
 

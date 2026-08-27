@@ -17,33 +17,20 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
 
   const items = pkg.package_items || []
   
-  let regularValue = 0;
+  const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
+  const partItems = items.filter((i: any) => i.item_type === 'PART')
   
-  const renderItems = items.map((item: any, i: number) => {
+  let regularValue = 0;
+  items.forEach((item: any) => {
     const isLabor = item.item_type === 'LABOR'
-    const name = isLabor ? item.labor_services?.service_name : item.parts?.name
     const qty = Number(item.quantity) || 1
-    
-    // Selling price for regular value calculation
     const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
-    const regularAmount = sellingPrice * qty
-    regularValue += regularAmount
-
-    return (
-      <tr key={i} className="hover:bg-slate-50">
-        <td className="px-6 py-3 text-sm text-slate-500 font-medium">{isLabor ? 'Labor' : 'Part'}</td>
-        <td className="px-6 py-3 text-sm text-slate-800 font-medium">{name || 'Unknown Item'}</td>
-        <td className="px-6 py-3 text-sm text-right text-slate-800">{qty}</td>
-        <td className="px-6 py-3 text-sm text-right font-medium text-slate-800">
-          ₱{regularAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </td>
-      </tr>
-    )
+    regularValue += (sellingPrice * qty)
   })
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
         <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
             <h3 className="font-bold text-slate-800 text-lg">Items in {pkg.name}</h3>
@@ -55,21 +42,75 @@ function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
         </div>
         
         <div className="overflow-y-auto p-0 flex-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider sticky top-0 shadow-sm">
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Type</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Item</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Qty</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Regular Price</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {items.length === 0 ? (
-                <tr><td colSpan={4} className="p-4 text-center text-slate-500">No items</td></tr>
-              ) : renderItems}
-            </tbody>
-          </table>
+          {laborItems.length > 0 && (
+            <div className="mb-4">
+              <div className="px-6 py-2 bg-indigo-50 border-y border-indigo-100 font-bold text-indigo-800 text-sm">
+                Labor
+              </div>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                    <th className="px-6 py-2 font-bold">Labor / Service</th>
+                    <th className="px-6 py-2 font-bold text-right">Qty</th>
+                    <th className="px-6 py-2 font-bold text-right">Regular Rate</th>
+                    <th className="px-6 py-2 font-bold text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {laborItems.map((item: any, i: number) => {
+                    const rate = Number(item.labor_services?.rate) || 0
+                    const qty = Number(item.quantity) || 1
+                    return (
+                      <tr key={i} className="hover:bg-slate-50">
+                        <td className="px-6 py-2 text-sm text-slate-800 font-bold">{item.labor_services?.name || 'Unknown Item'}</td>
+                        <td className="px-6 py-2 text-sm text-right text-slate-600 font-medium">{qty}</td>
+                        <td className="px-6 py-2 text-sm text-right text-slate-500">₱{rate.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td className="px-6 py-2 text-sm text-right font-bold text-slate-800">₱{(rate * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {partItems.length > 0 && (
+            <div>
+              <div className="px-6 py-2 bg-emerald-50 border-y border-emerald-100 font-bold text-emerald-800 text-sm">
+                Parts & Materials
+              </div>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
+                    <th className="px-6 py-2 font-bold">Part / Product</th>
+                    <th className="px-6 py-2 font-bold">Part No.</th>
+                    <th className="px-6 py-2 font-bold text-right">Qty</th>
+                    <th className="px-6 py-2 font-bold text-right">Regular Price</th>
+                    <th className="px-6 py-2 font-bold text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {partItems.map((item: any, i: number) => {
+                    const price = Number(item.parts?.selling_price) || 0
+                    const qty = Number(item.quantity) || 1
+                    return (
+                      <tr key={i} className="hover:bg-slate-50">
+                        <td className="px-6 py-2 text-sm text-slate-800 font-bold">{item.parts?.name || 'Unknown Item'}</td>
+                        <td className="px-6 py-2 text-sm text-slate-500 font-mono">{item.parts?.part_number || '—'}</td>
+                        <td className="px-6 py-2 text-sm text-right text-slate-600 font-medium">{qty}</td>
+                        <td className="px-6 py-2 text-sm text-right text-slate-500">₱{price.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                        <td className="px-6 py-2 text-sm text-right font-bold text-slate-800">₱{(price * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {items.length === 0 && (
+            <div className="p-8 text-center text-slate-500">No items found.</div>
+          )}
         </div>
         
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col gap-1 items-end shrink-0">
@@ -105,7 +146,7 @@ export default function PackagesListPage() {
     setIsLoading(true)
     let query = supabase
       .from('packages')
-      .select('*, package_items(item_type, quantity, labor_services(rate, service_name), parts(selling_price, name))', { count: 'exact' })
+      .select('*, package_items(item_type, quantity, labor_services(rate, name), parts(selling_price, name, part_number))', { count: 'exact' })
       .order('name')
       
     if (filterActive === 'active') query = query.eq('is_active', true)

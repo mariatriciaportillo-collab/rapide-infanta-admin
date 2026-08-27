@@ -41,6 +41,10 @@ export default function ViewPackagePage() {
   }
 
   const items = pkg.package_items || []
+  
+  const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
+  const partItems = items.filter((i: any) => i.item_type === 'PART')
+
   let regularValue = 0
   let productCost = 0
 
@@ -140,52 +144,94 @@ export default function ViewPackagePage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-          <h2 className="text-lg font-bold text-slate-800">Included Items ({items.length})</h2>
+          <h2 className="text-lg font-bold text-slate-800">Included Labor ({laborItems.length})</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Type</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Item</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Qty</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Selling Rate</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Regular Total</th>
+              <tr className="bg-indigo-50/50 text-indigo-800 text-xs uppercase tracking-wider">
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Labor / Service</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Qty</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Regular Rate</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {items.length === 0 ? (
+              {laborItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                    No items in this package.
+                  <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                    No labor added yet.
                   </td>
                 </tr>
               ) : (
-                items.map((item: any, i: number) => {
-                  const isLabor = item.item_type === 'LABOR'
-                  const title = isLabor ? 'Labor' : 'Part'
-                  const color = isLabor ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                  
-                  const name = isLabor ? item.labor_services?.service_name : item.parts?.name
-                  const subtext = isLabor ? item.labor_services?.category : `${item.parts?.part_number || 'No PN'} • ${item.parts?.brands?.name || 'No Brand'}`
-                  
+                laborItems.map((item: any, i: number) => {
+                  const name = item.labor_services?.name || 'Unknown Item'
                   const qty = Number(item.quantity) || 1
-                  const sellingPrice = isLabor ? Number(item.labor_services?.rate) || 0 : Number(item.parts?.selling_price) || 0
+                  const sellingPrice = Number(item.labor_services?.rate) || 0
                   const amount = sellingPrice * qty
 
                   return (
                     <tr key={i} className="hover:bg-slate-50 transition">
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${color}`}>
-                          {title}
-                        </span>
+                        <div className="font-bold text-slate-900">{name}</div>
                       </td>
+                      <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
+                      <td className="px-6 py-4 text-right text-slate-500">
+                        ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold text-slate-800">
+                        ₱{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+          <h2 className="text-lg font-bold text-slate-800">Parts & Materials ({partItems.length})</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-emerald-50/50 text-emerald-800 text-xs uppercase tracking-wider">
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Part / Product</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Part No.</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200">Brand</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-24">Qty</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Regular Price</th>
+                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right w-32">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {partItems.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    No parts or materials added yet.
+                  </td>
+                </tr>
+              ) : (
+                partItems.map((item: any, i: number) => {
+                  const name = item.parts?.name || 'Unknown Item'
+                  const partNumber = item.parts?.part_number || '—'
+                  const brandName = item.parts?.brands?.name || '—'
+                  const qty = Number(item.quantity) || 1
+                  const sellingPrice = Number(item.parts?.selling_price) || 0
+                  const amount = sellingPrice * qty
+
+                  return (
+                    <tr key={i} className="hover:bg-slate-50 transition">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">{name || 'Unknown Item'}</div>
-                        <div className="text-xs text-slate-500 font-medium mt-0.5">{subtext}</div>
+                        <div className="font-bold text-slate-900">{name}</div>
                       </td>
+                      <td className="px-6 py-4 text-slate-500 font-mono text-sm">{partNumber}</td>
+                      <td className="px-6 py-4 text-slate-600 text-sm">{brandName}</td>
                       <td className="px-6 py-4 text-right font-medium text-slate-800">{qty}</td>
                       <td className="px-6 py-4 text-right text-slate-500">
                         ₱{sellingPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
