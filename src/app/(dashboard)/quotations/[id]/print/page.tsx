@@ -66,7 +66,7 @@ export default function QuotationPrintPage({
         </div>
         
         <div className="text-right">
-          <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-widest mb-4">Quotation</h2>
+          <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-widest mb-2">Quotation</h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             <div className="text-slate-500 font-medium">Quote No:</div>
             <div className="font-bold text-slate-900">{quote.quote_number}</div>
@@ -81,9 +81,9 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Two-column info */}
-      <div className="flex border-b border-slate-300">
+      <div className="flex border-y border-slate-300">
         {/* Bill To */}
-        <div className="w-1/3 p-4 border-r border-slate-300">
+        <div className="w-1/3 p-3 border-r border-slate-300">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Quoted To</h3>
           <div className="space-y-0.5 text-slate-800 text-sm">
             <div className="font-bold text-base">{quote.customer_name}</div>
@@ -106,7 +106,7 @@ export default function QuotationPrintPage({
         </div>
         
         {/* Vehicle */}
-        <div className="w-1/3 p-4 border-r border-slate-300">
+        <div className="w-1/3 p-3 border-r border-slate-300">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Vehicle Details</h3>
           <div className="space-y-1 text-slate-800 text-sm">
             <div className="flex justify-between">
@@ -125,7 +125,7 @@ export default function QuotationPrintPage({
         </div>
 
         {/* Service Details */}
-        <div className="w-1/3 p-4">
+        <div className="w-1/3 p-3">
           <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Service Details</h3>
           <div className="space-y-1 text-slate-800 text-sm">
             <div className="flex justify-between">
@@ -145,7 +145,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Items Table */}
-      <div className="px-6 pt-4 pb-2 space-y-4">
+      <div className="px-6 pt-3 pb-1 space-y-3">
         {(() => {
           const sortedItems = [...items].sort((a: any, b: any) => a.sort_order - b.sort_order);
           const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
@@ -305,7 +305,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Footer */}
-      <div className="mt-8 px-6 pt-6 border-t-2 border-slate-800 flex justify-between gap-8 page-break-inside-avoid">
+      <div className="mt-4 px-6 pt-4 border-t-2 border-slate-800 flex justify-between gap-8 page-break-inside-avoid">
         <div className="flex-1 space-y-4">
           <div>
             <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Notes / Remarks</h4>
@@ -317,7 +317,7 @@ export default function QuotationPrintPage({
           </div>
         </div>
         
-        <div className="w-48 text-center pt-8">
+        <div className="w-48 text-center pt-4">
           <div className="border-b border-slate-800 mb-1"></div>
           <p className="font-bold text-slate-800 text-xs">{quote.prepared_by}</p>
           <p className="text-slate-500 text-[10px] uppercase tracking-wider">Prepared By</p>
@@ -325,9 +325,9 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Legal, Warranty, and Signatures */}
-      <div className="mt-8 px-6 grid grid-cols-2 gap-8 page-break-inside-avoid">
+      <div className="mt-4 px-6 grid grid-cols-2 gap-4 page-break-inside-avoid">
         {/* Warranty Policy */}
-        <div className="border border-slate-300 rounded p-4 flex flex-col">
+        <div className="border border-slate-300 rounded p-3 flex flex-col">
           <h3 className="font-bold text-slate-800 text-xs mb-2 uppercase border-b border-slate-200 pb-1">THREE (3) MONTHS WARRANTY ON PARTS AND LABOR</h3>
           <div className="text-[9px] text-slate-600 space-y-1.5 text-justify">
             <p><strong>1.</strong> Any hidden or unforeseen defective parts and defects discovered while repairs are being performed are not included in the current quotation/estimate. Additional cost and continuation of additional repairs should require customer approval.</p>
@@ -344,20 +344,22 @@ export default function QuotationPrintPage({
         </div>
         
         {/* Customer Authorization */}
-        <div className="border border-slate-300 rounded p-4 flex flex-col">
+        <div className="border border-slate-300 rounded p-3 flex flex-col">
           <h3 className="font-bold text-slate-800 text-xs mb-2 uppercase border-b border-slate-200 pb-1">CUSTOMER AUTHORIZATION</h3>
-          <p className="text-[9px] text-slate-600 text-justify mb-8">
+          <p className="text-[9px] text-slate-600 text-justify mb-4">
             I hereby authorize and agree to pay for the repair work performed on my vehicle, including all authorized parts and materials necessary to complete the repairs. Payment shall be due in full upon completion of the repair work and notice that the vehicle is ready for release. In the event that the amount due remains unpaid, I acknowledge Rapidé Infanta's right, subject to applicable law, to retain possession of the vehicle until payment is made, demand and pursue collection of the unpaid amount, and exercise any mechanic's lien or other remedies available under Philippine law.
           </p>
           
-          <div className="mt-auto flex justify-between gap-4">
+          <div className="mt-auto flex justify-between gap-6 pt-6">
             <div className="flex-1 text-center">
               <div className="border-b border-slate-800 mb-1"></div>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Customer Name / Signature</p>
+              <p className="text-[9px] font-bold text-slate-800">APPROVED BY</p>
+              <p className="text-[8px] text-slate-500 uppercase tracking-wider">Authorized Representative</p>
             </div>
-            <div className="w-24 text-center">
+            <div className="flex-1 text-center">
               <div className="border-b border-slate-800 mb-1"></div>
-              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Date</p>
+              <p className="text-[9px] font-bold text-slate-800">CUSTOMER'S SIGNATURE</p>
+              <p className="text-[8px] text-slate-500 uppercase tracking-wider">Customer Signature & Date/Time</p>
             </div>
           </div>
         </div>
