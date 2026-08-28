@@ -143,7 +143,6 @@ export default function QuotationPrintPage({
           </div>
         </div>
       </div>
-      </div>
 
       {/* Items Table */}
       <div className="px-6 pt-4 pb-2 space-y-4">

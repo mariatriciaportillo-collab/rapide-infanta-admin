@@ -206,7 +206,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         .select('id, full_name, roles, status')
         .in('status', ['Active', 'ACTIVE']);
         
-      let activeAdvisors = [];
+      let activeAdvisors: any[] = [];
       if (data) {
         activeAdvisors = data.filter(emp => 
           emp.roles && emp.roles.some((r: string) => r.toUpperCase() === 'SERVICE ADVISOR')
@@ -230,7 +230,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       
       setAdvisors(activeAdvisors);
       
-      let activeMechanics = [];
+      let activeMechanics: any[] = [];
       if (data) {
         activeMechanics = data.filter(emp => 
           emp.roles && emp.roles.some((r: string) => {
