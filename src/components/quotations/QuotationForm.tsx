@@ -107,7 +107,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   // Quote State
   const [notes, setNotes] = useState('')
   const [warranty, setWarranty] = useState('3 Months / 5,000km (Whichever comes first)')
-  const [preparedBy, setPreparedBy] = useState('Rapide Infanta Admin')
+  const [preparedBy, setPreparedBy] = useState('')
   const [serviceAdvisorId, setServiceAdvisorId] = useState<string>(initialData?.service_advisor_id || '')
   const [advisors, setAdvisors] = useState<any[]>([])
   const [discount, setDiscount] = useState<number>(0)

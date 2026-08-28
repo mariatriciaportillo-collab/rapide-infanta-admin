@@ -65,7 +65,14 @@ export function EmployeeForm({ initialData = null }: { initialData?: any }) {
     }
 
     if (err) {
-      setError(`Failed to save: ${err.message}`)
+      
+      console.error("Database Error:", err);
+      if (err.message?.includes('schema cache') || err.code === 'PGRST205' || err.code === 'PGRST204') {
+        setError("System configuration error: The Employees database table is currently inaccessible. Please contact the administrator to apply the latest database migrations.");
+      } else {
+        setError(`Failed to save: ${err.message}`);
+      }
+
       setIsSubmitting(false)
     } else {
       router.push('/admin/employees')
