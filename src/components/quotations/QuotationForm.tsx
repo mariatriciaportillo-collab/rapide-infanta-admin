@@ -108,6 +108,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const [notes, setNotes] = useState('')
   const [warranty, setWarranty] = useState('3 Months / 5,000km (Whichever comes first)')
   const [preparedBy, setPreparedBy] = useState('Rapide Infanta Admin')
+  const [serviceAdvisorId, setServiceAdvisorId] = useState<string>(initialData?.service_advisor_id || '')
+  const [advisors, setAdvisors] = useState<any[]>([])
   const [discount, setDiscount] = useState<number>(0)
 
   const [items, setItems] = useState<LineItem[]>([])
@@ -195,6 +197,16 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         .eq('is_active', true)
       if (data) setLaborServices(data)
     }
+    
+    const fetchAdvisors = async () => {
+      const { data } = await supabase.from('employees')
+        .select('id, full_name, roles, status')
+        .eq('status', 'Active')
+        .contains('roles', ['Service Advisor'])
+        
+      if (data) setAdvisors(data)
+    }
+    fetchAdvisors()
     
     const fetchPackages = async () => {
       const { data } = await supabase
@@ -834,6 +846,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           mileage_km: mileage ? parseFloat(mileage) : null,
           status: initialData?.status || 'draft',
           prepared_by: preparedBy,
+          service_advisor_id: serviceAdvisorId || null,
           notes: notes,
           warranty_terms: warranty,
           subtotal: subtotal,
@@ -1177,7 +1190,16 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Service Advisor</label>
-            <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-3" placeholder="Enter name..." />
+            <select value={serviceAdvisorId} onChange={e => {
+              setServiceAdvisorId(e.target.value)
+              const adv = advisors.find(a => a.id === e.target.value)
+              if (adv) setPreparedBy(adv.full_name) // keep fallback for older UI
+            }} className="w-full border border-slate-300 rounded-md p-3 bg-white">
+              <option value="">Select an Advisor...</option>
+              {advisors.map(adv => (
+                <option key={adv.id} value={adv.id}>{adv.full_name}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
@@ -1512,7 +1534,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Prepared By</label>
-              <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" />
+              <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" disabled />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Notes / Remarks</label>
