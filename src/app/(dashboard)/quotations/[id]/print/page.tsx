@@ -52,9 +52,15 @@ export default function QuotationPrintPage({
 
   return (
     <div className="bg-white text-black min-h-screen w-full max-w-[210mm] mx-auto print:w-full print:max-w-none print:m-0 font-sans text-sm pb-10">
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page { size: auto; margin: 0mm; }
+          body { -webkit-print-color-adjust: exact; margin: 0; padding: 0; }
+        }
+      `}} />
       
       {/* Header */}
-      <div className="flex justify-between items-start pt-8 px-8 pb-6 border-b-2 border-slate-800">
+      <div className="flex justify-between items-start pt-10 px-10 pb-4 border-b-2 border-slate-800 print:pt-12">
         <div>
           <h1 className="text-4xl font-black text-blue-900 tracking-tighter mb-1">RAPIDÉ</h1>
           <p className="text-xs font-bold text-slate-500 tracking-widest uppercase">Auto Service Experts</p>
@@ -145,7 +151,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Items Table */}
-      <div className="px-6 pt-3 pb-1 space-y-3">
+      <div className="px-10 pt-3 pb-1 space-y-3">
         {(() => {
           const sortedItems = [...items].sort((a: any, b: any) => a.sort_order - b.sort_order);
           const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
@@ -279,7 +285,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Totals */}
-      <div className="px-6 flex justify-end">
+      <div className="px-10 flex justify-end">
         <div className="w-1/2 min-w-[250px]">
           <div className="space-y-1.5">
             <div className="flex justify-between text-slate-600 text-sm">
@@ -305,7 +311,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Footer */}
-      <div className="mt-4 px-6 pt-4 border-t-2 border-slate-800 flex justify-between gap-8 page-break-inside-avoid">
+      <div className="mt-4 px-10 pt-4 border-t-2 border-slate-800 flex justify-between gap-8 page-break-inside-avoid">
         <div className="flex-1 space-y-4">
           <div>
             <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Notes / Remarks</h4>
@@ -325,7 +331,7 @@ export default function QuotationPrintPage({
       </div>
 
       {/* Legal, Warranty, and Signatures */}
-      <div className="mt-4 px-6 grid grid-cols-2 gap-4 page-break-inside-avoid">
+      <div className="mt-4 px-10 grid grid-cols-2 gap-4 page-break-inside-avoid">
         {/* Warranty Policy */}
         <div className="border border-slate-300 rounded p-3 flex flex-col">
           <h3 className="font-bold text-slate-800 text-xs mb-2 uppercase border-b border-slate-200 pb-1">THREE (3) MONTHS WARRANTY ON PARTS AND LABOR</h3>

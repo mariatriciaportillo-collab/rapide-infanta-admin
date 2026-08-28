@@ -174,9 +174,15 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       // Reload Service Details
       setMileage(initialData.mileage_km ? String(initialData.mileage_km) : '')
       
+      if (initialData.vehicles) {
+        const v = initialData.vehicles;
+        setVehicleSearch(v.plate_number + (v.make ? ' - ' + v.make : '') + (v.model ? ' ' + v.model : ''));
+      }
+      
       if (initialData.customers) {
         setDisplayCustomerName(formatCustomerName(initialData.customers))
         setDisplayContactPerson(formatContactPerson(initialData.customers))
+        setCustomerSearch(formatCustomerName(initialData.customers))
       }
 
       if (initialData.quotation_items) {
@@ -1038,7 +1044,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           <Link href="/quotations" className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={24} />
           </Link>
-          <h2 className="text-3xl font-bold text-slate-800">New Quotation</h2>
+          <h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Quotation" : "New Quotation"}</h2>
         </div>
         <button 
           type="submit" 
@@ -1046,7 +1052,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-md font-medium transition flex items-center gap-2"
         >
           <Save size={18} />
-          {isSubmitting ? 'Saving...' : 'Save Quotation'}
+          {isSubmitting ? "Saving..." : isEditingQuote ? "Update Quotation" : "Save Quotation"}
         </button>
       </div>
 
