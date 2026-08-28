@@ -80,7 +80,24 @@ export default async function QuotationsPage() {
                     <Link href={`/quotations/${q.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs uppercase tracking-wider">
                       View
                     </Link>
-                    <Link href={`/quotations/${q.id}/print`} className="text-slate-600 hover:text-slate-800 font-medium text-xs uppercase tracking-wider">
+                      {(() => {
+                        const status = (q.status || '').toUpperCase();
+                        const hasDownpayment = q.downpayment_amount > 0 || (q.payments && q.payments.length > 0);
+                        const isConverted = q.is_converted || q.invoice_id || status === 'CONVERTED';
+                        const isCompleted = status === 'COMPLETED';
+                        const canEdit = !hasDownpayment && !isConverted && !isCompleted && status !== 'REJECTED';
+                        
+                        return canEdit ? (
+                          <Link href={`/quotations/${q.id}/edit`} className="text-amber-600 hover:text-amber-800 font-medium text-xs uppercase tracking-wider">
+                            Edit
+                          </Link>
+                        ) : (
+                          <span className="text-slate-400 font-medium text-xs uppercase tracking-wider" title={hasDownpayment ? "Locked — Downpayment Received" : (isConverted ? "Locked — Converted" : "Locked")}>
+                            Locked
+                          </span>
+                        );
+                      })()}
+                      <Link href={`/quotations/${q.id}/print`} className="text-slate-600 hover:text-slate-800 font-medium text-xs uppercase tracking-wider">
                       Print
                     </Link>
                   </td>
