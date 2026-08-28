@@ -921,8 +921,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         if (quoteError) throw new Error(`Quotation Header Update Failed: ${quoteError.message}`);
         quote = updatedQuote;
         
-        // Delete old items so we can insert cleanly
-        await supabase.from('quotation_items').delete().eq('quotation_id', quote.id)
+        // We will delete removed items AFTER upserting the new/updated ones.
       } else {
         const { data: newQuote, error: quoteError } = await supabase
           .from('quotations')
@@ -936,12 +935,24 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
 
 
-      // 3. Insert Line Items
+      // 3. Prepare Line Items
+      // Generate fresh IDs for this specific save attempt to prevent 23505 on retries
+      const existingDbIds = new Set((initialData?.quotation_items || []).map((i: any) => i.id));
+      const idMap = new Map<string, string>();
+      
+      items.forEach(item => {
+        if (existingDbIds.has(item.id)) {
+          idMap.set(item.id, item.id);
+        } else {
+          idMap.set(item.id, crypto.randomUUID());
+        }
+      });
+
       const itemsToInsert = items
         .filter(i => (i.description && i.description.trim() !== '') || i.labor_service_id || i.part_id || i.package_id || i.is_category)
         .map((item, index) => ({
           // IMPORTANT: Include id so parent_item_id references map correctly if generating new UI UUIDs!
-          id: item.id,
+          id: idMap.get(item.id) as string,
           quotation_id: quote.id,
           sort_order: index,
           item_type: item.item_type || (item.package_id && !item.parent_item_id ? 'PACKAGE' : 'MANUAL'),
@@ -952,7 +963,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           is_section_header: item.is_section_header,
           labor_service_id: item.labor_service_id || null,
           package_id: item.package_id || null,
-          parent_item_id: item.parent_item_id || null,
+          parent_item_id: item.parent_item_id ? idMap.get(item.parent_item_id) : null,
           part_id: item.part_id || null,
           is_category: item.is_category || false,
           part_category_id: item.part_category_id || null,
@@ -970,7 +981,20 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       if (itemsToInsert.length > 0) {
         const { error: itemsError } = await supabase
           .from('quotation_items')
-          .insert(itemsToInsert)
+          .upsert(itemsToInsert) // Use upsert instead of insert
+          
+      // Delete removed items if editing
+      if (isEditingQuote && initialData?.quotation_items) {
+        const currentItemIds = new Set(itemsToInsert.map(i => i.id));
+        const itemsToDelete = initialData.quotation_items
+          .filter((i: any) => !currentItemIds.has(i.id))
+          .map((i: any) => i.id);
+          
+        if (itemsToDelete.length > 0) {
+          const { error: delErr } = await supabase.from('quotation_items').delete().in('id', itemsToDelete);
+          if (delErr) console.error("Failed to delete removed items", delErr);
+        }
+      }
           
         if (itemsError) {
           console.error("[QUOTATION SAVE] Step 5 FAILED (Quotation Items)", JSON.stringify(itemsError, null, 2));
