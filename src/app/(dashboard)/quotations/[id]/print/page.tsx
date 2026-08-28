@@ -62,7 +62,7 @@ export default function QuotationPrintPage({
       {/* Header */}
       <div className="flex justify-between items-start pt-10 px-8 pb-4 border-b-2 border-slate-800 print:pt-6">
         <div>
-          <img src="/rapide-logo.png" alt="Rapidé Auto Service Experts" className="h-10 w-auto object-contain mb-1" />
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTX8Xigj2p8bEaP3vO-6sFEeildEUl6k7tViArCkyMu3NHEtHFvYaPr3Bt&s=10" alt="Rapidé Auto Service Experts" className="h-10 w-auto object-contain mb-1" />
           <div className="mt-3 text-xs text-slate-600 space-y-0.5">
             <p>Infanta Branch</p>
             <p>123 Main Highway, Infanta, Quezon</p>
@@ -316,10 +316,7 @@ export default function QuotationPrintPage({
             <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Notes / Remarks</h4>
             <p className="text-slate-600 text-xs whitespace-pre-wrap">{quote.notes || 'None'}</p>
           </div>
-          <div>
-            <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Warranty Terms</h4>
-            <p className="text-slate-600 text-xs">{quote.warranty_terms}</p>
-          </div>
+          
         </div>
         
         <div className="w-48 text-center pt-2">
@@ -340,12 +337,7 @@ export default function QuotationPrintPage({
             <p><strong>3.</strong> MGP Auto Repair Center – Rapidé Infanta assumes no responsibility for loss or fire damage to the vehicle while it is placed in storage or under the shop's care for repairs, subject to the final approved business wording.</p>
           </div>
           
-          {quote.warranty_terms && (
-            <div className="mt-auto pt-2 border-t border-slate-200">
-              <span className="block font-bold text-slate-800 text-[9px] mb-0.5">WARRANTY TERMS</span>
-              <span className="text-[9px] font-bold text-slate-700">{quote.warranty_terms}</span>
-            </div>
-          )}
+          
         </div>
         
         {/* Customer Authorization */}

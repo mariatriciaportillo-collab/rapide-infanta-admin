@@ -75,7 +75,7 @@ export default async function ViewQuotationPage({
         {/* Document Header (similar to print layout but styled for screen) */}
         <div className="p-8 border-b border-slate-200 bg-slate-50 flex justify-between items-start">
           <div>
-            <img src="/rapide-logo.png" alt="Rapidé Auto Service Experts" className="h-14 w-auto object-contain mb-2" />
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTX8Xigj2p8bEaP3vO-6sFEeildEUl6k7tViArCkyMu3NHEtHFvYaPr3Bt&s=10" alt="Rapidé Auto Service Experts" className="h-14 w-auto object-contain mb-2" />
             <div className="mt-4 text-sm text-slate-600 space-y-1">
               <p>Infanta Branch</p>
               <p>123 Main Highway, Infanta, Quezon</p>
@@ -347,10 +347,7 @@ export default async function ViewQuotationPage({
               <h4 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-1">Notes / Remarks</h4>
               <p className="text-slate-600 whitespace-pre-wrap">{quote.notes || 'None'}</p>
             </div>
-            <div>
-              <h4 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-1">Warranty Terms</h4>
-              <p className="text-slate-600">{quote.warranty_terms}</p>
-            </div>
+            
           </div>
           
           <div className="w-64 text-center">
