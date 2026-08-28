@@ -533,6 +533,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setCustomerAddress('')
     setCustomerTin('')
     setCustomerSearch('')
+    setIsAddingCustomer(false)
+    setIsEditingCustomer(false)
     
     setVehiclePlate('')
     setVehicleMake('')
@@ -1151,279 +1153,20 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         </div>
       )}
 
-      {(isAddingCustomer || isEditingCustomer || isAddingVehicle || isEditingVehicle) && (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Customer Details */}
-        {(isAddingCustomer || isEditingCustomer) && (
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
-              {customerType === 'company' ? 'Company' : 'Customer'} Information
-              {selectedCustomerId && !isEditingCustomer && (
-                <span className="ml-2 text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  Existing Customer
-                </span>
-              )}
-            </h3>
-            {selectedCustomerId && !isEditingCustomer && (
-              <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setIsEditingCustomer(true)} className="text-sm font-medium text-blue-600 hover:underline">
-                  Edit Details
-                </button>
-                
-              </div>
-            )}
+      {/* Service Details */}
+      <div className="mb-8 bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+        <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Service Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Service Advisor</label>
+            <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-3" placeholder="Enter name..." />
           </div>
-          
-          {!selectedCustomerId && (
-            <div className="mb-4 flex gap-2">
-              <button type="button" onClick={() => setCustomerType('individual')} className={`px-3 py-1 rounded text-sm font-medium ${customerType === 'individual' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'}`}>Individual</button>
-              <button type="button" onClick={() => setCustomerType('company')} className={`px-3 py-1 rounded text-sm font-medium ${customerType === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>Company</button>
-            </div>
-          )}
-          
-          <div className="space-y-4">
-            
-            {selectedCustomerId && !isEditingCustomer ? (
-              // READONLY MODE FOR SELECTED CUSTOMER
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{customerType === 'company' ? 'Company Name' : 'Full Name'}</label>
-                  <div className="w-full border border-slate-200 rounded-md p-2 font-medium bg-slate-50 text-slate-900">{displayCustomerName}</div>
-                </div>
-                {customerType === 'company' && displayContactPerson && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{displayContactPerson}</div>
-                  </div>
-                )}
-              </>
-            ) : (
-              // INPUT MODE (NEW OR EDITING)
-              customerType === 'individual' ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
-                    <input required type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="Juan" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
-                    <input required type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="Dela Cruz" />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
-                    <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 font-medium" placeholder="ABC Construction Corp" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
-                      <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Maria" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
-                      <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Santos" />
-                    </div>
-                  </div>
-                </>
-              )
-            )}
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
-                {selectedCustomerId && !isEditingCustomer ? (
-                  <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerMobile || <span className="text-slate-400">None</span>}</div>
-                ) : (
-                  <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" />
-                )}
-              </div>
-              
-              {customerType === 'company' ? (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Telephone</label>
-                  {selectedCustomerId && !isEditingCustomer ? (
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerTelephone || <span className="text-slate-400">None</span>}</div>
-                  ) : (
-                    <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" />
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  {selectedCustomerId && !isEditingCustomer ? (
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerEmail || <span className="text-slate-400">None</span>}</div>
-                  ) : (
-                    <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="juan@example.com" />
-                  )}
-                </div>
-              )}
-            </div>
-
-            {customerType === 'company' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  {selectedCustomerId && !isEditingCustomer ? (
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerEmail || <span className="text-slate-400">None</span>}</div>
-                  ) : (
-                    <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@abccorp.com" />
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">TIN</label>
-                  {selectedCustomerId && !isEditingCustomer ? (
-                    <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerTin || <span className="text-slate-400">None</span>}</div>
-                  ) : (
-                    <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" />
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-              {selectedCustomerId && !isEditingCustomer ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 min-h-[42px]">{customerAddress || <span className="text-slate-400">None</span>}</div>
-              ) : (
-                <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows={2} className="w-full border border-slate-300 rounded-md p-2" placeholder="Complete address..."></textarea>
-              )}
-            </div>
-            
-            {isEditingCustomer && (
-              <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-slate-100">
-                <button type="button" onClick={() => {
-                  // Reload original data
-                  handleSelectCustomer(searchResults.find(c => c.id === selectedCustomerId) || { id: selectedCustomerId })
-                  setIsEditingCustomer(false)
-                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
-                  Cancel
-                </button>
-                <button type="button" onClick={handleSaveCustomerChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                  Save Customer Changes
-                </button>
-              </div>
-            )}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
+            <input type="text" value={mileage} onChange={e => setMileage(e.target.value.replace(/[^0-9]/g, ''))} className="w-full border border-slate-300 rounded-md p-3" placeholder="10500" />
           </div>
         </div>
-        )}
-
-        {/* Vehicle Details */}
-        {(isAddingCustomer || isAddingVehicle || isEditingVehicle) && (
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-              <Car size={18} className="text-slate-500"/>
-              Vehicle Information
-              {selectedVehicleId && !isEditingVehicle && (
-                <span className="ml-2 text-xs font-normal bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  Existing Vehicle
-                </span>
-              )}
-            </h3>
-            {selectedCustomerId && selectedVehicleId && !isEditingVehicle && (
-              <button type="button" onClick={() => setIsEditingVehicle(true)} className="text-sm font-medium text-blue-600 hover:underline">
-                Edit Vehicle
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-              {selectedVehicleId && !isEditingVehicle ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 font-bold bg-slate-50 text-slate-900 uppercase">{vehiclePlate}</div>
-              ) : (
-                <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
-              )}
-            </div>
-            
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
-              {selectedVehicleId && !isEditingVehicle ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleMake || '-'}</div>
-              ) : (
-                <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
-              )}
-            </div>
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
-              {selectedVehicleId && !isEditingVehicle ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleModel || '-'}</div>
-              ) : (
-                <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
-              )}
-            </div>
-
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-              {selectedVehicleId && !isEditingVehicle ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleYear || '-'}</div>
-              ) : (
-                <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
-              )}
-            </div>
-            <div className="col-span-1">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-              {selectedVehicleId && !isEditingVehicle ? (
-                <div className="w-full border border-slate-200 rounded-md p-2 bg-slate-50 text-slate-900">{vehicleTransmission || '-'}</div>
-              ) : (
-                <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
-                  <option value="">Select...</option>
-                  <option value="Automatic">Automatic</option>
-                  <option value="Manual">Manual</option>
-                </select>
-              )}
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Current Mileage (km)</label>
-              <input type="text" value={mileage} onChange={e => setMileage(e.target.value.replace(/[^0-9]/g, ''))} className="w-full border border-slate-300 rounded-md p-2" placeholder="10500" />
-              <p className="text-xs text-slate-500 mt-1">Mileage is always editable for current service</p>
-            </div>
-            
-            {(isAddingVehicle || isEditingVehicle) && !selectedVehicleId && selectedCustomerId && (
-              <div className="col-span-2 mt-4 flex justify-end gap-2">
-                <button type="button" onClick={() => {
-                  if (isAddingVehicle) {
-                    setIsAddingVehicle(false)
-                    if (customerVehicles.length > 0) handleSelectVehicle(customerVehicles[0])
-                  } else {
-                    setIsEditingVehicle(false)
-                    const orig = customerVehicles.find(v => v.id === selectedVehicleId)
-                    if (orig) handleSelectVehicle(orig)
-                  }
-                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
-                  Cancel
-                </button>
-                <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                  {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
-                </button>
-              </div>
-            )}
-            
-            {isEditingVehicle && selectedVehicleId && selectedCustomerId && (
-              <div className="col-span-2 mt-4 flex justify-end gap-2">
-                <button type="button" onClick={() => {
-                  setIsEditingVehicle(false)
-                  const orig = customerVehicles.find(v => v.id === selectedVehicleId)
-                  if (orig) handleSelectVehicle(orig)
-                }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">
-                  Cancel
-                </button>
-                <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                  Save Vehicle Changes
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        )}
       </div>
-      )}
 
       {/* SECTION 1: PACKAGES */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
@@ -1820,6 +1563,181 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           onApply={(resolvedParts) => addPackageToItems(pendingPackage, resolvedParts)}
         />
       )}
+
+      {/* CUSTOMER MODAL */}
+      {(isAddingCustomer || isEditingCustomer) && (
+        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
+                {isAddingCustomer ? 'Add New Customer' : 'Edit Customer'}
+              </h2>
+              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="text-slate-400 hover:text-slate-600 transition">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setCustomerType('individual')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'individual' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Individual</button>
+                <button type="button" onClick={() => setCustomerType('company')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Company</button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                {customerType === 'individual' ? (
+                  <>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
+                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
+                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
+                      <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Corporation" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
+                      <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
+                      <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
+                    </div>
+                  </>
+                )}
+
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
+                  <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Telephone</label>
+                  <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@example.com" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">TIN</label>
+                  <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                  <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows={2} className="w-full border border-slate-300 rounded-md p-2" placeholder="Complete address..."></textarea>
+                </div>
+              </div>
+              
+              {isAddingCustomer && (
+                <>
+                  <div className="border-t border-slate-200 mt-6 mb-4"></div>
+                  <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2 mb-4">
+                    <Car size={16} className="text-slate-500"/> First Vehicle (Optional)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number</label>
+                      <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
+                      <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
+                      <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                      <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+                      <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                        <option value="">Select...</option>
+                        <option value="Automatic">Automatic</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            
+            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
+              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
+                Cancel
+              </button>
+              <button type="button" onClick={isAddingCustomer ? handleCreateNewCustomer : handleSaveCustomerChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                {isAddingCustomer ? 'Save New Customer' : 'Save Customer Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VEHICLE MODAL */}
+      {(isAddingVehicle || isEditingVehicle) && (
+        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
+              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Car size={18} className="text-slate-500"/>
+                {isAddingVehicle ? 'Add New Vehicle' : 'Edit Vehicle'}
+              </h2>
+              <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="text-slate-400 hover:text-slate-600 transition">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
+                  <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
+                  <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Model</label>
+                  <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                  <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+                  <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                    <option value="">Select...</option>
+                    <option value="Automatic">Automatic</option>
+                    <option value="Manual">Manual</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
+              <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
+                Cancel
+              </button>
+              <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+                {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </form>
   )
 }
