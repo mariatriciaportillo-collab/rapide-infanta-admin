@@ -1,5 +1,5 @@
 -- Employees Table
-CREATE TABLE IF NOT EXISTS employees (
+CREATE TABLE IF NOT EXISTS public.employees (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS employees (
 );
 
 -- Service Intervals Settings
-CREATE TABLE IF NOT EXISTS service_intervals (
+CREATE TABLE IF NOT EXISTS public.service_intervals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     service_type TEXT NOT NULL, -- e.g., 'Oil Change', 'PMS'
     classification TEXT NOT NULL, -- e.g., 'Regular / Mineral', 'Semi Synthetic', 'Fully Synthetic'
@@ -26,18 +26,18 @@ CREATE TABLE IF NOT EXISTS service_intervals (
 );
 
 -- Default Service Intervals
-INSERT INTO service_intervals (service_type, classification, months, kilometers) VALUES
+INSERT INTO public.service_intervals (service_type, classification, months, kilometers) VALUES
 ('Oil Change', 'Regular / Mineral', 3, 5000),
 ('Oil Change', 'Semi Synthetic', 6, 7000),
 ('Oil Change', 'Fully Synthetic', 6, 10000)
 ON CONFLICT (service_type, classification) DO NOTHING;
 
 -- Service History
-CREATE TABLE IF NOT EXISTS service_history (
+CREATE TABLE IF NOT EXISTS public.service_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
-    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    invoice_id UUID REFERENCES invoices(id) ON DELETE SET NULL,
+    vehicle_id UUID NOT NULL REFERENCES public.vehicles(id) ON DELETE CASCADE,
+    customer_id UUID NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
+    invoice_id UUID REFERENCES public.invoices(id) ON DELETE SET NULL,
     service_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     mileage INT,
     service_name TEXT,
@@ -49,17 +49,21 @@ CREATE TABLE IF NOT EXISTS service_history (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Alter vehicles to ensure we have the new fields (if not already there)
-ALTER TABLE vehicles 
+-- Alter existing tables to ensure we have the new fields
+ALTER TABLE public.vehicles 
 ADD COLUMN IF NOT EXISTS vin text,
 ADD COLUMN IF NOT EXISTS engine_capacity text;
 
--- Create an RPC to safely execute these so I can call it from node if I have admin access, though I'll just save this file.
+ALTER TABLE public.quotations 
+ADD COLUMN IF NOT EXISTS service_advisor_id UUID REFERENCES public.employees(id) ON DELETE SET NULL;
 
--- Add service_advisor_id to quotations (and estimates/invoices if they share it, but assuming quotations covers estimates as they are the same table usually)
-ALTER TABLE quotations 
-ADD COLUMN IF NOT EXISTS service_advisor_id UUID REFERENCES employees(id) ON DELETE SET NULL;
+ALTER TABLE public.invoices
+ADD COLUMN IF NOT EXISTS service_advisor_id UUID REFERENCES public.employees(id) ON DELETE SET NULL;
 
--- Note: We assume Invoices either inherit this or have their own.
-ALTER TABLE invoices
-ADD COLUMN IF NOT EXISTS service_advisor_id UUID REFERENCES employees(id) ON DELETE SET NULL;
+-- GRANT PERMISSIONS (CRITICAL FIX FOR SCHEMA CACHE ERROR)
+GRANT ALL ON TABLE public.employees TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.service_intervals TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.service_history TO anon, authenticated, service_role;
+
+-- Force Schema Cache reload for PostgREST API
+NOTIFY pgrst, 'reload schema';

@@ -1,38 +1,67 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Car, User, Settings, Calculator, Wrench, Box, ChevronDown, ChevronRight, Briefcase, Search, ShoppingCart, Receipt, CreditCard, Package, Truck, ClipboardList, Archive, BarChart2, History as HistoryIcon, TrendingUp, MinusCircle, DollarSign, Clock, Shield, Building2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Users, User, 
+  Wrench, 
+  Box, 
+  Archive,
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  Car,
+  ClipboardList,
+  Search,
+  ShoppingCart,
+  Truck,
+  Package,
+  Receipt,
+  CreditCard,
+  History,
+  BarChart2,
+  TrendingUp,
+  MinusCircle,
+  DollarSign,
+  Clock,
+  Shield,
+  Building2
+} from 'lucide-react'
+
+type Section = 'operations' | 'customers' | 'products' | 'inventory' | 'reports' | 'admin' | null
 
 export function SidebarNav() {
   const pathname = usePathname()
   
-  // Active states for parent menus
   const isOperationsActive = ['/quotations', '/estimate', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
-  const isCustomerAccountsActive = ['/customers', '/vehicles'].some(route => pathname?.startsWith(route))
+  const isCustomerAccountsActive = ['/customers', '/vehicles', '/service-history'].some(route => pathname?.startsWith(route))
   const isProductsActive = ['/labor-lookup', '/labor-charges', '/parts', '/packages'].some(route => pathname?.startsWith(route))
   const isInventoryActive = ['/inventory', '/stock-adjustments', '/outside-purchases', '/purchase-orders', '/suppliers'].some(route => pathname?.startsWith(route))
   const isReportsActive = pathname?.startsWith('/reports')
   const isAdminActive = pathname?.startsWith('/admin')
   
-  const [operationsOpen, setOperationsOpen] = useState(isOperationsActive)
-  const [customersOpen, setCustomersOpen] = useState(isCustomerAccountsActive)
-  const [productsOpen, setProductsOpen] = useState(isProductsActive)
-  const [inventoryOpen, setInventoryOpen] = useState(isInventoryActive)
-  const [reportsOpen, setReportsOpen] = useState(isReportsActive)
-  const [adminOpen, setAdminOpen] = useState(isAdminActive)
+  const [openSection, setOpenSection] = useState<Section>(null)
 
   // Auto-expand if active route changes
   useEffect(() => {
-    if (isOperationsActive) setOperationsOpen(true)
-    if (isCustomerAccountsActive) setCustomersOpen(true)
-    if (isProductsActive) setProductsOpen(true)
-    if (isInventoryActive) setInventoryOpen(true)
-  }, [pathname, isOperationsActive, isCustomerAccountsActive, isProductsActive, isInventoryActive])
+    if (isOperationsActive) setOpenSection('operations')
+    else if (isCustomerAccountsActive) setOpenSection('customers')
+    else if (isProductsActive) setOpenSection('products')
+    else if (isInventoryActive) setOpenSection('inventory')
+    else if (isReportsActive) setOpenSection('reports')
+    else if (isAdminActive) setOpenSection('admin')
+    else setOpenSection(null)
+  }, [pathname, isOperationsActive, isCustomerAccountsActive, isProductsActive, isInventoryActive, isReportsActive, isAdminActive])
+
+  const toggleSection = (section: Section) => {
+    setOpenSection(prev => prev === section ? null : section)
+  }
 
   return (
-    <nav className="flex-1 py-4 flex flex-col gap-1 px-3">
+    <nav className="flex-1 py-4 flex flex-col gap-1 px-2">
       <Link 
         href="/" 
         className={`px-3 py-2 rounded-md transition font-medium flex items-center gap-2
@@ -45,25 +74,25 @@ export function SidebarNav() {
       {/* OPERATIONS */}
       <div className="mt-2">
         <button 
-          onClick={() => setOperationsOpen(!operationsOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isOperationsActive && !operationsOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('operations')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isOperationsActive && openSection !== 'operations' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
-            <Briefcase size={18} />
+            <FileText size={18} />
             Operations
           </div>
-          {operationsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'operations' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
         
-        {operationsOpen && (
+        {openSection === 'operations' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link 
               href="/quotations" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
                 ${pathname?.startsWith('/quotations') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
             >
-              <Calculator size={16} />
+              <FileText size={16} />
               Quotation
             </Link>
             <Link 
@@ -105,18 +134,18 @@ export function SidebarNav() {
       {/* CUSTOMER ACCOUNTS */}
       <div className="mt-2">
         <button 
-          onClick={() => setCustomersOpen(!customersOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isCustomerAccountsActive && !customersOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('customers')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isCustomerAccountsActive && openSection !== 'customers' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
             <Users size={18} />
             Customer Accounts
           </div>
-          {customersOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'customers' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
         
-        {customersOpen && (
+        {openSection === 'customers' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link 
               href="/customers" 
@@ -139,7 +168,7 @@ export function SidebarNav() {
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
                 ${pathname?.startsWith('/service-history') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
             >
-              <HistoryIcon size={16} />
+              <History size={16} />
               Service History
             </Link>
           </div>
@@ -149,18 +178,18 @@ export function SidebarNav() {
       {/* PRODUCTS & SERVICES */}
       <div className="mt-2">
         <button 
-          onClick={() => setProductsOpen(!productsOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isProductsActive && !productsOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('products')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isProductsActive && openSection !== 'products' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
             <Box size={18} />
             Products & Services
           </div>
-          {productsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'products' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
         
-        {productsOpen && (
+        {openSection === 'products' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link 
               href="/labor-lookup" 
@@ -201,18 +230,18 @@ export function SidebarNav() {
       {/* INVENTORY & PURCHASING */}
       <div className="mt-2">
         <button 
-          onClick={() => setInventoryOpen(!inventoryOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isInventoryActive && !inventoryOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('inventory')}
+          className={`w-full px-2 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isInventoryActive && openSection !== 'inventory' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
-            <Archive size={18} />
-            Inventory & Purchasing
+            <Archive size={18} className="shrink-0" />
+            <span className="truncate">Inventory & Purchasing</span>
           </div>
-          {inventoryOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'inventory' ? <ChevronDown size={16} className="shrink-0" /> : <ChevronRight size={16} className="shrink-0" />}
         </button>
         
-        {inventoryOpen && (
+        {openSection === 'inventory' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link 
               href="/inventory" 
@@ -257,21 +286,22 @@ export function SidebarNav() {
           </div>
         )}
       </div>
+
       {/* REPORTS */}
       <div className="mt-2">
         <button 
-          onClick={() => setReportsOpen(!reportsOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isReportsActive && !reportsOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('reports')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isReportsActive && openSection !== 'reports' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
             <BarChart2 size={18} />
             Reports
           </div>
-          {reportsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'reports' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
         
-        {reportsOpen && (
+        {openSection === 'reports' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link href="/reports/sales" className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2 ${pathname?.startsWith('/reports/sales') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}><TrendingUp size={16} /> Sales & Revenue</Link>
             <Link href="/reports/invoices" className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2 ${pathname?.startsWith('/reports/invoices') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}><Receipt size={16} /> Invoices</Link>
@@ -290,18 +320,18 @@ export function SidebarNav() {
       {/* ADMINISTRATION */}
       <div className="mt-2 mb-8">
         <button 
-          onClick={() => setAdminOpen(!adminOpen)}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center
-            ${isAdminActive && !adminOpen ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+          onClick={() => toggleSection('admin')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isAdminActive && openSection !== 'admin' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
         >
           <div className="flex items-center gap-2">
             <Settings size={18} />
             Administration
           </div>
-          {adminOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {openSection === 'admin' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
         </button>
         
-        {adminOpen && (
+        {openSection === 'admin' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             <Link href="/admin/employees" className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2 ${pathname?.startsWith('/admin/employees') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}><Users size={16} /> Employees</Link>
             <Link href="/admin/service-intervals" className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2 ${pathname?.startsWith('/admin/service-intervals') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}><Clock size={16} /> Service Interval Settings</Link>
