@@ -153,6 +153,23 @@ export default async function ViewQuotationPage({
               </div>
             </div>
           </div>
+
+        {/* Service Details */}
+        <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap gap-8 text-sm">
+          <div>
+            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Service Advisor</span>
+            <span className="font-semibold text-slate-800">{quote.service_advisor_name || 'Unassigned'}</span>
+          </div>
+          <div>
+            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Mechanic</span>
+            <span className="font-semibold text-slate-800">{quote.mechanic_name || 'Unassigned'}</span>
+          </div>
+          <div>
+            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Mileage</span>
+            <span className="font-semibold text-slate-800">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : 'N/A'}</span>
+          </div>
+        </div>
+
         </div>
 
         {/* Line Items Table */}

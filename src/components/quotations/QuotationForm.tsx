@@ -109,6 +109,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const [warranty, setWarranty] = useState('3 Months / 5,000km (Whichever comes first)')
   const [preparedBy, setPreparedBy] = useState('')
   const [serviceAdvisorId, setServiceAdvisorId] = useState<string>(initialData?.service_advisor_id || '')
+  const [mechanicId, setMechanicId] = useState<string>(initialData?.mechanic_id || '')
+  const [mechanics, setMechanics] = useState<any[]>([])
   const [advisors, setAdvisors] = useState<any[]>([])
   const [discount, setDiscount] = useState<number>(0)
 
@@ -227,6 +229,31 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       }
       
       setAdvisors(activeAdvisors);
+      
+      let activeMechanics = [];
+      if (data) {
+        activeMechanics = data.filter(emp => 
+          emp.roles && emp.roles.some((r: string) => {
+            const role = r.toUpperCase();
+            return role === 'MECHANIC / TECHNICIAN' || role === 'SENIOR MECHANIC' || role === 'MECHANIC';
+          })
+        );
+      }
+      
+      if (initialData?.mechanic_id) {
+        const isAlreadyInList = activeMechanics.some(m => m.id === initialData.mechanic_id);
+        if (!isAlreadyInList) {
+          const { data: historicalMechanic } = await supabase.from('employees')
+            .select('id, full_name, roles, status')
+            .eq('id', initialData.mechanic_id)
+            .single();
+            
+          if (historicalMechanic) {
+            activeMechanics.push(historicalMechanic);
+          }
+        }
+      }
+      setMechanics(activeMechanics);
     }
     fetchAdvisors()
     
@@ -871,6 +898,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           status: initialData?.status || 'draft',
           prepared_by: preparedBy,
           service_advisor_id: serviceAdvisorId || null,
+          mechanic_id: mechanicId || null,
+          service_advisor_name: advisors.find(a => a.id === serviceAdvisorId)?.full_name || null,
+          mechanic_name: mechanics.find(m => m.id === mechanicId)?.full_name || null,
           notes: notes,
           warranty_terms: warranty,
           subtotal: subtotal,
@@ -1211,17 +1241,22 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       {/* Service Details */}
       <div className="mb-4 bg-white border border-slate-200 rounded-lg shadow-sm p-4">
         <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Service Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Service Advisor</label>
-            <select value={serviceAdvisorId} onChange={e => {
-              setServiceAdvisorId(e.target.value)
-              const adv = advisors.find(a => a.id === e.target.value)
-              if (adv) setPreparedBy(adv.full_name) // keep fallback for older UI
-            }} className="w-full border border-slate-300 rounded-md p-3 bg-white">
+            <select value={serviceAdvisorId} onChange={e => setServiceAdvisorId(e.target.value)} className="w-full border border-slate-300 rounded-md p-3 bg-white">
               <option value="">Select an Advisor...</option>
               {advisors.map(adv => (
                 <option key={adv.id} value={adv.id}>{adv.full_name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Mechanic</label>
+            <select value={mechanicId} onChange={e => setMechanicId(e.target.value)} className="w-full border border-slate-300 rounded-md p-3 bg-white">
+              <option value="">Select a Mechanic...</option>
+              {mechanics.map(mech => (
+                <option key={mech.id} value={mech.id}>{mech.full_name}</option>
               ))}
             </select>
           </div>
