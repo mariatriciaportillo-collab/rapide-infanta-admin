@@ -96,6 +96,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   
   // Vehicle State
   const [vehiclePlate, setVehiclePlate] = useState('')
+  const [vin, setVin] = useState('')
+  const [engineCapacity, setEngineCapacity] = useState('')
   const [vehicleMake, setVehicleMake] = useState('')
   const [vehicleModel, setVehicleModel] = useState('')
   const [vehicleYear, setVehicleYear] = useState('')
@@ -314,7 +316,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     } else {
       setSelectedVehicleId(null)
       setVehiclePlate('')
-      setVehicleMake('')
+    setVin('')
+    setEngineCapacity('')
+    setVehicleMake('')
       setVehicleModel('')
       setVehicleYear('')
       setVehicleTransmission('')
@@ -372,6 +376,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       const vPayload = {
         customer_id: newCust.id,
         plate_number: normalizedPlate,
+        vin: vin.trim() || null,
+        engine_capacity: engineCapacity.trim() || null,
         make: vehicleMake || null,
         model: vehicleModel || null,
         year: vehicleYear ? parseInt(vehicleYear) : null,
@@ -450,6 +456,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const handleSelectVehicle = (vehicle: any) => {
     setSelectedVehicleId(vehicle.id)
     setVehiclePlate(vehicle.plate_number)
+    setVin(vehicle.vin || '')
+    setEngineCapacity(vehicle.engine_capacity || '')
     setVehicleMake(vehicle.make || '')
     setVehicleModel(vehicle.model || '')
     setVehicleYear(vehicle.year ? vehicle.year.toString() : '')
@@ -485,6 +493,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     const payload = {
       customer_id: selectedCustomerId, // Make sure it stays linked
       plate_number: vehiclePlate.toUpperCase(),
+      vin: vin.trim() || null,
+      engine_capacity: engineCapacity.trim() || null,
       make: vehicleMake,
       model: vehicleModel,
       year: vehicleYear ? parseInt(vehicleYear) : null,
@@ -537,6 +547,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setIsEditingCustomer(false)
     
     setVehiclePlate('')
+    setVin('')
+    setEngineCapacity('')
     setVehicleMake('')
     setVehicleModel('')
     setVehicleYear('')
@@ -764,7 +776,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         const vehiclePayload = {
           customer_id: finalCustomerId,
           plate_number: vehiclePlate.toUpperCase(),
-          make: vehicleMake,
+      vin: vin.trim() || null,
+      engine_capacity: engineCapacity.trim() || null,
+      make: vehicleMake,
           model: vehicleModel,
           year: vehicleYear ? parseInt(vehicleYear) : null,
           transmission: vehicleTransmission
@@ -909,7 +923,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
   return (
     <form onSubmit={handleSave} className="pb-24">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
           <Link href="/quotations" className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={24} />
@@ -927,14 +941,14 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-6 border border-red-200">
+        <div className="bg-red-50 text-red-600 p-4 rounded-md mb-4 border border-red-200">
           {error}
         </div>
       )}
 
       {/* SEARCH BAR */}
       {/* Enhanced Customer Search UI */}
-      <div className="mb-6" ref={searchRef}>
+      <div className="mb-4" ref={searchRef}>
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-lg font-semibold text-slate-800">Customer</h3>
         </div>
@@ -1039,7 +1053,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
       {/* Enhanced Vehicle Search UI */}
       {selectedCustomerId && (
-        <div className="mb-6" ref={vehicleSearchRef}>
+        <div className="mb-4" ref={vehicleSearchRef}>
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-semibold text-slate-800">Vehicle</h3>
           </div>
@@ -1115,7 +1129,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               onClick={() => {
                 setSelectedVehicleId(null)
                 setVehiclePlate('')
-                setVehicleMake('')
+    setVin('')
+    setEngineCapacity('')
+    setVehicleMake('')
                 setVehicleModel('')
                 setVehicleYear('')
                 setVehicleTransmission('')
@@ -1136,7 +1152,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               onClick={() => {
                 setSelectedVehicleId(null)
                 setVehiclePlate('')
-                setVehicleMake('')
+    setVin('')
+    setEngineCapacity('')
+    setVehicleMake('')
                 setVehicleModel('')
                 setVehicleYear('')
                 setVehicleTransmission('')
@@ -1154,9 +1172,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       )}
 
       {/* Service Details */}
-      <div className="mb-8 bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div className="mb-4 bg-white border border-slate-200 rounded-lg shadow-sm p-4">
         <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Service Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Service Advisor</label>
             <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-3" placeholder="Enter name..." />
@@ -1169,7 +1187,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       </div>
 
       {/* SECTION 1: PACKAGES */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
         <div className="flex justify-between items-center mb-4 border-b pb-2">
           <h3 className="text-lg font-semibold text-slate-800">Packages</h3>
         </div>
@@ -1243,7 +1261,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       </div>
 
       {/* SECTION 2: LABOR & SERVICES */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
         <div className="flex justify-between items-center mb-4 border-b pb-2">
           <h3 className="text-lg font-semibold text-slate-800">Labor & Services</h3>
           <div className="flex gap-2">
@@ -1385,7 +1403,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       </div>
 
       {/* SECTION 3: PARTS & MATERIALS */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 mb-4">
         <div className="flex justify-between items-center mb-4 border-b pb-2">
           <h3 className="text-lg font-semibold text-slate-800">Parts & Materials</h3>
         </div>
@@ -1484,8 +1502,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       </div>
 
       {/* Footer / Totals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
           <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Additional Information</h3>
           <div className="space-y-4">
             <div>
@@ -1503,8 +1521,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           </div>
         </div>
 
-        <div className="bg-slate-800 text-white rounded-lg shadow-sm p-6 flex flex-col justify-end">
-          <div className="space-y-3 mb-6">
+        <div className="bg-slate-800 text-white rounded-lg shadow-sm p-4 flex flex-col justify-end">
+          <div className="space-y-3 mb-4">
             <div className="flex justify-between text-slate-300">
               <span>Subtotal</span>
               <span>₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
@@ -1578,7 +1596,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-4">
+            <div className="p-4 overflow-y-auto space-y-4">
               <div className="flex gap-2">
                 <button type="button" onClick={() => setCustomerType('individual')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'individual' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Individual</button>
                 <button type="button" onClick={() => setCustomerType('company')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Company</button>
@@ -1642,9 +1660,13 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                     <Car size={16} className="text-slate-500"/> First Vehicle (Optional)
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
+                    <div className="col-span-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number</label>
                       <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Chassis Number / VIN</label>
+                      <input type="text" value={vin} onChange={e => setVin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="KNCSHX..." />
                     </div>
                     <div className="col-span-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
@@ -1659,6 +1681,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                       <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
                     </div>
                     <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Engine Capacity</label>
+                      <input type="text" value={engineCapacity} onChange={e => setEngineCapacity(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2.8L" />
+                    </div>
+                    <div className="col-span-2">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
                       <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
                         <option value="">Select...</option>
@@ -1697,11 +1723,15 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-4">
+            <div className="p-4 overflow-y-auto space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
                   <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
+                </div>
+                <div className="col-span-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Chassis Number / VIN</label>
+                  <input type="text" value={vin} onChange={e => setVin(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="KNCSHX..." />
                 </div>
                 <div className="col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Make</label>
@@ -1712,12 +1742,16 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                   <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
                 </div>
                 <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
-                  <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-                  <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
+                      <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
+                    </div>
+                    <div className="col-span-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Engine Capacity</label>
+                      <input type="text" value={engineCapacity} onChange={e => setEngineCapacity(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2.8L" />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
+                      <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
                     <option value="">Select...</option>
                     <option value="Automatic">Automatic</option>
                     <option value="Manual">Manual</option>
