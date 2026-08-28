@@ -25,10 +25,7 @@ export default async function DashboardLayout({
       <aside className="w-64 bg-slate-800 text-white flex flex-col fixed inset-y-0 left-0 print:hidden">
         <div className="p-6 border-b border-slate-700">
           <Link href="/" className="block">
-            <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-              RAPIDÉ
-              <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block -translate-y-2"></span>
-            </h1>
+            <img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-8 w-auto object-contain filter brightness-0 invert" />
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mt-1">Infanta</p>
           </Link>
         </div>

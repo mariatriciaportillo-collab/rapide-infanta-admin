@@ -75,8 +75,8 @@ export default async function ViewQuotationPage({
         {/* Document Header (similar to print layout but styled for screen) */}
         <div className="p-8 border-b border-slate-200 bg-slate-50 flex justify-between items-start">
           <div>
-            <div className="flex items-baseline gap-3 mb-2">
-              <h1 className="text-4xl font-black tracking-tighter text-blue-900 uppercase">RAPIDÉ</h1>
+            <div className="flex items-end gap-3 mb-2">
+              <img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-10 w-auto object-contain" />
               <h2 className="text-2xl font-bold tracking-tight text-slate-800 uppercase">INFANTA</h2>
             </div>
             <div className="mt-2 text-sm font-semibold text-slate-800 space-y-0.5">

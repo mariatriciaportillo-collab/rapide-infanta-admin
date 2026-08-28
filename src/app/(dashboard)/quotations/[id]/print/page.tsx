@@ -62,8 +62,8 @@ export default function QuotationPrintPage({
       {/* Header */}
       <div className="flex justify-between items-start pt-10 px-8 pb-4 border-b-2 border-slate-800 print:pt-6">
         <div>
-          <div className="flex items-baseline gap-2 mb-1">
-            <h1 className="text-3xl font-black tracking-tighter text-blue-900 uppercase">RAPIDÉ</h1>
+          <div className="flex items-end gap-3 mb-1">
+            <img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-8 w-auto object-contain" />
             <h2 className="text-xl font-bold tracking-tight text-slate-800 uppercase">INFANTA</h2>
           </div>
           <div className="mt-1 text-[11px] font-semibold text-slate-800 space-y-0.5">
