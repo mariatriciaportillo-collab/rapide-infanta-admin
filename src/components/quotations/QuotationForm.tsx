@@ -1044,7 +1044,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           <Link href="/quotations" className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={24} />
           </Link>
-          <h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Quotation" : "New Quotation"}</h2>
+          <div className="flex items-center gap-4"><img src="/rapide-logo.png" alt="Rapidé" className="h-10 w-auto object-contain" /><h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Quotation" : "New Quotation"}</h2></div>
         </div>
         <button 
           type="submit" 
