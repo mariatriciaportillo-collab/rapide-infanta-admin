@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+/* 
+  Global input uppercase normalization for master data fields.
+  Excludes email, password, url, and explicitly marked fields.
+  Coupled with the backend normalize helper to save uppercase to DB.
+*/
+input[type="text"]:not(.normal-case), 
+input:not([type]):not(.normal-case) {
+  text-transform: uppercase;
+}
