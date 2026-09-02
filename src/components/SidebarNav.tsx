@@ -200,6 +200,14 @@ export function SidebarNav() {
               Labor Lookup
             </Link>
             <Link 
+              href="/parts-lookup" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/parts-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Search size={16} />
+              Parts Lookup
+            </Link>
+            <Link 
               href="/labor-charges" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
                 ${pathname?.startsWith('/labor-charges') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}

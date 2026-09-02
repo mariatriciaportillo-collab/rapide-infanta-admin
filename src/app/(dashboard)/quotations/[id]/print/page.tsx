@@ -146,7 +146,7 @@ export default function QuotationPrintPage({
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Mileage:</span>
-              <span className="font-medium">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : '-'}</span>
+              <span className="font-semibold text-right">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : '-'}</span>
             </div>
           </div>
         </div>
