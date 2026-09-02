@@ -44,7 +44,7 @@ export function PartsLookupForm({ makes, models, parts, initialData }: Props) {
   const modelOptions = useMemo(() => availableModels.map(m => ({ id: m.id, name: m.name })), [availableModels])
   const partOptions = useMemo(() => [
     { id: "", name: "— Custom / External Part —" },
-    ...parts.map(p => ({ id: p.id, name: `${p.item_code} - ${p.name} (${p.brand || "No Brand"})` }))
+    ...parts.map(p => ({ id: p.id, name: `${p.part_number} - ${p.name} (${(p.brands ? p.brands.name : null) || "No Brand"})` }))
   ], [parts])
 
   // Pre-fill brand/number if part is selected
@@ -53,8 +53,8 @@ export function PartsLookupForm({ makes, models, parts, initialData }: Props) {
     if (val) {
       const p = parts.find(x => x.id === val)
       if (p) {
-        setPartNumber(p.item_code || '')
-        setBrand(p.brand || '')
+        setPartNumber(p.part_number || '')
+        setBrand((p.brands ? p.brands.name : null) || '')
       }
     }
   }

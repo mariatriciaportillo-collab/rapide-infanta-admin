@@ -12,7 +12,7 @@ export default async function EditPartsLookupPage({ params }: { params: { id: st
 
   const { data: makes } = await supabase.from('vehicle_makes').select('*').order('name')
   const { data: models } = await supabase.from('vehicle_models').select('*').order('name')
-  const { data: parts } = await supabase.from('parts_materials').select('id, name, item_code, brand').eq('is_active', true).order('name')
+  const { data: parts } = await supabase.from('parts').select('id, name, part_number, brands(name)').eq('is_active', true).order('name')
   
   return (
     <div className="max-w-4xl mx-auto pb-24">

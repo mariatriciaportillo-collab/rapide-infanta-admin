@@ -10,7 +10,7 @@ import { Pagination } from '@/components/ui/Pagination'
 // Types based on schema
 type Make = { id: string; name: string }
 type Model = { id: string; make_id: string; name: string }
-type PartMaterial = { id: string; name: string; item_code: string; brand: string }
+type PartRecord = { id: string; name: string; part_number: string | null; brands?: { name: string } }
 
 type PartsLookup = {
   id: string
@@ -28,7 +28,7 @@ type PartsLookup = {
   is_active: boolean
   vehicle_makes: Make
   vehicle_models: Model
-  parts_materials?: PartMaterial
+  parts?: PartRecord
 }
 
 type Props = {
@@ -88,7 +88,7 @@ export function PartsLookupClient({ makes, models }: Props) {
           *,
           vehicle_makes (*),
           vehicle_models (*),
-          parts_materials (id, name, item_code, brand)
+          parts (id, name, part_number, brands (name))
         `, { count: 'exact' })
         .eq('is_active', true)
 
@@ -294,19 +294,19 @@ export function PartsLookupClient({ makes, models }: Props) {
                       <tr key={item.id} className="hover:bg-slate-50 transition">
                         <td className="py-3 px-4 font-semibold text-slate-800">{item.category}</td>
                         <td className="py-3 px-4">
-                          {item.parts_materials ? (
+                          {item.parts ? (
                             <div>
                               <Link href={`/parts/${item.part_id}/edit`} className="text-blue-600 hover:underline font-medium block">
-                                {item.parts_materials.name}
+                                {item.parts.name}
                               </Link>
-                              <span className="text-xs text-slate-500">{item.parts_materials.item_code}</span>
+                              <span className="text-xs text-slate-500">{item.parts.part_number}</span>
                             </div>
                           ) : (
                             <span className="font-medium text-slate-700">{item.part_number}</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-slate-600">
-                          {item.brand || (item.parts_materials ? item.parts_materials.brand : '—')}
+                          {item.brand || (item.parts ? item.parts_materials.brand : '—')}
                         </td>
                         <td className="py-3 px-4 text-slate-500 text-xs">{item.notes || '—'}</td>
                         <td className="py-3 px-4 text-center">

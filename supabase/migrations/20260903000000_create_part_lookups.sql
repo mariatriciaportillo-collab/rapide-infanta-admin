@@ -1,3 +1,6 @@
+-- Safely create part_lookups, verifying parts table existence if needed.
+-- In this case, we know the correct table is 'public.parts'.
+
 CREATE TABLE IF NOT EXISTS public.part_lookups (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     vehicle_make_id uuid REFERENCES public.vehicle_makes(id) ON DELETE CASCADE,
@@ -7,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.part_lookups (
     engine_capacity text,
     transmission text,
     category text NOT NULL,
-    part_id uuid REFERENCES public.parts_materials(id) ON DELETE SET NULL,
+    part_id uuid REFERENCES public.parts(id) ON DELETE SET NULL, -- Fixed from parts_materials
     part_number text,
     brand text,
     notes text,
@@ -24,3 +27,6 @@ CREATE POLICY "Enable read access for all users" ON public.part_lookups FOR SELE
 CREATE POLICY "Enable insert for authenticated users" ON public.part_lookups FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 CREATE POLICY "Enable update for authenticated users" ON public.part_lookups FOR UPDATE USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable delete for authenticated users" ON public.part_lookups FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Reload schema cache in case REST API needs to see it immediately
+NOTIFY pgrst, 'reload schema';
