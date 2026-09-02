@@ -7,28 +7,22 @@ import { Search, Edit, Plus, Car, Loader2 } from 'lucide-react'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
 import { Pagination } from '@/components/ui/Pagination'
 
-// Types based on schema
 type Make = { id: string; name: string }
 type Model = { id: string; make_id: string; name: string }
-type PartRecord = { id: string; name: string; part_number: string | null; brands?: { name: string } }
 
-type PartsLookup = {
+type UnifiedLookup = {
   id: string
-  vehicle_make_id: string
-  vehicle_model_id: string
-  year_start: number
-  year_end: number
+  source: 'Manual Reference' | 'Previous Service'
+  yearDisplay: string
   engine_capacity: string | null
   transmission: string | null
   category: string
   part_id: string | null
+  part_name: string | null
   part_number: string | null
   brand: string | null
   notes: string | null
-  is_active: boolean
-  vehicle_makes: Make
-  vehicle_models: Model
-  parts?: PartRecord
+  raw_id?: string
 }
 
 type Props = {
@@ -41,14 +35,12 @@ const PAGE_SIZE = 25
 export function PartsLookupClient({ makes, models }: Props) {
   const supabase = createClient()
 
-  // === PAGINATION STATE ===
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
-  const [paginatedLookups, setPaginatedLookups] = useState<PartsLookup[]>([])
+  const [paginatedLookups, setPaginatedLookups] = useState<UnifiedLookup[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // === SEARCH BY VEHICLE ===
   const [vehMakeId, setVehMakeId] = useState('')
   const [vehModelId, setVehModelId] = useState('')
   const [vehYear, setVehYear] = useState('')
@@ -67,9 +59,9 @@ export function PartsLookupClient({ makes, models }: Props) {
     return null
   }, [makes, models, vehMakeId, vehModelId, vehYear])
 
-  // === DATA FETCHING ===
   const fetchLookups = useCallback(async () => {
-    const isVehicleModeValid = vehMakeId && vehModelId && vehYear
+    // Only Make and Model are required
+    const isVehicleModeValid = vehMakeId && vehModelId
 
     if (!isVehicleModeValid) {
       setPaginatedLookups([])
@@ -80,74 +72,144 @@ export function PartsLookupClient({ makes, models }: Props) {
     setIsLoading(true)
     setErrorMsg(null)
 
-    // Check if table exists (graceful degradation if migration not applied)
-    try {
-      let query = supabase
-        .from('part_lookups')
-        .select(`
-          *,
-          vehicle_makes (*),
-          vehicle_models (*),
-          parts (id, name, part_number, brands (name))
-        `, { count: 'exact' })
-        .eq('is_active', true)
+    const makeName = makes.find(m => m.id === vehMakeId)?.name
+    const modelName = models.find(m => m.id === vehModelId)?.name
 
-      query = query.eq('vehicle_make_id', vehMakeId)
-      query = query.eq('vehicle_model_id', vehModelId)
-      
+    try {
+      // 1. Fetch Manual References
+      let query1 = supabase
+        .from('part_lookups')
+        .select(`*, parts (id, name, part_number, brands (name))`)
+        .eq('is_active', true)
+        .eq('vehicle_make_id', vehMakeId)
+        .eq('vehicle_model_id', vehModelId)
+
       const yearInt = parseInt(vehYear)
       if (!isNaN(yearInt)) {
-        query = query.lte('year_start', yearInt)
-        query = query.gte('year_end', yearInt)
+        query1 = query1.lte('year_start', yearInt).gte('year_end', yearInt)
       }
-      
-      if (vehEngine) {
-        query = query.ilike('engine_capacity', `%${vehEngine}%`)
-      }
-      if (vehTransmission) {
-        query = query.ilike('transmission', `%${vehTransmission}%`)
-      }
+      if (vehEngine) query1 = query1.ilike('engine_capacity', `%${vehEngine}%`)
+      if (vehTransmission) query1 = query1.ilike('transmission', `%${vehTransmission}%`)
 
-      // Pagination
-      const from = (page - 1) * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-      query = query.range(from, to)
+      // 2. Fetch Historical Services
+      let query2 = supabase
+        .from('quotations')
+        .select(`
+          id, vehicle_year, engine_capacity, transmission,
+          quotation_items (
+            id, item_type, part_id, description, part_number, category_name_snapshot,
+            parts ( id, name, part_number, brands (name), part_categories (name) )
+          )
+        `)
+        .eq('status', 'COMPLETED')
+        .ilike('vehicle_make', makeName || '')
+        .ilike('vehicle_model', modelName || '')
 
-      const { data, count, error } = await query
-      
-      if (error) {
-        if (error.code === 'PGRST205') {
-          setErrorMsg('Parts Lookup table is not yet created. Please run the database migration.')
+      if (!isNaN(yearInt)) query2 = query2.eq('vehicle_year', yearInt)
+      if (vehEngine) query2 = query2.ilike('engine_capacity', `%${vehEngine}%`)
+      if (vehTransmission) query2 = query2.ilike('transmission', `%${vehTransmission}%`)
+
+      const [res1, res2] = await Promise.all([query1, query2])
+
+      if (res1.error) {
+        if (res1.error.code === 'PGRST205') {
+          // Table missing, but we can still show history
         } else {
-          setErrorMsg(error.message)
+          console.error(res1.error)
         }
-        setPaginatedLookups([])
-        setTotalCount(0)
-      } else {
-        setPaginatedLookups(data as PartsLookup[])
-        setTotalCount(count || 0)
       }
+
+      const unified: UnifiedLookup[] = []
+      
+      // Process Manual References
+      if (res1.data) {
+        res1.data.forEach((item: any) => {
+          let y = item.year_start === item.year_end ? `${item.year_start}` : `${item.year_start}–${item.year_end}`
+          unified.push({
+            id: `manual_${item.id}`,
+            raw_id: item.id,
+            source: 'Manual Reference',
+            yearDisplay: y,
+            engine_capacity: item.engine_capacity,
+            transmission: item.transmission,
+            category: item.category,
+            part_id: item.part_id,
+            part_name: item.parts?.name || null,
+            part_number: item.part_number || (item.parts ? item.parts.part_number : null),
+            brand: item.brand || (item.parts?.brands ? item.parts.brands.name : null),
+            notes: item.notes
+          })
+        })
+      }
+
+      // Process Historical Services
+      if (res2.data) {
+        res2.data.forEach((quote: any) => {
+          if (!quote.quotation_items) return
+          quote.quotation_items.forEach((qi: any) => {
+            // Only Parts
+            const isPrt = qi.item_type === 'PART' || qi.part_id
+            if (!isPrt) return
+
+            const category = qi.category_name_snapshot || qi.parts?.part_categories?.name || 'Uncategorized Part'
+            const pnum = qi.part_number || qi.parts?.part_number || null
+            const bname = qi.parts?.brands?.name || null
+
+            unified.push({
+              id: `hist_${qi.id}`,
+              source: 'Previous Service',
+              yearDisplay: quote.vehicle_year ? `${quote.vehicle_year}` : 'Unknown',
+              engine_capacity: quote.engine_capacity,
+              transmission: quote.transmission,
+              category: category,
+              part_id: qi.part_id,
+              part_name: qi.parts?.name || qi.description,
+              part_number: pnum,
+              brand: bname,
+              notes: null
+            })
+          })
+        })
+      }
+
+      // Deduplicate
+      const seen = new Set<string>()
+      const finalArray: UnifiedLookup[] = []
+
+      // Prioritize manual references, then historical
+      unified.sort((a, b) => a.source === 'Manual Reference' ? -1 : 1)
+
+      unified.forEach(item => {
+        // Create a signature to identify duplicates
+        const sig = `${item.yearDisplay}_${item.engine_capacity}_${item.transmission}_${item.category}_${item.part_id}_${item.part_number}`.toLowerCase()
+        if (!seen.has(sig)) {
+          seen.add(sig)
+          finalArray.push(item)
+        }
+      })
+
+      setTotalCount(finalArray.length)
+      
+      // Local Pagination
+      const from = (page - 1) * PAGE_SIZE
+      const to = from + PAGE_SIZE
+      setPaginatedLookups(finalArray.slice(from, to))
+
     } catch (e: any) {
       setErrorMsg(e.message)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase, vehMakeId, vehModelId, vehYear, vehEngine, vehTransmission, page])
+  }, [supabase, vehMakeId, vehModelId, vehYear, vehEngine, vehTransmission, page, makes, models])
 
   useEffect(() => {
     fetchLookups()
   }, [fetchLookups])
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setPage(1)
   }, [vehMakeId, vehModelId, vehYear, vehEngine, vehTransmission])
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage)
-  }
-
-  // Options for comboboxes
   const makeOptions: ComboboxOption[] = useMemo(() => 
     makes.map(m => ({ id: m.id, name: m.name })),
   [makes])
@@ -158,7 +220,6 @@ export function PartsLookupClient({ makes, models }: Props) {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -168,7 +229,7 @@ export function PartsLookupClient({ makes, models }: Props) {
           <p className="text-slate-500 text-sm mt-1">Vehicle-specific parts reference database</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/parts-lookup/new" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition">
+          <Link href="/parts-lookup/new" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition shadow-sm">
             <Plus size={18} /> Add Reference
           </Link>
         </div>
@@ -180,10 +241,7 @@ export function PartsLookupClient({ makes, models }: Props) {
         </div>
       )}
 
-      {/* Main Container */}
       <div className="bg-white border border-slate-200 shadow-sm rounded-lg overflow-hidden">
-        
-        {/* Filters Section */}
         <div className="p-6 border-b border-slate-200 bg-slate-50 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
             <div className="space-y-1">
@@ -193,7 +251,7 @@ export function PartsLookupClient({ makes, models }: Props) {
                 value={vehMakeId}
                 onChange={(val) => {
                   setVehMakeId(val)
-                  setVehModelId('') // Reset model on make change
+                  setVehModelId('')
                 }}
                 placeholder="Select Make"
               />
@@ -206,18 +264,17 @@ export function PartsLookupClient({ makes, models }: Props) {
                 value={vehModelId}
                 onChange={setVehModelId}
                 placeholder="Select Model"
-                
               />
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Year <span className="text-red-500">*</span></label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Year <span className="font-normal lowercase">(Optional)</span></label>
               <input 
                 type="number" 
                 value={vehYear} 
                 onChange={e => setVehYear(e.target.value)} 
                 className="w-full border border-slate-300 rounded-md p-2 h-[38px] text-sm" 
-                placeholder="e.g. 2020"
+                placeholder="All Years"
               />
             </div>
 
@@ -248,23 +305,22 @@ export function PartsLookupClient({ makes, models }: Props) {
           </div>
         </div>
 
-        {/* Results Section */}
         <div>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center p-12 text-slate-500">
               <Loader2 size={32} className="animate-spin mb-4 text-blue-500" />
               <p>Searching database...</p>
             </div>
-          ) : (!vehMakeId || !vehModelId || !vehYear) ? (
+          ) : (!vehMakeId || !vehModelId) ? (
             <div className="text-center p-12 text-slate-500">
               <Search size={48} className="mx-auto mb-4 text-slate-300" />
-              <p className="text-lg font-medium text-slate-700">Enter Vehicle Details</p>
-              <p className="text-sm">Please select a Make, Model, and Year to view compatible parts.</p>
+              <p className="text-lg font-medium text-slate-700">Select a Make and Model to view known part references.</p>
+              <p className="text-sm mt-1">Filters like Year, Engine, and Transmission can be used to refine results.</p>
             </div>
           ) : paginatedLookups.length === 0 ? (
             <div className="text-center p-12 text-slate-500 bg-slate-50">
               <p className="text-lg font-medium text-slate-700">No matching part reference found.</p>
-              <p className="text-sm mt-2">No verified parts have been assigned to {selectedVehicleName} yet.</p>
+              <p className="text-sm mt-2">No verified parts or previous services match this vehicle.</p>
             </div>
           ) : (
             <div>
@@ -279,40 +335,52 @@ export function PartsLookupClient({ makes, models }: Props) {
               </div>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-left text-sm whitespace-nowrap">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                     <tr>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Part Category</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Part / Reference</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Year</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Engine</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Trans</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Category</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Part Reference</th>
                       <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Brand</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Notes</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs w-24 text-center">Action</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Source</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {paginatedLookups.map((item) => (
                       <tr key={item.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-4 font-medium text-slate-700">{item.yearDisplay}</td>
+                        <td className="py-3 px-4 text-slate-600">{item.engine_capacity || 'Any'}</td>
+                        <td className="py-3 px-4 text-slate-600">{item.transmission || 'Any'}</td>
                         <td className="py-3 px-4 font-semibold text-slate-800">{item.category}</td>
                         <td className="py-3 px-4">
-                          {item.parts ? (
+                          {item.part_id ? (
                             <div>
-                              <Link href={`/parts/${item.part_id}/edit`} className="text-blue-600 hover:underline font-medium block">
-                                {item.parts.name}
+                              <Link href={`/parts/${item.part_id}/edit`} className="text-blue-600 hover:underline font-medium block truncate max-w-[200px]" title={item.part_name || ''}>
+                                {item.part_name}
                               </Link>
-                              <span className="text-xs text-slate-500">{item.parts.part_number}</span>
+                              {item.part_number && <span className="text-xs text-slate-500">{item.part_number}</span>}
                             </div>
                           ) : (
-                            <span className="font-medium text-slate-700">{item.part_number}</span>
+                            <span className="font-medium text-slate-700">{item.part_number || item.part_name || '—'}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-slate-600">
-                          {item.brand || (item.parts ? item.parts_materials.brand : '—')}
+                        <td className="py-3 px-4 text-slate-600">{item.brand || '—'}</td>
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            item.source === 'Manual Reference' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {item.source}
+                          </span>
                         </td>
-                        <td className="py-3 px-4 text-slate-500 text-xs">{item.notes || '—'}</td>
                         <td className="py-3 px-4 text-center">
-                          <Link href={`/parts-lookup/${item.id}/edit`} className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition">
-                            <Edit size={16} />
-                          </Link>
+                          {item.source === 'Manual Reference' && item.raw_id && (
+                            <Link href={`/parts-lookup/${item.raw_id}/edit`} className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition" title="Edit Manual Reference">
+                              <Edit size={16} />
+                            </Link>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -326,7 +394,7 @@ export function PartsLookupClient({ makes, models }: Props) {
                   currentPage={page}
                   totalCount={totalCount}
                   pageSize={PAGE_SIZE}
-                  onPageChange={handlePageChange}
+                  onPageChange={setPage}
                 />
               </div>
             </div>

@@ -61,7 +61,7 @@ export function SidebarNav() {
   }
 
   return (
-    <nav className="flex-1 py-4 flex flex-col gap-1 px-2">
+    <nav className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2 scrollbar-thin scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-500">
       <Link 
         href="/" 
         className={`px-3 py-2 rounded-md transition font-medium flex items-center gap-2
