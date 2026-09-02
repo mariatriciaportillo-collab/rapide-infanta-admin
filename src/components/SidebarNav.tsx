@@ -87,6 +87,15 @@ export function SidebarNav() {
         
         {openSection === 'operations' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
+            
+            <Link 
+              href="/estimate" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/estimate') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <FileText size={16} />
+              Estimate
+            </Link>
             <Link 
               href="/quotations" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2

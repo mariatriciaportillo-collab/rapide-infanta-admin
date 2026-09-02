@@ -57,7 +57,7 @@ const formatVehicleName = (v: any) => {
   return base.toUpperCase();
 }
 
-export function QuotationForm({ initialData }: { initialData?: any }) {
+export function EstimateForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -198,8 +198,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         setCustomerSearch(formatCustomerName(initialData.customers))
       }
 
-      if (initialData.quotation_items) {
-        const sortedItems = [...initialData.quotation_items].sort((a, b) => a.sort_order - b.sort_order)
+      if (initialData.estimate_items) {
+        const sortedItems = [...initialData.estimate_items].sort((a, b) => a.sort_order - b.sort_order)
         const flatItems: LineItem[] = sortedItems.map(item => ({
           id: item.id,
           description: item.description || '',
@@ -544,7 +544,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       return
     }
     
-    // Update display names without changing quotation items or other state
+    // Update display names without changing estimate items or other state
     setDisplayCustomerName(formatCustomerName(data))
     setDisplayContactPerson(formatContactPerson(data))
     
@@ -739,12 +739,12 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setError(null)
 
     if (isEditingCustomer) {
-      setError("Please save or cancel your Customer changes before saving the quotation.")
+      setError("Please save or cancel your Customer changes before saving the estimate.")
       setIsSubmitting(false)
       return
     }
     if (isEditingVehicle || isAddingVehicle) {
-      setError("Please save or cancel your Vehicle changes before saving the quotation.")
+      setError("Please save or cancel your Vehicle changes before saving the estimate.")
       setIsSubmitting(false)
       return
     }
@@ -898,29 +898,29 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       }
 
       // 1. Generate Quote Number (only if new)
-      let quoteNumber = initialData?.quote_number;
+      let estimateNumber = initialData?.estimate_number;
       if (!isEditingQuote) {
         let nextNumber = 1;
-        const { data: latestQuote } = await supabase
-          .from('quotations')
-          .select('quote_number')
-          .ilike('quote_number', 'INF-%')
-          .order('quote_number', { ascending: false })
+        const { data: latestEstimate } = await supabase
+          .from('estimates')
+          .select('estimate_number')
+          .ilike('estimate_number', 'EST-%')
+          .order('estimate_number', { ascending: false })
           .limit(1)
           .maybeSingle();
           
-        if (latestQuote && latestQuote.quote_number) {
-          const match = latestQuote.quote_number.match(/INF-(\d+)/);
+        if (latestEstimate && latestEstimate.estimate_number) {
+          const match = latestEstimate.estimate_number.match(/EST-(\d+)/);
           if (match && match[1]) {
             nextNumber = parseInt(match[1], 10) + 1;
           }
         }
-        quoteNumber = `INF-${nextNumber.toString().padStart(5, '0')}`;
+        estimateNumber = `EST-${nextNumber.toString().padStart(5, '0')}`;
       }
       
-      console.log("[QUOTATION SAVE] Step 4: Saving quotation header...");
-      const quotePayload = {
-          quote_number: quoteNumber,
+      console.log("[QUOTATION SAVE] Step 4: Saving estimate header...");
+      const estimatePayload = {
+          estimate_number: estimateNumber,
           customer_id: finalCustomerId,
           vehicle_id: finalVehicleId,
           customer_type: customerType,
@@ -948,36 +948,36 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           grand_total: grandTotal
       };
 
-      // 2. Save Quotation
-      let quote = null;
+      // 2. Save Estimate
+      let estimate = null;
       if (isEditingQuote) {
-        const { data: updatedQuote, error: quoteError } = await supabase
-          .from('quotations')
-          .update(quotePayload)
+        const { data: updatedEstimate, error: estimateError } = await supabase
+          .from('estimates')
+          .update(estimatePayload)
           .eq('id', initialData.id)
           .select()
           .single()
         
-        if (quoteError) throw new Error(`Quotation Header Update Failed: ${quoteError.message}`);
-        quote = updatedQuote;
+        if (estimateError) throw new Error(`Estimate Header Update Failed: ${estimateError.message}`);
+        estimate = updatedEstimate;
         
         // We will delete removed items AFTER upserting the new/updated ones.
       } else {
-        const { data: newQuote, error: quoteError } = await supabase
-          .from('quotations')
-          .insert(quotePayload)
+        const { data: newEstimate, error: estimateError } = await supabase
+          .from('estimates')
+          .insert(estimatePayload)
           .select()
           .single()
           
-        if (quoteError) throw new Error(`Quotation Header Save Failed: ${quoteError.message}`);
-        quote = newQuote;
+        if (estimateError) throw new Error(`Estimate Header Save Failed: ${estimateError.message}`);
+        estimate = newEstimate;
       }
 
 
 
       // 3. Prepare Line Items
       // Generate fresh IDs for this specific save attempt to prevent 23505 on retries
-      const existingDbIds = new Set((initialData?.quotation_items || []).map((i: any) => i.id));
+      const existingDbIds = new Set((initialData?.estimate_items || []).map((i: any) => i.id));
       const idMap = new Map<string, string>();
       
       items.forEach(item => {
@@ -993,7 +993,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
         .map((item, index) => ({
           // IMPORTANT: Include id so parent_item_id references map correctly if generating new UI UUIDs!
           id: idMap.get(item.id) as string,
-          quotation_id: quote.id,
+          estimate_id: estimate.id,
           sort_order: index,
           item_type: item.item_type || (item.package_id && !item.parent_item_id ? 'PACKAGE' : 'MANUAL'),
           description: item.description,
@@ -1020,34 +1020,34 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
       if (itemsToInsert.length > 0) {
         const { error: itemsError } = await supabase
-          .from('quotation_items')
+          .from('estimate_items')
           .upsert(itemsToInsert) // Use upsert instead of insert
           
       // Delete removed items if editing
-      if (isEditingQuote && initialData?.quotation_items) {
+      if (isEditingQuote && initialData?.estimate_items) {
         const currentItemIds = new Set(itemsToInsert.map(i => i.id));
-        const itemsToDelete = initialData.quotation_items
+        const itemsToDelete = initialData.estimate_items
           .filter((i: any) => !currentItemIds.has(i.id))
           .map((i: any) => i.id);
           
         if (itemsToDelete.length > 0) {
-          const { error: delErr } = await supabase.from('quotation_items').delete().in('id', itemsToDelete);
+          const { error: delErr } = await supabase.from('estimate_items').delete().in('id', itemsToDelete);
           if (delErr) console.error("Failed to delete removed items", delErr);
         }
       }
           
         if (itemsError) {
-          console.error("[QUOTATION SAVE] Step 5 FAILED (Quotation Items)", JSON.stringify(itemsError, null, 2));
-          throw new Error(`Quotation Items Save Failed: ${itemsError.message} (${itemsError.code})`);
+          console.error("[QUOTATION SAVE] Step 5 FAILED (Estimate Items)", JSON.stringify(itemsError, null, 2));
+          throw new Error(`Estimate Items Save Failed: ${itemsError.message} (${itemsError.code})`);
         }
       }
 
       // 4. Redirect to view page
-      router.push(`/quotations/${quote.id}`)
+      router.push(`/estimates/${estimate.id}`)
 
     } catch (err: any) {
       console.error("[QUOTATION SAVE] CAUGHT ERROR:", err)
-      setError(err.message || 'Unable to save the quotation. Please try again.')
+      setError(err.message || 'Unable to save the estimate. Please try again.')
       setIsSubmitting(false)
     }
   }
@@ -1056,10 +1056,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     <form onSubmit={handleSave} className="pb-24">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <Link href="/quotations" className="text-slate-400 hover:text-slate-600">
+          <Link href="/estimates" className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={24} />
           </Link>
-          <div className="flex items-center gap-4"><div className="flex items-end gap-3 border-r-2 border-slate-300 pr-4"><img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-8 w-auto object-contain" /><h2 className="text-xl font-bold text-slate-800 tracking-tight uppercase">INFANTA</h2></div><h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Quotation" : "New Quotation"}</h2></div>
+          <div className="flex items-center gap-4"><div className="flex items-end gap-3 border-r-2 border-slate-300 pr-4"><img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-8 w-auto object-contain" /><h2 className="text-xl font-bold text-slate-800 tracking-tight uppercase">INFANTA</h2></div><h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Estimate" : "New Estimate"}</h2></div>
         </div>
         <button 
           type="submit" 
@@ -1067,7 +1067,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-md font-medium transition flex items-center gap-2"
         >
           <Save size={18} />
-          {isSubmitting ? "Saving..." : isEditingQuote ? "Update Quotation" : "Save Quotation"}
+          {isSubmitting ? "Saving..." : isEditingQuote ? "Update Estimate" : "Save Estimate"}
         </button>
       </div>
 
@@ -1432,7 +1432,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               if (service) {
                 const alreadyAdded = items.some(i => i.labor_service_id === service.id)
                 if (alreadyAdded) {
-                  setError(`"${service.name}" is already added to this quotation.`)
+                  setError(`"${service.name}" is already added to this estimate.`)
                   setTimeout(() => setError(null), 3000)
                   return
                 }
@@ -1561,7 +1561,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
               if (part) {
                 const alreadyAdded = items.some(i => i.part_id === part.id && i.item_type === 'PART')
                 if (alreadyAdded) {
-                  setError(`"${part.name}" is already added to this quotation.`)
+                  setError(`"${part.name}" is already added to this estimate.`)
                   setTimeout(() => setError(null), 3000)
                   return
                 }

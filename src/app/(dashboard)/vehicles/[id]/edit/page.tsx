@@ -93,8 +93,10 @@ export default function EditVehiclePage({
       return
     }
 
-    if (!make.trim() || !model.trim()) {
-      setError("Make and Model are required.")
+    if (!plate.trim()) { setError("Plate Number is required."); setIsSubmitting(false); return; }
+    if (!make.trim()) { setError("Make is required."); setIsSubmitting(false); return; }
+    if (!model.trim()) { setError("Model is required."); setIsSubmitting(false); return; }
+    if (!year.toString().trim()) { setError("Year is required.");
       setIsSubmitting(false)
       return
     }

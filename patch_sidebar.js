@@ -1,16 +1,16 @@
 const fs = require('fs');
 let file = fs.readFileSync('src/components/SidebarNav.tsx', 'utf8');
 
-const partsLookupLink = `
+const estimateLink = `
             <Link 
-              href="/parts-lookup" 
+              href="/estimate" 
               className={\`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                \${pathname?.startsWith('/parts-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}\`}
+                \${pathname?.startsWith('/estimate') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}\`}
             >
-              <Search size={16} />
-              Parts Lookup
+              <FileText size={16} />
+              Estimate
             </Link>`;
 
-file = file.replace(/Labor Lookup\n            <\/Link>/, 'Labor Lookup\n            </Link>' + partsLookupLink);
+file = file.replace(/<Link \n\s+href="\/quotations"/, estimateLink + '\n            <Link \n              href="/quotations"');
 
 fs.writeFileSync('src/components/SidebarNav.tsx', file);
