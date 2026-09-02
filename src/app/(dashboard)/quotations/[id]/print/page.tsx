@@ -322,11 +322,7 @@ export default function QuotationPrintPage({
           
         </div>
         
-        <div className="w-48 text-center pt-2">
-          <div className="border-b border-slate-800 mb-1"></div>
-          <p className="font-bold text-slate-800 text-xs">{quote.prepared_by}</p>
-          <p className="text-slate-500 text-[10px] uppercase tracking-wider">Prepared By</p>
-        </div>
+        
       </div>
 
       {/* Legal, Warranty, and Signatures */}
@@ -356,13 +352,13 @@ export default function QuotationPrintPage({
       <div className="mt-6 px-16 flex justify-between gap-16 page-break-inside-avoid pb-8">
         <div className="flex-1 text-center">
           <div className="border-b border-slate-800 mb-1 h-8"></div>
-          <p className="text-[9px] font-bold text-slate-800">APPROVED BY</p>
-          <p className="text-[8px] text-slate-500 uppercase tracking-wider">Authorized Representative</p>
+          <p className="text-[10px] font-bold text-slate-800 uppercase">{quote.prepared_by}</p>
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider">PREPARED BY</p>
         </div>
         <div className="flex-1 text-center">
           <div className="border-b border-slate-800 mb-1 h-8"></div>
-          <p className="text-[9px] font-bold text-slate-800">CUSTOMER'S SIGNATURE</p>
-          <p className="text-[8px] text-slate-500 uppercase tracking-wider">Customer Signature & Date/Time</p>
+          <p className="text-[10px] font-bold text-slate-800 uppercase">CUSTOMER'S SIGNATURE</p>
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider">CUSTOMER SIGNATURE & DATE/TIME</p>
         </div>
       </div>
     </div>

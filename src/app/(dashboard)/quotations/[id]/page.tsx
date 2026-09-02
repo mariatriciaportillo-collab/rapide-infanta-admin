@@ -353,13 +353,23 @@ export default async function ViewQuotationPage({
             
           </div>
           
-          <div className="w-64 text-center">
-            <div className="h-16 border-b border-slate-400 mb-2"></div>
-            <p className="font-bold text-slate-800">{quote.prepared_by}</p>
-            <p className="text-slate-500 text-xs uppercase tracking-wider mt-1">Prepared By</p>
-          </div>
+          
         </div>
 
+
+        {/* Signatures */}
+        <div className="mt-8 px-16 flex justify-between gap-16 pb-12">
+          <div className="flex-1 text-center">
+            <div className="border-b border-slate-800 mb-1 h-12"></div>
+            <p className="text-xs font-bold text-slate-800 uppercase">{quote.prepared_by}</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">PREPARED BY</p>
+          </div>
+          <div className="flex-1 text-center">
+            <div className="border-b border-slate-800 mb-1 h-12"></div>
+            <p className="text-xs font-bold text-slate-800 uppercase">CUSTOMER'S SIGNATURE</p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wider">CUSTOMER SIGNATURE & DATE/TIME</p>
+          </div>
+        </div>
       </div>
     </div>
   )

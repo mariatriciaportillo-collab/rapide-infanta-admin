@@ -145,6 +145,19 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
   const searchRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    async function initUser() {
+      if (!initialData) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && user.email) {
+          const { data: emp } = await supabase.from('employees').select('full_name').eq('email', user.email).single()
+          setPreparedBy(emp?.full_name || user.email)
+        }
+      }
+    }
+    initUser()
+  }, [initialData, supabase])
+
   // Load initialData
   useEffect(() => {
     if (initialData) {
