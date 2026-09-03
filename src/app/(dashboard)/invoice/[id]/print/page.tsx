@@ -284,32 +284,27 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* Footer, Legal, and Signatures */}
-      <div className="mt-4 px-8 pt-2 border-t-2 border-slate-800 grid grid-cols-2 gap-8 page-break-inside-avoid pb-4">
-        <div className="col-span-1 space-y-3">
+      {/* Footer */}
+      <div className="mt-4 px-8 pt-2 border-t-2 border-slate-800 flex justify-between gap-6 page-break-inside-avoid">
+        <div className="flex-1 space-y-2">
           <div>
-            <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-0.5">Notes / Remarks</h4>
-            <p className="text-slate-600 text-[10px] leading-tight whitespace-pre-wrap">{inv.notes || 'None'}</p>
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-800 text-[10px] mb-0.5 uppercase tracking-wider">PLEASE READ</h3>
-            <p className="text-[9px] text-slate-600 text-justify leading-snug">
-              This invoice serves as the final billing statement for the services rendered. Please make checks payable to MGP AUTO REPAIR CENTER. Thank you for your business!
-            </p>
+            <h4 className="font-bold text-slate-700 uppercase text-[10px] tracking-wider mb-1">Notes / Remarks</h4>
+            <p className="text-slate-600 text-[10px] whitespace-pre-wrap">{inv.notes || 'None'}</p>
           </div>
         </div>
+      </div>
 
-        <div className="col-span-1 flex flex-col justify-between gap-4">
-          <div className="flex flex-col text-center w-full max-w-[200px] ml-auto mt-2">
-            <div className="border-b border-slate-800 mb-0.5 h-6"></div>
-            <p className="text-[10px] font-bold text-slate-800 uppercase truncate leading-tight">{inv.prepared_by}</p>
-            <p className="text-[8px] text-slate-500 uppercase tracking-wider mt-0.5 leading-tight">PREPARED BY</p>
-          </div>
-          <div className="flex flex-col text-center w-full max-w-[200px] ml-auto mt-2">
-            <div className="border-b border-slate-800 mb-0.5 h-6"></div>
-            <p className="text-[10px] font-bold text-slate-800 uppercase leading-tight">CUSTOMER'S SIGNATURE</p>
-            <p className="text-[8px] text-slate-400 mt-0.5 leading-tight">Customer Signature & Date/Time</p>
-          </div>
+      {/* Signatures */}
+      <div className="mt-8 px-16 flex justify-between gap-16 page-break-inside-avoid pb-8">
+        <div className="flex-1 text-center">
+          <div className="border-b border-slate-800 mb-1 h-8"></div>
+          <p className="text-[10px] font-bold text-slate-800 uppercase">{inv.prepared_by}</p>
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider">PREPARED BY</p>
+        </div>
+        <div className="flex-1 text-center">
+          <div className="border-b border-slate-800 mb-1 h-8"></div>
+          <p className="text-[10px] font-bold text-slate-800 uppercase">CUSTOMER'S SIGNATURE</p>
+          <p className="text-[9px] text-slate-500 uppercase tracking-wider">CUSTOMER SIGNATURE & DATE/TIME</p>
         </div>
       </div>
     </div>

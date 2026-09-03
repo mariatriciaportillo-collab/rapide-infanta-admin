@@ -32,7 +32,7 @@ export async function createInvoiceFromEstimate(estimateId: string) {
     .single()
 
   if (estErr || !estimate) throw new Error('Estimate not found')
-  if (estimate.status !== 'JOB STARTED' && estimate.status !== 'APPROVED') {
+  if (estimate.status !== 'JOB STARTED' && estimate.status !== 'APPROVED' && estimate.status !== 'COMPLETED') {
     throw new Error('Estimate must be Approved / Job Started to complete.')
   }
 
