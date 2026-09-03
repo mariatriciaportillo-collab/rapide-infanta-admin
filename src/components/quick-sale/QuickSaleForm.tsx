@@ -375,9 +375,9 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       if (status === 'UNPAID' && (!initialData || initialData.status !== 'COMPLETED')) {
         for (const item of items) {
           if (item.part_id) {
-            const { data: currentPart } = await supabase.from('parts_inventory').select('stock_quantity').eq('id', item.part_id).single()
+            const { data: currentPart } = await supabase.from('parts').select('stock_quantity').eq('id', item.part_id).single()
             if (currentPart) {
-              await supabase.from('parts_inventory').update({ stock_quantity: Number(currentPart.stock_quantity) - Number(item.quantity) }).eq('id', item.part_id)
+              await supabase.from('parts').update({ stock_quantity: Number(currentPart.stock_quantity) - Number(item.quantity) }).eq('id', item.part_id)
             }
           }
         }

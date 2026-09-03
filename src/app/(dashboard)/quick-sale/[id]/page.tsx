@@ -48,9 +48,9 @@ const handleComplete = async () => {
     if (!sale.inventory_deducted) {
       for (const item of sale.quick_sale_items) {
         if (item.part_id) {
-          const { data: currentPart } = await supabase.from('parts_inventory').select('stock_quantity').eq('id', item.part_id).single()
+          const { data: currentPart } = await supabase.from('parts').select('stock_quantity').eq('id', item.part_id).single()
           if (currentPart) {
-            await supabase.from('parts_inventory').update({ stock_quantity: Number(currentPart.stock_quantity) - Number(item.quantity) }).eq('id', item.part_id)
+            await supabase.from('parts').update({ stock_quantity: Number(currentPart.stock_quantity) - Number(item.quantity) }).eq('id', item.part_id)
           }
         }
       }
