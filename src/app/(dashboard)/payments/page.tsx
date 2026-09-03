@@ -24,13 +24,13 @@ export default function PaymentsModule() {
     const { data: invData } = await supabase
       .from('invoices')
       .select(`id, invoice_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(first_name, last_name, company_name, customer_type)`)
-      .in('status', ['UNPAID', 'PARTIALLY PAID'])
+      .in('status', ['UNPAID', 'PARTIALLY PAID']).eq('inventory_deducted', true)
       
     // 2. Fetch Quick Sales ready for payment (Assuming status is UNPAID or PARTIALLY PAID)
     const { data: qsData } = await supabase
       .from('quick_sales')
       .select(`id, quick_sale_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(first_name, last_name, company_name, customer_type)`)
-      .in('status', ['UNPAID', 'PARTIALLY PAID'])
+      .in('status', ['UNPAID', 'PARTIALLY PAID']).eq('inventory_deducted', true)
 
     const merged = [
       ...(invData || []).map(i => ({ ...i, source: 'Invoice', ref: i.invoice_number, link: `/invoice/${i.id}` })),

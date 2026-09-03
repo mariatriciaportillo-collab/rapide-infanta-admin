@@ -4,13 +4,34 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, CheckCircle2, Loader2, Plus, Printer } from 'lucide-react'
-import { startJobEstimate } from '@/app/(dashboard)/estimates/[id]/actions'
+import { startJobEstimate, createInvoiceFromEstimate } from '@/app/(dashboard)/estimates/[id]/actions'
+import { FileText } from 'lucide-react'
 
 export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: string, initialStatus: string }) {
   const router = useRouter()
   const [isApproving, setIsApproving] = useState(false)
   
   const isApproved = initialStatus === 'JOB STARTED' || initialStatus === 'APPROVED'
+
+
+  const [isCompleting, setIsCompleting] = useState(false)
+  
+  const handleCompleteJob = async () => {
+    if (!confirm('Complete this job?\n\nThis will mark the Estimate as completed and create the customer\'s Invoice/Billing Statement. The Estimate will remain locked.')) {
+      return
+    }
+
+    try {
+      setIsCompleting(true)
+      const res = await createInvoiceFromEstimate(estimateId)
+      if (res.success && res.invoiceId) {
+        router.push(`/invoice/${res.invoiceId}`)
+      }
+    } catch (e: any) {
+      alert(e.message)
+      setIsCompleting(false)
+    }
+  }
 
   const handleApprove = async () => {
     if (isApproved) {
@@ -51,8 +72,41 @@ export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: s
         title={isApproved ? "Job Started" : "Start Job"}
       >
         {isApproving ? <Loader2 size={16} className="animate-spin" /> : (isApproved ? <CheckCircle2 size={16} /> : <Check size={16} />)}
-        <span className="hidden sm:inline">{isApproved ? 'Approved' : 'Approve'}</span>
+        <span className="hidden sm:inline">{isApproved ? 'Job Started' : 'Approve'}</span>
       </button>
+
+      {/* Complete Job Button */}
+      {(initialStatus === 'APPROVED' || initialStatus === 'JOB STARTED') && (
+        <button 
+          onClick={handleCompleteJob}
+          disabled={isCompleting}
+          className="flex items-center justify-center px-4 py-2 hover:bg-emerald-50 text-emerald-700 transition border-r border-slate-200 font-medium text-sm gap-2"
+          title="Complete Job"
+        >
+          {isCompleting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+          <span className="hidden sm:inline">Complete Job</span>
+        </button>
+      )}
+
+      {/* View Invoice Button */}
+      {initialStatus === 'COMPLETED' && (
+        <button 
+          onClick={handleCompleteJob} // It checks existing in action and returns invoiceId
+          disabled={isCompleting}
+          className="flex items-center justify-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white transition border-r border-slate-200 font-medium text-sm gap-2"
+          title="View Invoice"
+        >
+          {isCompleting ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+          <span className="hidden sm:inline">View Invoice</span>
+        </button>
+      )}
+      
+      {initialStatus === 'COMPLETED' && (
+        <div className="flex items-center justify-center px-4 py-2 bg-slate-50 text-slate-500 border-r border-slate-200 font-medium text-sm gap-2">
+          <CheckCircle2 size={16} />
+          <span className="hidden sm:inline">Completed</span>
+        </div>
+      )}
 
       <Link 
         href={`/estimates/${estimateId}/print`}

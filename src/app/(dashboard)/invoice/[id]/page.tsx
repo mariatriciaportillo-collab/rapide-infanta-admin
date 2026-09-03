@@ -60,7 +60,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       }
     }
 
-    await supabase.from('invoices').update({ status: 'UNPAID', inventory_deducted: true }).eq('id', inv.id)
+    await supabase.from('invoices').update({ inventory_deducted: true }).eq('id', inv.id)
     window.location.reload()
   }
 
@@ -143,13 +143,13 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           </Link>
           
 
-          {inv.status === 'DRAFT' && (
+          {!inv.inventory_deducted && (
             <button onClick={handlePushToPayments} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <ArrowRightCircle size={16} /> Push to Payments
             </button>
           )}
           
-          {(inv.status === 'UNPAID' || inv.status === 'PARTIALLY PAID') && (
+          {inv.inventory_deducted && (inv.status === 'UNPAID' || inv.status === 'PARTIALLY PAID') && (
             <button onClick={() => { setPayAmount(inv.balance_due); setShowPaymentModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <DollarSign size={16} /> Record Payment
             </button>

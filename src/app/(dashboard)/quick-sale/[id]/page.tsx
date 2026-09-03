@@ -140,13 +140,13 @@ const handleComplete = async () => {
           </Link>
           
 
-          {sale.status === 'DRAFT' && (
+          {!sale.inventory_deducted && (
             <button onClick={handleComplete} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <ArrowRightCircle size={16} /> Push to Payments
             </button>
           )}
           
-          {(sale.status === 'UNPAID' || sale.status === 'PARTIALLY PAID') && (
+          {sale.inventory_deducted && (sale.status === 'UNPAID' || sale.status === 'PARTIALLY PAID') && (
             <button onClick={() => { setPayAmount(sale.balance_due); setShowPaymentModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <DollarSign size={16} /> Record Payment
             </button>

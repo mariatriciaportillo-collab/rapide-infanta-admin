@@ -1,26 +1,8 @@
-'use server'
+const fs = require('fs');
+const path = 'src/app/(dashboard)/estimates/[id]/actions.ts';
+let content = fs.readFileSync(path, 'utf8');
 
-import { createClient } from '@/utils/supabase/server'
-import { revalidatePath } from 'next/cache'
-
-export async function startJobEstimate(estimateId: string) {
-  const supabase = await createClient()
-
-  const { error } = await supabase
-    .from('estimates')
-    .update({ status: 'JOB STARTED' })
-    .eq('id', estimateId)
-
-  if (error) {
-    throw new Error('Failed to start job: ' + error.message)
-  }
-
-  revalidatePath(`/estimates/${estimateId}`)
-  
-  return { success: true }
-}
-
-
+const createInvoiceAction = `
 export async function createInvoiceFromEstimate(estimateId: string) {
   const supabase = await createClient()
 
@@ -60,10 +42,10 @@ export async function createInvoiceFromEstimate(estimateId: string) {
 
   let nextSeq = 1
   if (latest && latest.invoice_number) {
-    const match = latest.invoice_number.match(/INV-(\d+)/)
+    const match = latest.invoice_number.match(/INV-(\\d+)/)
     if (match) nextSeq = parseInt(match[1]) + 1
   }
-  const invNumber = `INV-${nextSeq.toString().padStart(6, '0')}`
+  const invNumber = \`INV-\${nextSeq.toString().padStart(6, '0')}\`
 
   // 4. Insert Invoice
   const { data: inv, error: invErr } = await supabase
@@ -88,21 +70,14 @@ export async function createInvoiceFromEstimate(estimateId: string) {
 
   if (invErr) throw new Error(invErr.message)
 
-
-  // 5. Insert Items (With Parent UUID Mapping)
-  const idMap = new Map()
-  for (const item of estimate.estimate_items) {
-    idMap.set(item.id, crypto.randomUUID())
-  }
-
+  // 5. Insert Items
   const newItems = estimate.estimate_items.map((i: any) => ({
-    id: idMap.get(i.id),
     invoice_id: inv.id,
     item_type: i.item_type,
     package_id: i.package_id,
     labor_service_id: i.labor_service_id,
     part_id: i.part_id, // Final replacement part is carried over accurately
-    parent_item_id: i.parent_item_id ? idMap.get(i.parent_item_id) : null,
+    parent_item_id: i.parent_item_id, // If they had parent structure
     is_section_header: i.is_section_header,
     description: i.description,
     quantity: i.quantity,
@@ -110,7 +85,6 @@ export async function createInvoiceFromEstimate(estimateId: string) {
     total_price: i.total_price,
     sort_order: i.sort_order
   }))
-
 
   const { error: itemsErr } = await supabase.from('invoice_items').insert(newItems)
   if (itemsErr) throw new Error(itemsErr.message)
@@ -125,3 +99,7 @@ export async function createInvoiceFromEstimate(estimateId: string) {
 
   return { success: true, invoiceId: inv.id }
 }
+`;
+
+content = content + '\n' + createInvoiceAction;
+fs.writeFileSync(path, content);
