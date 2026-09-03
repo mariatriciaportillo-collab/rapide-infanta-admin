@@ -80,7 +80,7 @@ export default function QuickSaleList() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        s.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 
+                        s.status === 'UNPAID' || s.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 
                         s.status === 'DRAFT' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700'
                       }`}>
                         {s.status}

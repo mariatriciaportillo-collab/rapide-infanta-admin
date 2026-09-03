@@ -296,7 +296,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   const subtotal = items.reduce((sum, item) => sum + (Number(item.total_price) || 0), 0)
   const grandTotal = Math.max(0, subtotal - (Number(discount) || 0))
 
-  const handleSave = async (status: 'DRAFT' | 'COMPLETED') => {
+  const handleSave = async (status: 'DRAFT' | 'UNPAID') => {
     if (!selectedCustomerId) { setError("Customer is required."); return; }
     if (items.length === 0) { setError("Please add at least one item."); return; }
     
@@ -332,8 +332,10 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
           subtotal,
           discount_amount: discount || 0,
           grand_total: grandTotal,
+          balance_due: grandTotal,
           prepared_by: preparedBy,
-          notes
+          notes,
+          inventory_deducted: status === 'UNPAID'
         }).select().single()
         
         if (qsErr) throw new Error(qsErr.message)
@@ -346,7 +348,9 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
           subtotal,
           discount_amount: discount || 0,
           grand_total: grandTotal,
-          notes
+          balance_due: grandTotal,
+          notes,
+          inventory_deducted: status === 'UNPAID'
         }).eq('id', qsId)
         if (updErr) throw new Error(updErr.message)
         
@@ -368,7 +372,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       if (itmErr) throw new Error(itmErr.message)
 
       // If COMPLETED, deduct inventory
-      if (status === 'COMPLETED' && (!initialData || initialData.status !== 'COMPLETED')) {
+      if (status === 'UNPAID' && (!initialData || initialData.status !== 'COMPLETED')) {
         for (const item of items) {
           if (item.part_id) {
             const { data: currentPart } = await supabase.from('parts_inventory').select('stock_quantity').eq('id', item.part_id).single()
@@ -607,10 +611,10 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
         <button type="button" onClick={() => router.back()} className="px-6 py-2 rounded bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium shadow-sm">
           Cancel
         </button>
-        <button type="button" onClick={() => handleSave('DRAFT')} disabled={isSubmitting || initialData?.status === 'COMPLETED'} className="px-6 py-2 rounded bg-slate-800 hover:bg-slate-700 text-white font-medium shadow-sm disabled:opacity-50">
+        <button type="button" onClick={() => handleSave('DRAFT')} disabled={isSubmitting || initialData?.status === 'UNPAID'} className="px-6 py-2 rounded bg-slate-800 hover:bg-slate-700 text-white font-medium shadow-sm disabled:opacity-50">
           {isSubmitting ? 'Saving...' : 'Save Draft'}
         </button>
-        <button type="button" onClick={() => handleSave('COMPLETED')} disabled={isSubmitting || initialData?.status === 'COMPLETED'} className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm disabled:opacity-50">
+        <button type="button" onClick={() => handleSave('UNPAID')} disabled={isSubmitting || initialData?.status === 'UNPAID'} className="px-6 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm disabled:opacity-50">
           {isSubmitting ? 'Processing...' : 'Complete Quick Sale'}
         </button>
       </div>

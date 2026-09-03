@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { ArrowLeft, Printer, FileText, CheckCircle, Edit, Building2, User as UserIcon, Car, DollarSign, X } from 'lucide-react'
+import { ArrowLeft, Printer, FileText, CheckCircle, Edit, Building2, User as UserIcon, Car, DollarSign, X, ArrowRightCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 
@@ -43,6 +43,26 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   if (!inv) return <div className="p-6 text-center text-red-500">Invoice not found</div>
 
   const isCompany = inv.customers?.customer_type === 'company'
+
+
+  const handlePushToPayments = async () => {
+    if (!confirm('Finalize this invoice and push to Payments? This will officially deduct parts inventory and lock the items.')) return;
+    
+    // Deduct inventory ONLY ONCE
+    if (!inv.inventory_deducted) {
+      for (const item of inv.invoice_items) {
+        if (item.part_id) {
+          const { data: currentPart } = await supabase.from('parts_inventory').select('stock_quantity').eq('id', item.part_id).single()
+          if (currentPart) {
+            await supabase.from('parts_inventory').update({ stock_quantity: Number(currentPart.stock_quantity) - Number(item.quantity) }).eq('id', item.part_id)
+          }
+        }
+      }
+    }
+
+    await supabase.from('invoices').update({ status: 'UNPAID', inventory_deducted: true }).eq('id', inv.id)
+    window.location.reload()
+  }
 
   const handleRecordPayment = async () => {
     const amount = Number(payAmount)
@@ -122,11 +142,19 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
             <Printer size={16} /> Print Invoice
           </Link>
           
-          {Number(inv.balance_due) > 0 && (
+
+          {inv.status === 'DRAFT' && (
+            <button onClick={handlePushToPayments} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
+              <ArrowRightCircle size={16} /> Push to Payments
+            </button>
+          )}
+          
+          {(inv.status === 'UNPAID' || inv.status === 'PARTIALLY PAID') && (
             <button onClick={() => { setPayAmount(inv.balance_due); setShowPaymentModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <DollarSign size={16} /> Record Payment
             </button>
           )}
+
         </div>
       </div>
 
