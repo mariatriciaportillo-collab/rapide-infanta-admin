@@ -19,6 +19,7 @@ export default function QuickSaleViewPage({ params }: { params: Promise<{ id: st
   const [payRef, setPayRef] = useState('N/A')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  
   useEffect(() => {
     async function load() {
       const { data } = await supabase
@@ -31,11 +32,38 @@ export default function QuickSaleViewPage({ params }: { params: Promise<{ id: st
         `)
         .eq('id', id)
         .single()
-      if (data) setSale(data)
+        
+      if (data) {
+        // Fetch valid payments
+        const { data: payments } = await supabase.from('payments').select('*').eq('quick_sale_id', data.id);
+        const validPayments = (payments || []).filter(p => Number(p.amount_paid) > 0);
+        
+        const totalPaid = validPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+        const balanceDue = Math.max(0, Number(data.grand_total) - totalPaid);
+        
+        let computedStatus = 'UNPAID';
+        if (balanceDue <= 0) computedStatus = 'PAID';
+        else if (totalPaid > 0) computedStatus = 'PARTIALLY PAID';
+        
+        // Always reflect computed status in UI
+        data.amount_paid = totalPaid;
+        data.balance_due = balanceDue;
+        data.status = computedStatus;
+        
+        // Auto-fix DB silently if it got out of sync
+        supabase.from('quick_sales').update({
+          amount_paid: totalPaid,
+          balance_due: balanceDue,
+          status: computedStatus
+        }).eq('id', data.id).then();
+
+        setSale(data)
+      }
       setLoading(false)
     }
     load()
   }, [id, supabase])
+
 
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!sale) return <div className="p-6 text-center text-red-500">Quick Sale not found</div>

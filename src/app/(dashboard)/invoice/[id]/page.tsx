@@ -21,6 +21,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   const [payRef, setPayRef] = useState('N/A')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  
   useEffect(() => {
     async function load() {
       const { data } = await supabase
@@ -29,15 +30,51 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           *,
           invoice_items(*),
           customers:customer_id(*),
-          vehicles:vehicle_id(*)
+          vehicles:vehicle_id(*),
+          estimates( quotation_id )
         `)
         .eq('id', id)
         .single()
-      if (data) setInv(data)
+        
+      if (data) {
+        // Fetch valid payments
+        const quotationId = data.estimates?.quotation_id || null;
+        let paymentQuery = supabase.from('payments').select('*');
+        if (quotationId) {
+          paymentQuery = paymentQuery.or(`invoice_id.eq.${data.id},quotation_id.eq.${quotationId}`);
+        } else {
+          paymentQuery = paymentQuery.eq('invoice_id', data.id);
+        }
+        
+        const { data: payments } = await paymentQuery;
+        const validPayments = (payments || []).filter(p => Number(p.amount_paid) > 0);
+        
+        const totalPaid = validPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+        const balanceDue = Math.max(0, Number(data.grand_total) - totalPaid);
+        
+        let computedStatus = 'UNPAID';
+        if (balanceDue <= 0) computedStatus = 'PAID';
+        else if (totalPaid > 0) computedStatus = 'PARTIALLY PAID';
+        
+        // Always reflect computed status in UI
+        data.amount_paid = totalPaid;
+        data.balance_due = balanceDue;
+        data.status = computedStatus;
+        
+        // Auto-fix DB silently if it got out of sync
+        supabase.from('invoices').update({
+          amount_paid: totalPaid,
+          balance_due: balanceDue,
+          status: computedStatus
+        }).eq('id', data.id).then();
+
+        setInv(data)
+      }
       setLoading(false)
     }
     load()
   }, [id, supabase])
+
 
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!inv) return <div className="p-6 text-center text-red-500">Invoice not found</div>
