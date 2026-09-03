@@ -23,13 +23,13 @@ export default function PaymentsModule() {
     // 1. Fetch Invoices ready for payment
     const { data: invData } = await supabase
       .from('invoices')
-      .select(`id, invoice_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(first_name, last_name, company_name, customer_type)`)
+      .select(`id, invoice_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(name, first_name, last_name, customer_type)`)
       .in('status', ['UNPAID', 'PARTIALLY PAID']).eq('inventory_deducted', true)
       
     // 2. Fetch Quick Sales ready for payment (Assuming status is UNPAID or PARTIALLY PAID)
     const { data: qsData } = await supabase
       .from('quick_sales')
-      .select(`id, quick_sale_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(first_name, last_name, company_name, customer_type)`)
+      .select(`id, quick_sale_number, created_at, grand_total, amount_paid, balance_due, status, customers:customer_id(name, first_name, last_name, customer_type)`)
       .in('status', ['UNPAID', 'PARTIALLY PAID']).eq('inventory_deducted', true)
 
     const merged = [
@@ -44,7 +44,7 @@ export default function PaymentsModule() {
       .from('payments')
       .select(`
         *,
-        customers:customer_id(first_name, last_name, company_name, customer_type),
+        customers:customer_id(name, first_name, last_name, customer_type),
         invoices:invoice_id(invoice_number),
         quick_sales:quick_sale_id(quick_sale_number)
       `)
@@ -58,8 +58,8 @@ export default function PaymentsModule() {
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
-    if (c.customer_type === 'company') return c.company_name
-    return `${c.first_name} ${c.last_name}`
+    if (c.customer_type === 'company') return c.name
+    return c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()
   }
 
   return (

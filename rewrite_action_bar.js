@@ -1,4 +1,7 @@
-'use client'
+const fs = require('fs');
+const path = 'src/components/estimates/EstimateActionBar.tsx';
+
+const content = `'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,7 +15,7 @@ export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: s
   const [isCompleting, setIsCompleting] = useState(false)
   
   const handleApprove = async () => {
-    if (!confirm('Start this job?\n\nApproving this Estimate means the customer has confirmed the work and the Estimate will be locked from further editing.')) {
+    if (!confirm('Start this job?\\n\\nApproving this Estimate means the customer has confirmed the work and the Estimate will be locked from further editing.')) {
       return
     }
     try {
@@ -28,14 +31,14 @@ export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: s
   }
 
   const handleCompleteJob = async () => {
-    if (initialStatus !== 'COMPLETED' && !confirm('Complete this job?\n\nThis will mark the Estimate as completed and create the customer\'s Billing Statement. The Estimate will remain locked.')) {
+    if (initialStatus !== 'COMPLETED' && !confirm('Complete this job?\\n\\nThis will mark the Estimate as completed and create the customer\\'s Billing Statement. The Estimate will remain locked.')) {
       return
     }
     try {
       setIsCompleting(true)
       const res = await createInvoiceFromEstimate(estimateId)
       if (res.success && res.invoiceId) {
-        router.push(`/invoice/${res.invoiceId}`)
+        router.push(\`/invoice/\${res.invoiceId}\`)
       }
     } catch (e: any) {
       alert(e.message)
@@ -115,7 +118,7 @@ export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: s
 
       {/* Print */}
       <Link 
-        href={`/estimates/${estimateId}/print`}
+        href={\`/estimates/\${estimateId}/print\`}
         target="_blank"
         className="flex items-center justify-center px-3 py-1.5 hover:bg-slate-50 transition text-slate-700 font-medium text-sm gap-2"
         title="Print"
@@ -125,3 +128,5 @@ export function EstimateActionBar({ estimateId, initialStatus }: { estimateId: s
     </div>
   )
 }
+`;
+fs.writeFileSync(path, content);

@@ -17,7 +17,7 @@ export default function InvoiceList() {
         .from('invoices')
         .select(`
           *,
-          customers:customer_id(first_name, last_name, company_name, customer_type),
+          customers:customer_id(name, first_name, last_name, customer_type),
           vehicles:vehicle_id(plate_number, make, model)
         `)
         .order('created_at', { ascending: false })
@@ -29,8 +29,8 @@ export default function InvoiceList() {
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
-    if (c.customer_type === 'company') return c.company_name
-    return `${c.first_name} ${c.last_name}`
+    if (c.customer_type === 'company') return c.name
+    return c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()
   }
 
   return (

@@ -59,7 +59,7 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
         </div>
         
         <div className="text-right">
-          <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-widest mb-2">Invoice</h2>
+          <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-widest mb-2">Billing Statement</h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
             <div className="text-slate-500 font-medium">Invoice No:</div>
             <div className="font-bold text-slate-900">{inv.invoice_number}</div>
@@ -101,52 +101,156 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      {/* Items Table */}
-      <div className="px-8 pt-3 pb-1 space-y-2">
-        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1 mt-4">BILLING DETAILS</h3>
-        <table className="w-full text-left text-sm border-t-2 border-slate-800">
-          <thead className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
-            <tr>
-              <th className="py-0 pr-2 w-[55%]">Description</th>
-              <th className="py-0 px-2 text-center w-[10%]">Qty</th>
-              <th className="py-0 px-2 text-right w-[15%]">Unit Price</th>
-              <th className="py-0 pl-2 text-right w-[20%]">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {inv.invoice_items?.sort((a: any, b: any) => a.sort_order - b.sort_order).map((item: any) => {
-              if (item.is_section_header) {
-                return (
-                  <tr key={item.id} className="bg-slate-50/50">
-                    <td colSpan={4} className="py-0 px-1 font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                      {item.description}
-                    </td>
-                  </tr>
-                )
-              }
-              return (
-                <tr key={item.id}>
-                  <td className="py-0 pr-2 text-slate-800 font-normal">{item.description}</td>
-                  <td className="py-0 px-2 text-center text-slate-600 align-top">{item.quantity}</td>
-                  <td className="py-0 px-2 text-right text-slate-600 align-top">
-                    {!!item.parent_item_id ? (
-                      <span className="text-slate-500 italic text-[11px]">Included</span>
-                    ) : (
-                      `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
-                    )}
-                  </td>
-                  <td className="py-0 pl-2 text-right font-medium text-slate-800 align-top">
-                    {!!item.parent_item_id ? (
-                      <span className="text-slate-500 italic text-[11px]">—</span>
-                    ) : (
-                      `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+            {/* Items Table */}
+      <div className="px-8 pt-3 pb-1">
+
+          {(() => {
+            const sortedItems = [...(inv.invoice_items || [])].sort((a: any, b: any) => a.sort_order - b.sort_order);
+            const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
+            const isPrt = (i: any) => i.item_type === 'PART' || (!i.parent_item_id && i.part_id && !i.package_id) || (i.parent_item_id && (i.part_id || i.is_category));
+            const isLbr = (i: any) => !isPkg(i) && !isPrt(i);
+
+            const packages = sortedItems.filter(isPkg);
+            const partItems = sortedItems.filter(isPrt);
+            const laborItems = sortedItems.filter(isLbr);
+
+            return (
+              <>
+                {/* PACKAGES */}
+                {packages.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1 mt-4">PACKAGES</h3>
+                    <div className="border-t-2 border-slate-800">
+                      <table className="w-full text-left text-sm">
+                        <thead className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                          <tr>
+                            <th className="py-0 pr-2 w-[55%]">Description</th>
+                            <th className="py-0 px-2 text-center w-[10%]">Qty</th>
+                            <th className="py-0 px-2 text-right w-[15%]">Unit Price</th>
+                            <th className="py-0 pl-2 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {packages.map((item: any) => (
+                            <tr key={item.id} className="">
+                              <td className="py-0 pr-2 text-slate-800 font-normal">{item.description}</td>
+                              <td className="py-0 px-2 text-center text-slate-600 align-top">{item.quantity}</td>
+                              <td className="py-0 px-2 text-right text-slate-600 align-top">₱{Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              <td className="py-0 pl-2 text-right font-medium text-slate-800 align-top">₱{Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* LABOR & SERVICES */}
+                {laborItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1 mt-4">LABOR & SERVICES</h3>
+                    <div className="border-t-2 border-slate-800">
+                      <table className="w-full text-left text-sm">
+                        <thead className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                          <tr>
+                            <th className="py-0 pr-2 w-[55%]">Description</th>
+                            <th className="py-0 px-2 text-center w-[10%]">Qty</th>
+                            <th className="py-0 px-2 text-right w-[15%]">Unit Price</th>
+                            <th className="py-0 pl-2 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {laborItems.map((item: any) => {
+                            if (item.is_section_header) {
+                              return (
+                                <tr key={item.id} className="bg-slate-50/50">
+                                  <td colSpan={4} className="py-0 px-1 text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                                    {item.description}
+                                  </td>
+                                </tr>
+                              )
+                            }
+                            return (
+                              <tr key={item.id} className="">
+                                <td className="py-0 pr-2 text-slate-800 font-normal">{item.description}</td>
+                                <td className="py-0 px-2 text-center text-slate-600 align-top">{item.quantity}</td>
+                                <td className="py-0 px-2 text-right text-slate-600 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">Included</span>
+                                  ) : (
+                                    `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                                <td className="py-0 pl-2 text-right font-medium text-slate-800 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">—</span>
+                                  ) : (
+                                    `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* PARTS & MATERIALS */}
+                {partItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1 mt-4">PARTS & MATERIALS</h3>
+                    <div className="border-t-2 border-slate-800">
+                      <table className="w-full text-left text-sm">
+                        <thead className="border-b border-slate-200 text-slate-500 font-bold text-[10px] uppercase tracking-wider">
+                          <tr>
+                            <th className="py-0 pr-2 w-[55%]">Description</th>
+                            <th className="py-0 px-2 text-center w-[10%]">Qty</th>
+                            <th className="py-0 px-2 text-right w-[15%]">Unit Price</th>
+                            <th className="py-0 pl-2 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {partItems.map((item: any) => {
+                            if (item.is_section_header) {
+                              return (
+                                <tr key={item.id} className="bg-slate-50/50">
+                                  <td colSpan={4} className="py-0 px-1 text-[10px] font-bold text-slate-800 uppercase tracking-wider">
+                                    {item.description}
+                                  </td>
+                                </tr>
+                              )
+                            }
+                            return (
+                              <tr key={item.id} className="">
+                                <td className="py-0 pr-2 text-slate-800 font-normal">{item.description}</td>
+                                <td className="py-0 px-2 text-center text-slate-600 align-top">{item.quantity}</td>
+                                <td className="py-0 px-2 text-right text-slate-600 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">Included</span>
+                                  ) : (
+                                    `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                                <td className="py-0 pl-2 text-right font-medium text-slate-800 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">—</span>
+                                  ) : (
+                                    `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
       </div>
 
       {/* Totals */}

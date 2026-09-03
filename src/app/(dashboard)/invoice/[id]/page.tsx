@@ -124,7 +124,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-slate-800">{inv.invoice_number}</h1>
+              <h1 className="text-2xl font-bold text-slate-800">Billing Statement</h1>
               <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border ${
                 inv.status === 'PAID' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
                 inv.status === 'PARTIALLY PAID' ? 'bg-amber-100 text-amber-700 border-amber-200' :
@@ -133,7 +133,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
                 {inv.status}
               </span>
             </div>
-            <p className="text-slate-500 text-sm">Created {format(new Date(inv.created_at), 'MMM d, yyyy')}</p>
+            <p className="text-slate-500 text-sm font-medium">Invoice No. {inv.invoice_number} &middot; Created {format(new Date(inv.created_at), 'MMM d, yyyy')}</p>
           </div>
         </div>
         
@@ -190,59 +190,156 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      {/* Items */}
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
-        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 uppercase tracking-wider text-xs">Billing Details</h3>
-        </div>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50/50 text-slate-500 border-b border-slate-100 text-[10px] uppercase tracking-wider">
-            <tr>
-              <th className="px-4 py-2 font-semibold">Description</th>
-              <th className="px-4 py-2 font-semibold text-center w-20">Qty</th>
-              <th className="px-4 py-2 font-semibold text-right w-32">Unit Price</th>
-              <th className="px-4 py-2 font-semibold text-right w-32">Amount</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {inv.invoice_items?.sort((a: any, b: any) => a.sort_order - b.sort_order).map((item: any) => {
-              if (item.is_section_header) {
-                return (
-                  <tr key={item.id} className="bg-slate-50/50">
-                    <td colSpan={4} className="px-4 py-2 font-bold text-slate-800 uppercase tracking-wider text-[10px]">
-                      {item.description}
-                    </td>
-                  </tr>
-                )
-              }
-              return (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2 text-slate-800">
-                    <div className="flex items-center gap-2">
-                      {item.item_type === 'PACKAGE_ITEM' && <span className="w-4 h-4 bg-emerald-200 text-emerald-700 flex items-center justify-center rounded-full text-[10px] font-bold">P</span>}
-                      {item.description}
+            {/* Items */}
+      <div className="mb-6">
+
+          {(() => {
+            const sortedItems = [...(inv.invoice_items || [])].sort((a: any, b: any) => a.sort_order - b.sort_order);
+            const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
+            const isPrt = (i: any) => i.item_type === 'PART' || (!i.parent_item_id && i.part_id && !i.package_id) || (i.parent_item_id && (i.part_id || i.is_category));
+            const isLbr = (i: any) => !isPkg(i) && !isPrt(i);
+
+            const packages = sortedItems.filter(isPkg);
+            const partItems = sortedItems.filter(isPrt);
+            const laborItems = sortedItems.filter(isLbr);
+
+            return (
+              <>
+                {/* PACKAGES */}
+                {packages.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-1 ">PACKAGES</h3>
+                    <div className="border border-slate-200 rounded-md bg-white shadow-sm overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                          <tr>
+                            <th className="py-2 px-4 w-[55%]">Description</th>
+                            <th className="py-2 px-4 text-center w-[10%]">Qty</th>
+                            <th className="py-2 px-4 text-right w-[15%]">Unit Price</th>
+                            <th className="py-2 px-4 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {packages.map((item: any) => (
+                            <tr key={item.id} className="hover:bg-slate-50">
+                              <td className="py-2 px-4 text-slate-800 font-normal">{item.description}</td>
+                              <td className="py-2 px-4 text-center text-slate-600 align-top">{item.quantity}</td>
+                              <td className="py-2 px-4 text-right text-slate-600 align-top">₱{Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              <td className="py-2 px-4 text-right font-medium text-slate-800 align-top">₱{Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                  </td>
-                  <td className="px-4 py-2 text-center text-slate-600">{item.quantity}</td>
-                  <td className="px-4 py-2 text-right text-slate-600">
-                    {!!item.parent_item_id ? (
-                      <span className="text-slate-400 italic text-[11px]">Included</span>
-                    ) : (
-                      `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
-                    )}
-                  </td>
-                  <td className="px-4 py-2 text-right font-medium text-slate-800">
-                    {!!item.parent_item_id ? (
-                      <span className="text-slate-400 italic text-[11px]">—</span>
-                    ) : (
-                      `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                  </div>
+                )}
+
+                {/* LABOR & SERVICES */}
+                {laborItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-1 ">LABOR & SERVICES</h3>
+                    <div className="border border-slate-200 rounded-md bg-white shadow-sm overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                          <tr>
+                            <th className="py-2 px-4 w-[55%]">Description</th>
+                            <th className="py-2 px-4 text-center w-[10%]">Qty</th>
+                            <th className="py-2 px-4 text-right w-[15%]">Unit Price</th>
+                            <th className="py-2 px-4 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {laborItems.map((item: any) => {
+                            if (item.is_section_header) {
+                              return (
+                                <tr key={item.id} className="bg-slate-50/50">
+                                  <td colSpan={4} className="py-2 px-4 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                    {item.description}
+                                  </td>
+                                </tr>
+                              )
+                            }
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-50">
+                                <td className="py-2 px-4 text-slate-800 font-normal">{item.description}</td>
+                                <td className="py-2 px-4 text-center text-slate-600 align-top">{item.quantity}</td>
+                                <td className="py-2 px-4 text-right text-slate-600 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">Included</span>
+                                  ) : (
+                                    `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                                <td className="py-2 px-4 text-right font-medium text-slate-800 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">—</span>
+                                  ) : (
+                                    `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* PARTS & MATERIALS */}
+                {partItems.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-1 ">PARTS & MATERIALS</h3>
+                    <div className="border border-slate-200 rounded-md bg-white shadow-sm overflow-hidden">
+                      <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                          <tr>
+                            <th className="py-2 px-4 w-[55%]">Description</th>
+                            <th className="py-2 px-4 text-center w-[10%]">Qty</th>
+                            <th className="py-2 px-4 text-right w-[15%]">Unit Price</th>
+                            <th className="py-2 px-4 text-right w-[20%]">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {partItems.map((item: any) => {
+                            if (item.is_section_header) {
+                              return (
+                                <tr key={item.id} className="bg-slate-50/50">
+                                  <td colSpan={4} className="py-2 px-4 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                    {item.description}
+                                  </td>
+                                </tr>
+                              )
+                            }
+                            return (
+                              <tr key={item.id} className="hover:bg-slate-50">
+                                <td className="py-2 px-4 text-slate-800 font-normal">{item.description}</td>
+                                <td className="py-2 px-4 text-center text-slate-600 align-top">{item.quantity}</td>
+                                <td className="py-2 px-4 text-right text-slate-600 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">Included</span>
+                                  ) : (
+                                    `₱${Number(item.unit_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                                <td className="py-2 px-4 text-right font-medium text-slate-800 align-top">
+                                  {!!item.parent_item_id ? (
+                                    <span className="text-slate-500 italic text-[11px]">—</span>
+                                  ) : (
+                                    `₱${Number(item.total_price).toLocaleString('en-US', {minimumFractionDigits: 2})}`
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          })()}
       </div>
 
       {/* Totals & Notes */}
