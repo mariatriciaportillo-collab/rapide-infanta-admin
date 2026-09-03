@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { checkDuplicateCustomer } from '@/utils/checkDuplicateCustomer'
 import { ArrowLeft, Save, Building2, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { buildLegacyName } from '@/utils/customer'
@@ -44,6 +45,14 @@ export default function NewCustomerPage() {
     const cleanContactFirst = contactFirstName.trim()
     const cleanContactLast = contactLastName.trim()
 
+
+    const duplicate = await checkDuplicateCustomer(supabase, customerType, cleanFirstName, cleanLastName, cleanCompanyName)
+    if (duplicate) {
+      setError("Customer already exists. Please select the existing customer instead.")
+      setIsSubmitting(false)
+      return
+    }
+    
     if (customerType === 'individual') {
       if (!cleanFirstName || !cleanLastName) {
         setError("First Name and Last Name are required.")

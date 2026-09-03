@@ -9,3 +9,10 @@ input[type="text"]:not(.normal-case),
 input:not([type]):not(.normal-case) {
   text-transform: uppercase;
 }
+
+
+@layer base {
+  html {
+    font-size: 15px;
+  }
+}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { checkDuplicateCustomer } from '@/utils/checkDuplicateCustomer'
 import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2, Edit, X } from 'lucide-react'
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
@@ -115,6 +116,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const [discount, setDiscount] = useState<number>(0)
 
   const [items, setItems] = useState<LineItem[]>([])
+  const [replacingItemId, setReplacingItemId] = useState<string | null>(null)
 
   // Labor Services for Combobox
   const [laborServices, setLaborServices] = useState<any[]>([])
@@ -442,6 +444,13 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       return
     }
 
+    
+    const duplicate = await checkDuplicateCustomer(supabase, customerType, cleanFirstName, cleanLastName, cleanCompanyName)
+    if (duplicate) {
+      setError("Customer already exists. Please select the existing customer instead.")
+      return
+    }
+    
     const normalizedPlate = vehiclePlate.replace(/[^A-Z0-9]/ig, '').toUpperCase()
     if (vehicleMake || vehicleModel || vehicleYear || normalizedPlate) {
       if (!normalizedPlate) { setError("Plate Number is required."); return; }
@@ -667,6 +676,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setEngineCapacity('')
     setVehicleTransmission('')
   }
+  
+  
 
   // Computed Totals
   const subtotal = items.reduce((sum, item) => {
@@ -1093,7 +1104,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       
       {/* Compact Customer & Vehicle Selection */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 mb-4 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           {/* Customer Column */}
           <div className="relative">
