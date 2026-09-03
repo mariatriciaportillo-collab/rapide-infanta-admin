@@ -36,7 +36,7 @@ type Section = 'operations' | 'customers' | 'products' | 'inventory' | 'reports'
 export function SidebarNav() {
   const pathname = usePathname()
   
-  const isOperationsActive = ['/quotations', '/estimate', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
+  const isOperationsActive = ['/quotations', '/estimates', '/quick-sale', '/invoice', '/payments'].some(route => pathname?.startsWith(route))
   const isCustomerAccountsActive = ['/customers', '/vehicles', '/service-history'].some(route => pathname?.startsWith(route))
   const isProductsActive = ['/labor-lookup', '/labor-charges', '/parts', '/packages'].some(route => pathname?.startsWith(route))
   const isInventoryActive = ['/inventory', '/stock-adjustments', '/outside-purchases', '/purchase-orders', '/suppliers'].some(route => pathname?.startsWith(route))
@@ -89,9 +89,9 @@ export function SidebarNav() {
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
             
             <Link 
-              href="/estimate" 
+              href="/estimates" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/estimate') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+                ${pathname?.startsWith('/estimates') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
             >
               <FileText size={16} />
               Estimate

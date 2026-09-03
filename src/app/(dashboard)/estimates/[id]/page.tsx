@@ -38,7 +38,7 @@ export default async function ViewEstimatePage({
       {/* Action Bar */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/estimate" className="text-slate-400 hover:text-slate-600 transition">
+          <Link href="/estimates" className="text-slate-400 hover:text-slate-600 transition">
             <ArrowLeft size={24} />
           </Link>
           <h2 className="text-3xl font-bold text-slate-800">Estimate #{estimate.estimate_number}</h2>
@@ -55,7 +55,7 @@ export default async function ViewEstimatePage({
         
         <div className="flex gap-3">
           <Link 
-            href={`/estimate/${estimate.id}/print`} 
+            href={`/estimates/${estimate.id}/print`} 
             target="_blank"
             className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm"
           >

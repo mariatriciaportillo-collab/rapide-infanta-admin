@@ -13,7 +13,7 @@ export function ApproveQuotationButton({ quotationId, initialStatus, initialEsti
 
   const handleApprove = async () => {
     if (isApproved && initialEstimateId) {
-      router.push(`/estimate/${initialEstimateId}`)
+      router.push(`/estimates/${initialEstimateId}`)
       return
     }
 
@@ -21,7 +21,7 @@ export function ApproveQuotationButton({ quotationId, initialStatus, initialEsti
       setIsApproving(true)
       const res = await approveQuotation(quotationId)
       if (res.success) {
-        router.push(`/estimate/${res.estimateId}`)
+        router.push(`/estimates/${res.estimateId}`)
       }
     } catch (e: any) {
       alert(e.message)
