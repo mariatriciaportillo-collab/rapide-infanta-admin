@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Printer, Download, CheckCircle2, FileText, User as UserIcon, Building2, Car, Edit } from 'lucide-react'
 import { format } from 'date-fns'
+import { ApproveQuotationButton } from '@/components/quotations/ApproveQuotationButton'
 
 export default async function ViewQuotationPage({
   params,
@@ -32,6 +33,7 @@ export default async function ViewQuotationPage({
   const items = quote.quotation_items.sort((a: any, b: any) => a.sort_order - b.sort_order)
   
   const isCompany = quote.customer_type === 'company'
+  const { data: est } = await supabase.from('estimates').select('id').eq('quotation_id', quote.id).maybeSingle()
 
   return (
     <div className="pb-24 max-w-5xl mx-auto">
@@ -62,10 +64,7 @@ export default async function ViewQuotationPage({
             <Printer size={18} />
             Print
           </Link>
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm">
-            <CheckCircle2 size={18} />
-            Mark Approved
-          </button>
+          <ApproveQuotationButton quotationId={quote.id} initialStatus={quote.status} initialEstimateId={est?.id} />
         </div>
       </div>
 

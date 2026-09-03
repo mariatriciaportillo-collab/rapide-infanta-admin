@@ -104,14 +104,7 @@ export function SidebarNav() {
               <FileText size={16} />
               Quotation
             </Link>
-            <Link 
-              href="/estimate" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/estimate') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <Settings size={16} />
-              Estimate
-            </Link>
+            
             <Link 
               href="/quick-sale" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2

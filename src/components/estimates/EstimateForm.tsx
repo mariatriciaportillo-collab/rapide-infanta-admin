@@ -106,8 +106,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
 
   // Quote State
   const [notes, setNotes] = useState('')
-  const [warranty, setWarranty] = useState('3 Months / 5,000km (Whichever comes first)')
-  const [preparedBy, setPreparedBy] = useState('')
+    const [preparedBy, setPreparedBy] = useState('')
   const [serviceAdvisorId, setServiceAdvisorId] = useState<string>(initialData?.service_advisor_id || '')
   const [mechanicId, setMechanicId] = useState<string>(initialData?.mechanic_id || '')
   const [mechanics, setMechanics] = useState<any[]>([])
@@ -164,8 +163,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       setSelectedCustomerId(initialData.customer_id)
       setSelectedVehicleId(initialData.vehicle_id || null)
       setNotes(initialData.notes || '')
-      setWarranty(initialData.warranty_terms || '')
-      setPreparedBy(initialData.prepared_by || '')
+            setPreparedBy(initialData.prepared_by || '')
       setDiscount(initialData.discount_amount || 0)
       
       // Reload Customer Details
@@ -942,8 +940,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
           service_advisor_name: advisors.find(a => a.id === serviceAdvisorId)?.full_name || null,
           mechanic_name: mechanics.find(m => m.id === mechanicId)?.full_name || null,
           notes: notes,
-          warranty_terms: warranty,
-          subtotal: subtotal,
+                    subtotal: subtotal,
           discount_amount: Number(discount) || 0,
           grand_total: grandTotal
       };
@@ -1651,10 +1648,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
         <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
           <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Additional Information</h3>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Warranty Terms</label>
-              <input type="text" value={warranty} onChange={e => setWarranty(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" />
-            </div>
+            
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Prepared By</label>
               <input type="text" value={preparedBy} onChange={e => setPreparedBy(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" disabled />

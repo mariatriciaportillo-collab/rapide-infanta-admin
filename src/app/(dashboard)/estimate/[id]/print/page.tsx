@@ -132,25 +132,7 @@ export default function EstimatePrintPage({
           </div>
         </div>
 
-        {/* Service Details */}
-        <div className="w-1/3 p-3">
-          <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Service Details</h3>
-          <div className="space-y-1 text-slate-800 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-500">Service Advisor:</span>
-              <span className="font-semibold text-right">{estimate.service_advisor_name || 'Unassigned'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Mechanic:</span>
-              <span className="font-semibold text-right">{estimate.mechanic_name || 'Unassigned'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-500">Mileage:</span>
-              <span className="font-semibold text-right">{estimate.mileage_km ? `${estimate.mileage_km.toLocaleString()} km` : '-'}</span>
-            </div>
-          </div>
         </div>
-      </div>
 
       {/* Items Table */}
       <div className="px-8 pt-3 pb-1 space-y-2">
