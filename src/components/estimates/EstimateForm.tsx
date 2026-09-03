@@ -842,7 +842,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
         const { data: newCust, error: custErr } = await supabase.from('customers').insert(customerPayload).select().single()
         
         if (custErr) {
-          console.error("[QUOTATION SAVE] Step 2 FAILED (Customer)", JSON.stringify(custErr, null, 2));
+          console.error("[ESTIMATE SAVE] Step 2 FAILED (Customer)", JSON.stringify(custErr, null, 2));
           throw new Error(`Customer Save Failed: ${custErr.message} (${custErr.code})`);
         }
         if (newCust) {
@@ -888,7 +888,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
         const { data: newVeh, error: vehErr } = await supabase.from('vehicles').insert(vehiclePayload).select().single()
         
         if (vehErr) {
-          console.error("[QUOTATION SAVE] Step 3 FAILED (Vehicle)", JSON.stringify(vehErr, null, 2));
+          console.error("[ESTIMATE SAVE] Step 3 FAILED (Vehicle)", JSON.stringify(vehErr, null, 2));
           throw new Error(`Vehicle Save Failed: ${vehErr.message} (${vehErr.code})`);
         }
         if (newVeh) finalVehicleId = newVeh.id
@@ -916,7 +916,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
         estimateNumber = `EST-${nextNumber.toString().padStart(5, '0')}`;
       }
       
-      console.log("[QUOTATION SAVE] Step 4: Saving estimate header...");
+      console.log("[ESTIMATE SAVE] Step 4: Saving estimate header...");
       const estimatePayload = {
           estimate_number: estimateNumber,
           customer_id: finalCustomerId,
@@ -1034,7 +1034,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       }
           
         if (itemsError) {
-          console.error("[QUOTATION SAVE] Step 5 FAILED (Estimate Items)", JSON.stringify(itemsError, null, 2));
+          console.error("[ESTIMATE SAVE] Step 5 FAILED (Estimate Items)", JSON.stringify(itemsError, null, 2));
           throw new Error(`Estimate Items Save Failed: ${itemsError.message} (${itemsError.code})`);
         }
       }
@@ -1043,7 +1043,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       router.push(`/estimates/${estimate.id}`)
 
     } catch (err: any) {
-      console.error("[QUOTATION SAVE] CAUGHT ERROR:", err)
+      console.error("[ESTIMATE SAVE] CAUGHT ERROR:", err)
       setError(err.message || 'Unable to save the estimate. Please try again.')
       setIsSubmitting(false)
     }
