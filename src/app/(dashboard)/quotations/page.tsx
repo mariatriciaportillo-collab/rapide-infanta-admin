@@ -39,20 +39,20 @@ export default async function QuotationsPage() {
               <th className="px-4 py-3">Vehicle</th>
               <th className="px-4 py-3">Total</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {quotations?.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
                   No quotations found. Create your first one!
                 </td>
               </tr>
             ) : (
               quotations?.map((q) => (
                 <tr key={q.id} className="hover:bg-slate-50 transition">
-                  <td className="px-4 py-3 font-medium text-slate-900">{q.quote_number}</td>
+                  <td className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800 hover:underline"><Link href={`/quotations/${q.id}`}>{q.quote_number}</Link></td>
                   <td className="px-4 py-3">
                     {q.created_at ? format(new Date(q.created_at), 'MMM d, yyyy') : '-'}
                   </td>
@@ -76,31 +76,7 @@ export default async function QuotationsPage() {
                       {q.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right space-x-3">
-                    <Link href={`/quotations/${q.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs uppercase tracking-wider">
-                      View
-                    </Link>
-                      {(() => {
-                        const status = (q.status || '').toUpperCase();
-                        const hasDownpayment = q.downpayment_amount > 0 || (q.payments && q.payments.length > 0);
-                        const isConverted = q.is_converted || q.invoice_id || status === 'CONVERTED';
-                        const isCompleted = status === 'COMPLETED';
-                        const canEdit = !hasDownpayment && !isConverted && !isCompleted && status !== 'REJECTED';
-                        
-                        return canEdit ? (
-                          <Link href={`/quotations/${q.id}/edit`} className="text-amber-600 hover:text-amber-800 font-medium text-xs uppercase tracking-wider">
-                            Edit
-                          </Link>
-                        ) : (
-                          <span className="text-slate-400 font-medium text-xs uppercase tracking-wider" title={hasDownpayment ? "Locked — Downpayment Received" : (isConverted ? "Locked — Converted" : "Locked")}>
-                            Locked
-                          </span>
-                        );
-                      })()}
-                      <Link href={`/quotations/${q.id}/print`} className="text-slate-600 hover:text-slate-800 font-medium text-xs uppercase tracking-wider">
-                      Print
-                    </Link>
-                  </td>
+                  
                 </tr>
               ))
             )}
