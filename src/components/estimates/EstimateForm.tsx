@@ -1040,7 +1040,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       }
 
       // 4. Redirect to view page
-      router.push(`/estimates/${estimate.id}`)
+      router.push(`/estimate/${estimate.id}`)
 
     } catch (err: any) {
       console.error("[ESTIMATE SAVE] CAUGHT ERROR:", err)
@@ -1053,7 +1053,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
     <form onSubmit={handleSave} className="pb-24">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-4">
-          <Link href="/estimates" className="text-slate-400 hover:text-slate-600">
+          <Link href="/estimate" className="text-slate-400 hover:text-slate-600">
             <ArrowLeft size={24} />
           </Link>
           <div className="flex items-center gap-4"><div className="flex items-end gap-3 border-r-2 border-slate-300 pr-4"><img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-8 w-auto object-contain" /><h2 className="text-xl font-bold text-slate-800 tracking-tight uppercase">INFANTA</h2></div><h2 className="text-3xl font-bold text-slate-800">{isEditingQuote ? "Edit Estimate" : "New Estimate"}</h2></div>

@@ -38,7 +38,7 @@ export default async function ViewEstimatePage({
       {/* Action Bar */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/estimates" className="text-slate-400 hover:text-slate-600 transition">
+          <Link href="/estimate" className="text-slate-400 hover:text-slate-600 transition">
             <ArrowLeft size={24} />
           </Link>
           <h2 className="text-3xl font-bold text-slate-800">Estimate #{estimate.estimate_number}</h2>
@@ -55,7 +55,7 @@ export default async function ViewEstimatePage({
         
         <div className="flex gap-3">
           <Link 
-            href={`/estimates/${estimate.id}/print`} 
+            href={`/estimate/${estimate.id}/print`} 
             target="_blank"
             className="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm"
           >
@@ -89,7 +89,7 @@ export default async function ViewEstimatePage({
           <div className="text-right">
             <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-widest mb-4">Estimate</h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div className="text-slate-500 font-medium">Quote No:</div>
+              <div className="text-slate-500 font-medium">Estimate No:</div>
               <div className="font-bold text-slate-900">{estimate.estimate_number}</div>
               <div className="text-slate-500 font-medium">Date:</div>
               <div className="font-bold text-slate-900">{format(new Date(estimate.created_at), 'MMMM d, yyyy')}</div>

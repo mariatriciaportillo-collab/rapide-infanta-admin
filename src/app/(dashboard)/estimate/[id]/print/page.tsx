@@ -76,7 +76,7 @@ export default function EstimatePrintPage({
         <div className="text-right">
           <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-widest mb-2">Estimate</h2>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-            <div className="text-slate-500 font-medium">Quote No:</div>
+            <div className="text-slate-500 font-medium">Estimate No:</div>
             <div className="font-bold text-slate-900">{estimate.estimate_number}</div>
             <div className="text-slate-500 font-medium">Date:</div>
             <div className="font-bold text-slate-900">{format(new Date(estimate.created_at), 'MMM d, yyyy')}</div>

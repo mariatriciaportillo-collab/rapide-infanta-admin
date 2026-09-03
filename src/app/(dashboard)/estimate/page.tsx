@@ -77,7 +77,7 @@ export default async function EstimatesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right space-x-3">
-                    <Link href={`/estimates/${q.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs uppercase tracking-wider">
+                    <Link href={`/estimate/${q.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs uppercase tracking-wider">
                       View
                     </Link>
                       {(() => {
@@ -88,7 +88,7 @@ export default async function EstimatesPage() {
                         const canEdit = !hasDownpayment && !isConverted && !isCompleted && status !== 'REJECTED';
                         
                         return canEdit ? (
-                          <Link href={`/estimates/${q.id}/edit`} className="text-amber-600 hover:text-amber-800 font-medium text-xs uppercase tracking-wider">
+                          <Link href={`/estimate/${q.id}/edit`} className="text-amber-600 hover:text-amber-800 font-medium text-xs uppercase tracking-wider">
                             Edit
                           </Link>
                         ) : (
@@ -97,7 +97,7 @@ export default async function EstimatesPage() {
                           </span>
                         );
                       })()}
-                      <Link href={`/estimates/${q.id}/print`} className="text-slate-600 hover:text-slate-800 font-medium text-xs uppercase tracking-wider">
+                      <Link href={`/estimate/${q.id}/print`} className="text-slate-600 hover:text-slate-800 font-medium text-xs uppercase tracking-wider">
                       Print
                     </Link>
                   </td>

@@ -38,7 +38,7 @@ export default async function EditEstimatePage({
               ? "This estimate cannot be edited because it has already been converted."
               : "This estimate is locked and cannot be edited."}
         </p>
-        <a href={`/estimates/${id}`} className="bg-slate-800 text-white px-6 py-2 rounded-md hover:bg-slate-700 font-medium">
+        <a href={`/estimate/${id}`} className="bg-slate-800 text-white px-6 py-2 rounded-md hover:bg-slate-700 font-medium">
           Return to View
         </a>
       </div>
