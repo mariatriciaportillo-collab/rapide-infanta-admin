@@ -70,7 +70,7 @@ export default async function ViewQuotationPage({
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
         
         {/* Document Header (similar to print layout but styled for screen) */}
-        <div className="p-6 border-b border-slate-200 bg-slate-50 flex justify-between items-start">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-start">
           <div>
             <div className="flex items-end gap-3 mb-2">
               <img src="/rapide-wordmark-clean.png" alt="Rapidé" className="h-10 w-auto object-contain" />
@@ -98,81 +98,46 @@ export default async function ViewQuotationPage({
           </div>
         </div>
 
-        {/* Customer & Vehicle Info */}
-        <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
-          
-          {/* Bill To */}
-          <div className="p-6">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              {isCompany ? <Building2 size={14} /> : <UserIcon size={14} />}
-              Quoted To
-            </h3>
-            <div className="space-y-1 text-slate-800">
-              <div className="font-bold text-lg">{quote.customer_name}</div>
-              
-              {isCompany && quote.contact_person && (
-                <div className="text-sm text-slate-600">Attn: {quote.contact_person}</div>
-              )}
-              
-              {quote.customer_telephone && (
-                <div className="text-sm text-slate-600 pt-1">{quote.customer_telephone}</div>
-              )}
-              
-              {quote.customer_email && <div className="text-sm text-slate-600">{quote.customer_email}</div>}
-              {quote.customer_address && <div className="text-sm text-slate-600 pt-1">{quote.customer_address}</div>}
-              
-              {isCompany && quote.customer_tin && (
-                <div className="text-sm text-slate-600 pt-2 font-medium">TIN: {quote.customer_tin}</div>
-              )}
+        {/* Compact Customer & Vehicle Info */}
+        <div className="bg-white border-b border-slate-200">
+          <div className="grid grid-cols-2 divide-x divide-slate-100 p-4">
+            {/* Quoted To */}
+            <div>
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                {isCompany ? <Building2 size={12} /> : <UserIcon size={12} />}
+                Quoted To
+              </h3>
+              <div className="text-slate-800 text-sm leading-snug">
+                <div className="font-bold text-base">{quote.customer_name}</div>
+                {quote.customer_telephone && <div className="text-slate-600 mt-0.5">{quote.customer_telephone}</div>}
+                {isCompany && quote.contact_person && <div className="text-slate-500 text-xs mt-0.5">Attn: {quote.contact_person}</div>}
+              </div>
+            </div>
+            
+            {/* Vehicle Details */}
+            <div className="pl-4">
+              <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Car size={12} />
+                Vehicle Details
+              </h3>
+              <div className="text-slate-800 text-sm space-y-1">
+                <div><span className="text-slate-500 mr-2 w-10 inline-block">Plate:</span><span className="font-medium uppercase">{quote.vehicle_plate}</span></div>
+                <div><span className="text-slate-500 mr-2 w-10 inline-block">Model:</span><span className="font-medium">{quote.vehicle_make} {quote.vehicle_model}</span></div>
+                <div><span className="text-slate-500 mr-2 w-10 inline-block">Year:</span><span className="font-medium">{quote.vehicle_year || '-'}</span></div>
+              </div>
             </div>
           </div>
           
-          {/* Vehicle */}
-          <div className="p-6">
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Car size={14} />
-              Vehicle Details
-            </h3>
-            <div className="space-y-2 text-slate-800">
-              <div className="flex justify-between">
-                <span className="text-slate-500 text-sm">Plate Number:</span>
-                <span className="font-bold uppercase bg-slate-100 px-2 rounded">{quote.vehicle_plate}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 text-sm">Make / Model:</span>
-                <span className="font-medium">{quote.vehicle_make} {quote.vehicle_model}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 text-sm">Year:</span>
-                <span className="font-medium">{quote.vehicle_year || '-'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500 text-sm">Mileage:</span>
-                <span className="font-medium">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : '-'}</span>
-              </div>
-            </div>
+          {/* Service Details Strip */}
+          <div className="bg-slate-50 border-t border-slate-100 px-4 py-2 flex gap-4 text-sm">
+            <div><span className="text-slate-500 font-medium mr-2">Service Advisor:</span><span className="font-bold text-slate-800">{quote.service_advisor_name || '-'}</span></div>
+            <div><span className="text-slate-500 font-medium mr-2">Mechanic:</span><span className="font-bold text-slate-800">{quote.mechanic_name || '-'}</span></div>
+            <div><span className="text-slate-500 font-medium mr-2">Mileage:</span><span className="font-bold text-slate-800">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : '-'}</span></div>
           </div>
-
-        {/* Service Details */}
-        <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap gap-6 text-sm">
-          <div>
-            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Service Advisor</span>
-            <span className="font-semibold text-slate-800">{quote.service_advisor_name || 'Unassigned'}</span>
-          </div>
-          <div>
-            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Mechanic</span>
-            <span className="font-semibold text-slate-800">{quote.mechanic_name || 'Unassigned'}</span>
-          </div>
-          <div>
-            <span className="block text-slate-500 font-medium mb-1 uppercase tracking-wider text-xs">Mileage</span>
-            <span className="font-semibold text-slate-800">{quote.mileage_km ? `${quote.mileage_km.toLocaleString()} km` : 'N/A'}</span>
-          </div>
-        </div>
-
         </div>
 
         {/* Line Items Table */}
-        <div className="p-6 pb-4 space-y-6">
+        <div className="p-4 pb-4 space-y-6">
           {(() => {
             const sortedItems = [...items].sort((a: any, b: any) => a.sort_order - b.sort_order);
             const isPkg = (i: any) => i.item_type === 'PACKAGE' || (!i.parent_item_id && i.package_id);
@@ -341,7 +306,7 @@ export default async function ViewQuotationPage({
         </div>
 
         {/* Footer Info */}
-        <div className="bg-slate-50 p-6 border-t border-slate-200 text-sm flex justify-between gap-12">
+        <div className="bg-slate-50 p-4 border-t border-slate-200 text-sm flex justify-between gap-12">
           <div className="flex-1 space-y-4">
             <div>
               <h4 className="font-bold text-slate-700 uppercase text-xs tracking-wider mb-1">Notes / Remarks</h4>
