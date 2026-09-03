@@ -63,7 +63,7 @@ export default async function ViewQuotationPage({
           </span>
         </div>
         
-        <QuotationActionBar quotationId={quote.id} initialStatus={quote.status} initialEstimateId={est?.id} />
+        <QuotationActionBar quote={quote} initialEstimateId={est?.id} />
       </div>
 
       {/* Main Document View */}

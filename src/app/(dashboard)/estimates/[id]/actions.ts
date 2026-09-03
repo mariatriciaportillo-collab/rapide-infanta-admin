@@ -77,8 +77,9 @@ export async function createInvoiceFromEstimate(estimateId: string) {
       subtotal: estimate.subtotal,
       discount_amount: estimate.discount_amount,
       grand_total: estimate.grand_total,
-      amount_paid: 0,
-      balance_due: estimate.grand_total,
+    downpayment_applied: estimate.downpayment_carried || 0.00,
+      amount_paid: estimate.downpayment_carried || 0.00,
+      balance_due: Number(estimate.grand_total) - Number(estimate.downpayment_carried || 0),
       inventory_deducted: false,
       prepared_by: estimate.prepared_by,
       notes: estimate.notes

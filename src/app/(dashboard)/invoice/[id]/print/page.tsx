@@ -272,6 +272,12 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
               <span>Grand Total</span>
               <span>₱{Number(inv.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
             </div>
+            {Number(inv.downpayment_applied) > 0 && (
+              <div className="flex justify-between text-slate-600 font-medium text-sm">
+                <span>Less: Downpayment</span>
+                <span>₱{Number(inv.downpayment_applied).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              </div>
+            )}
             <div className="flex justify-between text-slate-600 font-bold text-sm">
               <span>Total Paid</span>
               <span>₱{Number(inv.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>

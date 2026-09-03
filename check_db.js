@@ -1,23 +1,18 @@
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
 require('dotenv').config({ path: '.env.local' });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-// For admin we might need service key but let's try anon or see if we can just query the rest API
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 async function check() {
-  const tables = ['quick_sales', 'quick_sale_items', 'invoices', 'invoice_items', 'payments', 'payment_allocations'];
+  const { data: q, error: eq } = await supabase.from('quotations').select('*').limit(1);
+  console.log("Quotations cols:", q ? Object.keys(q[0] || {}) : eq);
+
+  const { data: p, error: ep } = await supabase.from('payments').select('*').limit(1);
+  console.log("Payments cols:", p ? Object.keys(p[0] || {}) : ep);
+
+  const { data: e, error: ee } = await supabase.from('estimates').select('*').limit(1);
+  console.log("Estimates cols:", e ? Object.keys(e[0] || {}) : ee);
   
-  for (const t of tables) {
-    const { data, error } = await supabase.from(t).select('*').limit(1);
-    if (error) {
-      console.log(`Table ${t} check error:`, error.message);
-    } else {
-      console.log(`Table ${t} exists.`);
-    }
-  }
+  const { data: i, error: ei } = await supabase.from('invoices').select('*').limit(1);
+  console.log("Invoices cols:", i ? Object.keys(i[0] || {}) : ei);
 }
 check();
