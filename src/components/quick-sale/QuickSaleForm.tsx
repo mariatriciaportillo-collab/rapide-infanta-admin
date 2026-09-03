@@ -89,7 +89,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       let query = supabase.from('customers').select('*').limit(20)
       
       if (searchTerm.length > 0) {
-        query = query.or(`name.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,legacy_name.ilike.%${searchTerm}%`)
+        query = query.or(`name.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,contact_first_name.ilike.%${searchTerm}%,contact_last_name.ilike.%${searchTerm}%,mobile.ilike.%${searchTerm}%`)
       }
       
       const { data } = await query

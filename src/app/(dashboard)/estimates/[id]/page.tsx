@@ -31,6 +31,7 @@ export default async function ViewEstimatePage({
 
   // Sort items by sort_order
   const items = estimate.estimate_items.sort((a: any, b: any) => a.sort_order - b.sort_order)
+  const normalizedStatus = (estimate.status || 'DRAFT').toUpperCase()
   
   const isCompany = estimate.customer_type === 'company'
 
@@ -45,7 +46,7 @@ export default async function ViewEstimatePage({
           
           <div className="flex items-center gap-3">
             <h2 className="text-3xl font-bold text-slate-800">Estimate #{estimate.estimate_number}</h2>
-            {(!estimate.status || (estimate.status !== "JOB STARTED" && estimate.status !== "APPROVED")) && (
+            {(normalizedStatus !== 'JOB STARTED' && normalizedStatus !== 'APPROVED' && normalizedStatus !== 'COMPLETED') && (
               <Link href={`/estimates/${estimate.id}/edit`} className="text-slate-400 hover:text-blue-600 transition" title="Edit">
                 <Edit size={20} />
               </Link>
@@ -54,15 +55,16 @@ export default async function ViewEstimatePage({
           
           {/* Status Badge */}
           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
-            ${estimate.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
-              estimate.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 
+            ${normalizedStatus === 'APPROVED' || normalizedStatus === 'JOB STARTED' ? 'bg-green-100 text-green-700' : 
+              normalizedStatus === 'COMPLETED' ? 'bg-blue-100 text-blue-700' : 
+              normalizedStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 
               'bg-yellow-100 text-yellow-700'}`}
           >
-            {estimate.status}
+            {normalizedStatus}
           </span>
         </div>
         
-        <EstimateActionBar estimateId={estimate.id} initialStatus={estimate.status || ''} />
+        <EstimateActionBar estimateId={estimate.id} initialStatus={normalizedStatus} />
       </div>
 
       {/* Main Document View */}
