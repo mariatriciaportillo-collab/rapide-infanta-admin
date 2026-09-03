@@ -119,7 +119,7 @@ export default function QuotationPrintPage({
           <div className="space-y-1 text-slate-800 text-sm">
             <div className="flex justify-between">
               <span className="text-slate-500">Plate:</span>
-              <span className="font-bold uppercase">{quote.vehicle_plate}</span>
+              <span className="font-medium uppercase">{quote.vehicle_plate}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Model:</span>

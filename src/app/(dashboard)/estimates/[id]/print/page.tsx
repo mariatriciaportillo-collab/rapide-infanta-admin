@@ -106,7 +106,7 @@ export default function EstimatePrintPage({
           <div className="text-slate-800 text-sm space-y-1">
             <div className="flex gap-2 items-center">
               <span className="text-slate-500 font-medium w-12">Plate:</span>
-              <span className="font-bold uppercase bg-slate-100 border border-slate-200 px-1 rounded text-xs">{estimate.vehicle_plate}</span>
+              <span className="font-medium uppercase">{estimate.vehicle_plate}</span>
             </div>
             <div className="flex gap-2">
               <span className="text-slate-500 font-medium w-12">Model:</span>
@@ -294,8 +294,8 @@ export default function EstimatePrintPage({
       </div>
 
       {/* Legal and Signatures */}
-      <div className="mt-6 pt-4 border-t-2 border-slate-800 grid grid-cols-3 gap-6 page-break-inside-avoid pb-8">
-        {/* PLEASE READ Notice */}
+      <div className="mt-4 px-8 grid grid-cols-2 gap-8 page-break-inside-avoid pb-6">
+        {/* Left Column: PLEASE READ Notice */}
         <div className="col-span-1">
           <h3 className="font-bold text-slate-800 text-[10px] mb-1 uppercase tracking-wider">PLEASE READ</h3>
           <p className="text-[9px] text-slate-600 text-justify leading-snug">
@@ -303,18 +303,22 @@ export default function EstimatePrintPage({
           </p>
         </div>
 
-        {/* PREPARED BY */}
-        <div className="col-span-1 flex flex-col justify-end text-center pb-2">
-          <div className="border-b border-slate-800 mb-1 h-6"></div>
-          <p className="text-[10px] font-bold text-slate-800 uppercase">{estimate.prepared_by}</p>
-          <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">PREPARED BY</p>
-        </div>
+        {/* Right Column: Signatures */}
+        <div className="col-span-1 flex flex-col justify-between gap-6">
+          {/* Upper Right: PREPARED BY */}
+          <div className="flex flex-col text-center w-3/4 ml-auto">
+            <div className="border-b border-slate-800 mb-1 h-6"></div>
+            <p className="text-[10px] font-bold text-slate-800 uppercase truncate px-1">{estimate.prepared_by}</p>
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">PREPARED BY</p>
+          </div>
 
-        {/* CUSTOMER SIGNATURE */}
-        <div className="col-span-1 flex flex-col justify-end text-center pb-2">
-          <div className="border-b border-slate-800 mb-1 h-6"></div>
-          <p className="text-[10px] font-bold text-slate-800 uppercase">CUSTOMER'S SIGNATURE</p>
-          <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">CUSTOMER SIGNATURE & DATE/TIME</p>
+          {/* Lower Right: CUSTOMER SIGNATURE */}
+          <div className="flex flex-col text-center w-3/4 ml-auto">
+            <div className="border-b border-slate-800 mb-1 h-6"></div>
+            <p className="text-[10px] font-bold text-slate-800 uppercase">&nbsp;</p>
+            <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">CUSTOMER'S SIGNATURE</p>
+            <p className="text-[8px] text-slate-400 mt-0.5">Customer Signature & Date/Time</p>
+          </div>
         </div>
       </div>
     </div>
