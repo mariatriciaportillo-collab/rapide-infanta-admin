@@ -5,6 +5,5 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 async function test() {
   const { data, error } = await supabase.from('part_labor_rules').select('*').limit(1);
   console.log("Error:", error);
-  console.log("Rules:", data);
 }
 test();
