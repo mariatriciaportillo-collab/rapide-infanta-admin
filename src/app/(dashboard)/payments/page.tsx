@@ -9,7 +9,7 @@ import { recordDownpayment } from '@/app/(dashboard)/quotations/[id]/actions'
 
 export default function PaymentsList() {
   const supabase = createClient()
-  const [tab, setTab] = useState('downpayment') // 'downpayment' or 'history'
+  const [tab, setTab] = useState('history') // 'downpayment' or 'history'
   const [downpayments, setDownpayments] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,10 +28,10 @@ export default function PaymentsList() {
     // 1. Fetch pending Quotation downpayments
     const { data: qData } = await supabase
       .from('quotations')
-      .select(`id, quotation_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number)`)
+      .select(`id, quote_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number)`)
       .eq('status', 'APPROVED')
       .eq('downpayment_required', true)
-      .neq('downpayment_status', 'PAID')
+      .or('downpayment_status.neq.PAID,downpayment_status.is.null')
       .order('created_at', { ascending: false })
       
     setDownpayments(qData || [])
@@ -44,7 +44,7 @@ export default function PaymentsList() {
         customers:customer_id(name, first_name, last_name, customer_type),
         invoices:invoice_id(invoice_number),
         quick_sales:quick_sale_id(quick_sale_number),
-        quotations:quotation_id(quotation_number)
+        quotations:quotation_id(quote_number)
       `)
       .order('created_at', { ascending: false })
       .limit(50)
@@ -98,16 +98,16 @@ export default function PaymentsList() {
 
       <div className="flex gap-4 mb-6 border-b border-slate-200">
         <button 
-          onClick={() => setTab('downpayment')}
-          className={`pb-2 px-2 font-medium text-sm transition ${tab === 'downpayment' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
-        >
-          Downpayment
-        </button>
-        <button 
           onClick={() => setTab('history')}
           className={`pb-2 px-2 font-medium text-sm transition ${tab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
         >
           Payment History
+        </button>
+        <button 
+          onClick={() => setTab('downpayment')}
+          className={`pb-2 px-2 font-medium text-sm transition ${tab === 'downpayment' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+        >
+          Downpayment
         </button>
       </div>
 
@@ -135,7 +135,7 @@ export default function PaymentsList() {
                   downpayments.map(q => (
                     <tr key={q.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
-                        <Link href={`/quotations/${q.id}`}>{q.quotation_number}</Link>
+                        <Link href={`/quotations/${q.id}`}>{q.quote_number}</Link>
                       </td>
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(q.customers)}</td>
                       <td className="px-4 py-3 text-slate-600">
@@ -165,33 +165,26 @@ export default function PaymentsList() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                <tr>
+                                <tr>
                   <th className="px-4 py-3 font-semibold">Receipt No.</th>
                   <th className="px-4 py-3 font-semibold">Date</th>
                   <th className="px-4 py-3 font-semibold">Customer</th>
                   <th className="px-4 py-3 font-semibold">Ref. Document</th>
                   <th className="px-4 py-3 font-semibold">Method</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount Paid</th>
+                  <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 ) : history.length === 0 ? (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No payments found</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No payments found</td></tr>
                 ) : (
                   history.map(p => (
                     <tr key={p.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
-                        {p.invoices ? (
-                          <Link href={`/invoice/${p.invoice_id}/receipt`} target="_blank">{p.receipt_number}</Link>
-                        ) : p.quick_sales ? (
-                          <Link href={`/quick-sale/${p.quick_sale_id}/receipt`} target="_blank">{p.receipt_number}</Link>
-                        ) : p.quotation_id ? (
-                          <Link href={`/quotations/${p.quotation_id}`} target="_blank">{p.receipt_number}</Link>
-                        ) : (
-                          <span>{p.receipt_number}</span>
-                        )}
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {p.receipt_number}
                       </td>
                       <td className="px-4 py-3 text-slate-600">{format(new Date(p.created_at), 'MMM d, yyyy')}</td>
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(p.customers)}</td>
@@ -201,7 +194,7 @@ export default function PaymentsList() {
                         ) : p.quick_sales ? (
                           <Link href={`/quick-sale/${p.quick_sale_id}`} className="hover:underline">{p.quick_sales.quick_sale_number}</Link>
                         ) : p.quotations ? (
-                          <Link href={`/quotations/${p.quotation_id}`} className="hover:underline">{p.quotations.quotation_number}</Link>
+                          <Link href={`/quotations/${p.quotation_id}`} className="hover:underline">{p.quotations.quote_number}</Link>
                         ) : '-'}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-xs">
@@ -210,6 +203,15 @@ export default function PaymentsList() {
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-emerald-600">
                         ₱{Number(p.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                      </td>
+                      <td className="px-4 py-3 text-center align-middle">
+                        {p.invoices ? (
+                          <Link href={`/invoice/${p.invoice_id}/receipt`} target="_blank" className="text-blue-600 hover:underline text-xs font-medium">Print</Link>
+                        ) : p.quick_sales ? (
+                          <Link href={`/quick-sale/${p.quick_sale_id}/receipt`} target="_blank" className="text-blue-600 hover:underline text-xs font-medium">Print</Link>
+                        ) : p.quotation_id ? (
+                          <Link href={`/quotations/${p.quotation_id}/receipt`} target="_blank" className="text-blue-600 hover:underline text-xs font-medium">Print</Link>
+                        ) : null}
                       </td>
                     </tr>
                   ))
@@ -233,7 +235,7 @@ export default function PaymentsList() {
             
             <div className="p-6 space-y-4">
               <div className="text-sm space-y-1 mb-4">
-                <div className="flex justify-between"><span className="text-slate-500">Quotation No:</span> <span className="font-medium text-slate-900">{selectedQuote.quotation_number}</span></div>
+                <div className="flex justify-between"><span className="text-slate-500">Quotation No:</span> <span className="font-medium text-slate-900">{selectedQuote.quote_number}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Customer:</span> <span className="font-medium text-slate-900">{formatCustomerName(selectedQuote.customers)}</span></div>
                 <div className="flex justify-between"><span className="text-slate-500">Quotation Total:</span> <span className="font-medium text-slate-900">₱{Number(selectedQuote.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span></div>
               </div>

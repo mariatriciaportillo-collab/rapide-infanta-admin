@@ -191,7 +191,7 @@ export async function recordDownpayment(quotationId: string, amount: number, met
     received_by: receivedBy,
     payment_type: 'DOWNPAYMENT',
     source_type: 'QUOTATION',
-    source_reference: quote.quotation_number,
+    source_reference: quote.quote_number,
     quotation_id: quote.id,
     quotation_total: quote.grand_total,
     required_downpayment: quote.required_downpayment_amount

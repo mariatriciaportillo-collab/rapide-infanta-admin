@@ -37,7 +37,7 @@ export default async function QuotationReceiptPage({ params }: { params: Promise
 
   return (
     <PaymentReceipt 
-      documentNo={quote.quotation_number}
+      documentNo={quote.quote_number}
       documentType="Quotation"
       customerName={customerName}
       vehicleInfo={vehicleInfo}
