@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -376,11 +377,11 @@ export function PartsLookupClient({ makes, models }: Props) {
                           </span>
                         </td>
                         <td className="py-3 px-4 text-center">
-                          {item.source === 'Manual Reference' && item.raw_id && (
-                            <Link href={`/parts-lookup/${item.raw_id}/edit`} className="inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition" title="Edit Manual Reference">
-                              <Edit size={16} />
-                            </Link>
-                          )}
+                          <TableActions align="center">
+                            {item.source === 'Manual Reference' && item.raw_id && (
+                              <TableAction icon={Edit} label="Edit Manual Reference" href={`/parts-lookup/${item.raw_id}/edit`} />
+                            )}
+                          </TableActions>
                         </td>
                       </tr>
                     ))}

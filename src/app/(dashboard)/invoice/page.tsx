@@ -1,9 +1,10 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { Plus, Search, FileText, Printer } from 'lucide-react'
+import { Plus, Search, FileText, Printer, Eye, Banknote } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function InvoiceList() {
@@ -84,9 +85,9 @@ export default function InvoiceList() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center align-middle">
-                      <Link href={`/invoice/${s.id}/print`} target="_blank" className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Print Billing Statement">
-                        <Printer size={18} />
-                      </Link>
+                      <TableActions align="center">
+                        <TableAction icon={Printer} label="Print Billing Statement" href={`/invoice/${s.id}/print`} />
+                      </TableActions>
                     </td>
                   </tr>
                 ))

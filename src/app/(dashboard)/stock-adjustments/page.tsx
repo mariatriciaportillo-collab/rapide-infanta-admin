@@ -1,9 +1,10 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Search, Settings, RefreshCcw, X } from 'lucide-react'
+import { Plus, Search, Settings, RefreshCcw, X, Eye } from 'lucide-react'
 import { format } from 'date-fns'
 import { createPortal } from 'react-dom'
 import { Pagination } from '@/components/ui/Pagination'

@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
@@ -126,14 +127,10 @@ export default function PartLaborRulesPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-3">
-                        <Link href={`/part-labor-rules/${rule.id}/edit`} className="text-slate-400 hover:text-blue-600" title="Edit">
-                          <Edit2 size={16} />
-                        </Link>
-                        <button onClick={() => handleDelete(rule.id, rule.rule_name)} className="text-slate-400 hover:text-red-600" title="Delete">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      <TableActions align="center">
+                        <TableAction icon={Edit2} label="Edit Rule" href={`/part-labor-rules/${rule.id}/edit`} />
+                        <TableAction icon={Trash2} label="Delete Rule" onClick={() => handleDelete(rule.id, rule.rule_name)} variant="destructive" />
+                      </TableActions>
                     </td>
                   </tr>
                 ))

@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'

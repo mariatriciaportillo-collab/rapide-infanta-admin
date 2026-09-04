@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -370,14 +371,15 @@ export default function NewPurchaseOrderPage() {
                         ₱{lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <button 
-                          type="button"
-                          onClick={() => handleRemoveItem(item.id)}
-                          disabled={items.length === 1}
-                          className={`text-slate-400 hover:text-red-500 transition ${items.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        <TableActions align="center">
+                          <TableAction 
+                            icon={Trash2} 
+                            label="Remove Item" 
+                            onClick={() => handleRemoveItem(item.id)} 
+                            disabled={items.length === 1} 
+                            variant="destructive" 
+                          />
+                        </TableActions>
                       </td>
                     </tr>
                   )

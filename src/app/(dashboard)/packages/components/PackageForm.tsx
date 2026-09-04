@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -500,9 +501,9 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                             ₱{amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition" title="Delete">
-                              <Trash2 size={16} />
-                            </button>
+                            <TableActions align="center">
+                              <TableAction icon={Trash2} label="Remove Item" onClick={() => removeItem(item.id)} variant="destructive" />
+                            </TableActions>
                           </td>
                         </tr>
                       )
@@ -677,9 +678,9 @@ export default function PackageForm({ initialData = null }: { initialData?: any 
                             ₱{amount.toLocaleString(undefined, {minimumFractionDigits: 2})}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <button type="button" onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-1.5 hover:bg-red-50 rounded transition" title="Delete">
-                              <Trash2 size={16} />
-                            </button>
+                            <TableActions align="center">
+                              <TableAction icon={Trash2} label="Remove Item" onClick={() => removeItem(item.id)} variant="destructive" />
+                            </TableActions>
                           </td>
                         </tr>
                       )

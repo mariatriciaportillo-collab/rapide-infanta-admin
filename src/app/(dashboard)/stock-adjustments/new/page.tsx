@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -213,13 +214,12 @@ export default function NewStockAdjustmentPage() {
                     <div className="flex justify-between items-center mb-3">
                       <span className="text-xs font-bold text-slate-400">LINE {index + 1}</span>
                       {items.length > 1 && (
-                        <button 
-                          type="button" 
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-red-400 hover:text-red-600 transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <TableAction 
+                            icon={Trash2} 
+                            label="Remove Item" 
+                            onClick={() => handleRemoveItem(item.id)} 
+                            variant="destructive" 
+                          />
                       )}
                     </div>
 

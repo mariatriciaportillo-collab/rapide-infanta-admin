@@ -1,10 +1,11 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { X, Printer } from 'lucide-react'
+import { X, Printer, Banknote } from 'lucide-react'
 import { recordDownpayment } from '@/app/(dashboard)/quotations/[id]/actions'
 
 export default function PaymentsList() {
@@ -166,15 +167,13 @@ export default function PaymentsList() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? (
-                          <Link href={`/quotations/${q.id}/receipt`} target="_blank" className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Print Downpayment Receipt">
-                            <Printer size={18} />
-                          </Link>
-                        ) : (
-                          <button onClick={() => handleOpenModal(q)} className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-xs">
-                            Record Downpayment
-                          </button>
-                        )}
+                        <TableActions align="center">
+                          {(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? (
+                            <TableAction icon={Printer} label="Print Downpayment Receipt" href={`/quotations/${q.id}/receipt`} />
+                          ) : (
+                            <TableAction icon={Banknote} label="Record Downpayment" onClick={() => handleOpenModal(q)} variant="success" />
+                          )}
+                        </TableActions>
                       </td>
                     </tr>
                   ))

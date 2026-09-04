@@ -1,9 +1,10 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Search, Filter, Download, Printer, ClipboardList, CheckCircle2, AlertCircle, XCircle } from 'lucide-react'
+import { Search, Filter, Download, Printer, ClipboardList, CheckCircle2, AlertCircle, XCircle, Eye } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
 
 const PAGE_SIZE = 25

@@ -1,8 +1,9 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Save, Plus, Trash2 } from 'lucide-react'
+import { Save, Plus, Trash2, Edit2 } from 'lucide-react'
 
 export default function ServiceIntervalsPage() {
   const supabase = createClient()

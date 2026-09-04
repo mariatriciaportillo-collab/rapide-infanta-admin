@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -257,42 +258,11 @@ export default function PackagesListPage() {
                             {pkg.package_code && <div className="text-xs font-mono text-slate-500 mt-0.5">{pkg.package_code}</div>}
                           </td>
                           <td className="px-6 py-4 text-slate-700 font-medium">{pkg.category || '—'}</td>
-                          <td className="px-6 py-4 text-right">
-                            <button 
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); setSelectedPkg(pkg); }}
-                              className="font-bold text-blue-600 hover:text-blue-800 hover:underline px-2 py-1"
-                            >
-                              {numItems}
-                            </button>
-                          </td>
-
-                          <td className="px-6 py-4 text-right text-slate-500 font-medium">
-                            <span className="font-bold text-slate-800">₱{Number(pkg.package_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </td>
                           <td className="px-6 py-4">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
-                              pkg.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
-                            }`}>
-                              {pkg.is_active ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
-                              <Link 
-                                href={`/packages/${pkg.id}`}
-                                className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition"
-                              >
-                                <Eye size={16} /> View
-                              </Link>
-                              <Link 
-                                href={`/packages/${pkg.id}/edit`}
-                                className="text-sm font-bold text-slate-600 hover:text-slate-800 flex items-center gap-1.5 hover:bg-slate-100 px-3 py-1.5 rounded-md transition"
-                              >
-                                <Edit size={16} /> Edit
-                              </Link>
-                            </div>
-                          </td>
+                        <TableActions align="right">
+                          <TableAction icon={Edit} label="Edit Package" href={`/packages/${pkg.id}/edit`} />
+                        </TableActions>
+                      </td>
                         </tr>
                       )
                     })

@@ -1,4 +1,5 @@
 'use client'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -171,14 +172,11 @@ export default function SuppliersListPage() {
                             {supplier.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <Link 
-                            href={`/suppliers/${supplier.id}/edit`}
-                            className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-bold bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition"
-                          >
-                            <Edit size={16} /> Edit
-                          </Link>
-                        </td>
+                        <td className="px-6 py-4">
+                        <TableActions align="right">
+                          <TableAction icon={Edit} label="Edit Supplier" href={`/suppliers/${supplier.id}/edit`} />
+                        </TableActions>
+                      </td>
                       </tr>
                     ))
                   )}
