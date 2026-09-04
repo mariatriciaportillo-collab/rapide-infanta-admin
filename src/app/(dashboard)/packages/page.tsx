@@ -1,119 +1,13 @@
 'use client'
-import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 import React, { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
-import { Plus, Search, Filter, Edit, Package, Eye, X, Loader2 } from 'lucide-react'
+import { Plus, Search, Filter, Edit, Package, Loader2 } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
-import { createPortal } from 'react-dom'
+import { TableActions, TableAction } from '@/components/ui/TableActions'
 
 const PAGE_SIZE = 25
-
-// Simple Modal for Items
-function ItemsModal({ pkg, onClose }: { pkg: any, onClose: () => void }) {
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-  if (!mounted) return null
-
-
-
-  const items = pkg.package_items || []
-  
-  const laborItems = items.filter((i: any) => i.item_type === 'LABOR')
-  const partItems = items.filter((i: any) => i.item_type === 'PART')
-  
-  let packageTotal = 0;
-  
-  items.forEach((item: any) => {
-    const qty = Number(item.quantity) || 1
-    const price = Number(item.price) || 0
-    packageTotal += (price * qty)
-  })
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[85vh]">
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
-          <div>
-            <h3 className="font-bold text-slate-800 text-lg">Items in {pkg.name}</h3>
-            {pkg.package_code && <p className="text-sm text-slate-500 font-mono mt-0.5">{pkg.package_code}</p>}
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition">
-            <X size={20} />
-          </button>
-        </div>
-        
-        <div className="overflow-y-auto p-0 flex-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-200">
-                <th className="px-6 py-3 font-bold">Type</th>
-                <th className="px-6 py-3 font-bold">Requirement</th>
-                <th className="px-6 py-3 font-bold text-right">Price</th>
-                <th className="px-6 py-3 font-bold text-right">Qty</th>
-                <th className="px-6 py-3 font-bold text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {laborItems.map((item: any, i: number) => {
-                const qty = Number(item.quantity) || 1
-                const price = Number(item.price) || 0
-                return (
-                  <tr key={`labor-${i}`} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 text-sm text-indigo-600 font-bold">Labor</td>
-                    <td className="px-6 py-3 text-sm text-slate-800 font-medium">{item.labor_services?.name || 'Unknown Item'}</td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-500">₱{price.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-600 font-medium">{qty}</td>
-                    <td className="px-6 py-3 text-sm text-right font-bold text-slate-800">₱{(price * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                  </tr>
-                )
-              })}
-              
-              {partItems.map((item: any, i: number) => {
-                const qty = Number(item.quantity) || 1
-                const price = Number(item.price) || 0
-                return (
-                  <tr key={`part-${i}`} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 text-sm font-bold">
-                      {item.is_category ? (
-                        <span className="text-amber-600">Part Category</span>
-                      ) : (
-                        <span className="text-emerald-600">Fixed Part</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-3 text-sm text-slate-800 font-medium">
-                      {item.is_category ? item.part_categories?.name || 'Unknown Category' : item.parts?.name || 'Unknown Item'}
-                    </td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-500">₱{price.toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-600 font-medium">{qty}</td>
-                    <td className="px-6 py-3 text-sm text-right font-bold text-slate-800">₱{(price * qty).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-                  </tr>
-                )
-              })}
-
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500">No items found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col items-end shrink-0">
-          <div className="flex justify-between w-64 text-slate-900 font-black text-xl">
-            <span>Total:</span>
-            <span>₱{Number(pkg.package_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body
-  )
-}
-
-
 
 export default function PackagesListPage() {
   const supabase = createClient()
@@ -122,7 +16,6 @@ export default function PackagesListPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterActive, setFilterActive] = useState('all')
-  const [selectedPkg, setSelectedPkg] = useState<any | null>(null)
 
   // Pagination State
   const [page, setPage] = useState(1)
@@ -132,7 +25,7 @@ export default function PackagesListPage() {
     setIsLoading(true)
     let query = supabase
       .from('packages')
-      .select('*, package_items(item_type, is_category, quantity, price, labor_services(rate, name), parts(selling_price, name, part_number), part_categories(name))', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .order('name')
       
     if (filterActive === 'active') query = query.eq('is_active', true)
@@ -224,45 +117,55 @@ export default function PackagesListPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium">PACKAGE NAME</th>
-                    <th className="px-6 py-3 font-medium">CATEGORY</th>
-                    <th className="px-6 py-3 font-medium text-right">ITEMS</th>
-                    <th className="px-6 py-3 font-medium text-right">PACKAGE PRICE</th>
-                    <th className="px-6 py-3 font-medium">STATUS</th>
-                    <th className="px-6 py-3 font-medium">ACTIONS</th>
+                    <th className="px-6 py-3 font-medium w-2/5">PACKAGE NAME</th>
+                    <th className="px-6 py-3 font-medium w-1/5">CATEGORY</th>
+                    <th className="px-6 py-3 font-medium text-right w-1/5">PACKAGE PRICE</th>
+                    <th className="px-6 py-3 font-medium w-1/5">STATUS</th>
+                    <th className="px-6 py-3 font-medium text-center w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {packages.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                      <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
                         <div className="flex justify-center mb-3"><Package className="text-slate-300" size={40} /></div>
                         <p className="text-base font-medium">No packages found.</p>
                       </td>
                     </tr>
                   ) : (
                     packages.map(pkg => {
-                      const items = pkg.package_items || []
-                      const numItems = items.length
-                      
-
-
-                      const pkgPrice = Number(pkg.package_price) || 0
-
-
+                      const pkgPrice = pkg.package_price !== null && pkg.package_price !== undefined 
+                        ? Number(pkg.package_price) 
+                        : null;
 
                       return (
                         <tr key={pkg.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
                           <td className="px-6 py-4">
-                            <div className="font-bold text-slate-900">{pkg.name}</div>
+                            <div className="font-bold text-slate-900">
+                              <Link href={`/packages/${pkg.id}/edit`} className="hover:underline">
+                                {pkg.name}
+                              </Link>
+                            </div>
                             {pkg.package_code && <div className="text-xs font-mono text-slate-500 mt-0.5">{pkg.package_code}</div>}
                           </td>
-                          <td className="px-6 py-4 text-slate-700 font-medium">{pkg.category || '—'}</td>
+                          <td className="px-6 py-4 text-slate-700 font-medium">
+                            {pkg.category || '—'}
+                          </td>
+                          <td className="px-6 py-4 text-right font-medium text-slate-800">
+                            {pkgPrice !== null ? `₱${pkgPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'}
+                          </td>
                           <td className="px-6 py-4">
-                        <TableActions align="right">
-                          <TableAction icon={Edit} label="Edit Package" href={`/packages/${pkg.id}/edit`} />
-                        </TableActions>
-                      </td>
+                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                              pkg.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {pkg.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <TableActions align="center">
+                              <TableAction icon={Edit} label="Edit Package" href={`/packages/${pkg.id}/edit`} />
+                            </TableActions>
+                          </td>
                         </tr>
                       )
                     })
@@ -282,13 +185,6 @@ export default function PackagesListPage() {
           </div>
         )}
       </div>
-      
-      {selectedPkg && (
-        <ItemsModal 
-          pkg={selectedPkg} 
-          onClose={() => setSelectedPkg(null)} 
-        />
-      )}
     </div>
   )
 }
