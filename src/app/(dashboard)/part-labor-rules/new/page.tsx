@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Save, Plus, X } from 'lucide-react'
+import { SearchableCombobox } from '@/components/ui/SearchableCombobox'
 
 export default function NewPartLaborRulePage() {
   const supabase = createClient()
@@ -29,8 +30,8 @@ export default function NewPartLaborRulePage() {
       const { data: pData } = await supabase.from('parts').select('id, name, part_number').eq('is_active', true).eq('auto_suggest_labor', true).order('name')
       if (pData) setAvailableParts(pData)
 
-      // Load labor
-      const { data: lData } = await supabase.from('labor_charges').select('id, name').eq('is_active', true).order('name')
+      // Load labor from labor_services
+      const { data: lData } = await supabase.from('labor_services').select('id, name').eq('is_active', true).order('name')
       if (lData) setAvailableLabor(lData)
 
       if (prefillPartId && pData) {
@@ -184,17 +185,12 @@ export default function NewPartLaborRulePage() {
           </div>
           <div className="p-6">
             <label className="block text-sm font-medium text-slate-700 mb-1">Labor Service</label>
-            <select 
-              required
+            <SearchableCombobox 
+              options={availableLabor.map(l => ({ id: l.id, name: l.name }))}
               value={laborId}
-              onChange={e => setLaborId(e.target.value)}
-              className="w-full border border-slate-300 rounded-md p-2 bg-white font-medium"
-            >
-              <option value="" disabled>-- Select Labor to Suggest --</option>
-              {availableLabor.map(l => (
-                <option key={l.id} value={l.id}>{l.name}</option>
-              ))}
-            </select>
+              onChange={setLaborId}
+              placeholder="Search existing labor services..."
+            />
             <p className="text-xs text-slate-500 mt-2">
               Note: The system will automatically add this labor with ₱0.00. The staff must manually enter the labor price during quotation.
             </p>
