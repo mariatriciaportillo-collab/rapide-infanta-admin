@@ -28,7 +28,7 @@ export default function PaymentsList() {
     // 1. Fetch pending Quotation downpayments
     const { data: qData } = await supabase
       .from('quotations')
-      .select(`id, quote_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number), estimates(id, invoices(status))`)
+      .select(`id, quote_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number), estimates(id, invoices(status)), payments(customer_receipt)`)
       .in('status', ['APPROVED', 'CONVERTED'])
       .eq('downpayment_required', true)
       .order('created_at', { ascending: false })
@@ -138,14 +138,15 @@ export default function PaymentsList() {
                   <th className="px-4 py-3 font-semibold text-right">Required Downpayment</th>
                   <th className="px-4 py-3 font-semibold text-right">Amount Paid</th>
                   <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold">Receipt</th>
                   <th className="px-4 py-3 font-semibold text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 ) : downpayments.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">No pending downpayments</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">No pending downpayments</td></tr>
                 ) : (
                   downpayments.map(q => (
                     <tr key={q.id} className="hover:bg-slate-50">
@@ -199,14 +200,15 @@ export default function PaymentsList() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 ) : history.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">No payments found</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">No payments found</td></tr>
                 ) : (
                   history.map(p => (
                     <tr key={p.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-800">
-                        {p.receipt_number}
+                        {p.customer_receipt || 'PENDING'}
+                        <span className="block text-[10px] text-slate-400 font-normal">Internal: {p.receipt_number}</span>
                       </td>
                       <td className="px-4 py-3 text-slate-600">{format(new Date(p.created_at), 'MMM d, yyyy')}</td>
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(p.customers)}</td>

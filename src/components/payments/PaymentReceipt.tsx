@@ -12,6 +12,7 @@ type PaymentHistory = {
   reference_number: string
   amount_paid: number
   received_by: string
+  customer_receipt?: string
 }
 
 type ReceiptProps = {
@@ -39,7 +40,7 @@ export function PaymentReceipt({
 }: ReceiptProps) {
   
   const lastPayment = payments.length > 0 ? payments[payments.length - 1] : null
-  const receiptNo = lastPayment?.id ? `REC-${lastPayment.id.substring(0, 8).toUpperCase()}` : 'N/A'
+  const receiptNo = lastPayment?.customer_receipt || 'N/A'
   const receiptDate = lastPayment ? new Date(lastPayment.created_at) : new Date()
   const receivedBy = lastPayment?.received_by || 'Staff'
   
