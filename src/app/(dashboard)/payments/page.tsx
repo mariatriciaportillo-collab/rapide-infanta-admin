@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { X } from 'lucide-react'
+import { X, Printer } from 'lucide-react'
 import { recordDownpayment } from '@/app/(dashboard)/quotations/[id]/actions'
 
 export default function PaymentsList() {
@@ -31,7 +31,6 @@ export default function PaymentsList() {
       .select(`id, quote_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number), estimates(id, invoices(status))`)
       .in('status', ['APPROVED', 'CONVERTED'])
       .eq('downpayment_required', true)
-      .neq('payment_type', 'DOWNPAYMENT')
       .order('created_at', { ascending: false })
       
     const activeQs = (qData || []).filter(q => {
@@ -167,7 +166,9 @@ export default function PaymentsList() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? (
-                          <Link href={`/quotations/${q.id}/receipt`} target="_blank" className="text-blue-600 hover:underline text-xs font-medium">Print Receipt</Link>
+                          <Link href={`/quotations/${q.id}/receipt`} target="_blank" className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Print Downpayment Receipt">
+                            <Printer size={18} />
+                          </Link>
                         ) : (
                           <button onClick={() => handleOpenModal(q)} className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-xs">
                             Record Downpayment
