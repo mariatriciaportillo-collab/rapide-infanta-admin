@@ -1,8 +1,15 @@
-'use client'
+const fs = require('fs');
+const quoteCode = fs.readFileSync('src/components/quotations/QuotationForm.tsx', 'utf8');
+
+const customerModal = quoteCode.match(/\{\/\* CUSTOMER MODAL \*\/\}[\s\S]*?\{\/\* VEHICLE MODAL \*\/\}/)[0].replace('{/* VEHICLE MODAL */}', '');
+const vehicleModalEndIndex = quoteCode.indexOf('</form>');
+const vehicleModal = quoteCode.substring(quoteCode.indexOf('{/* VEHICLE MODAL */}'), vehicleModalEndIndex);
+
+const newForm = `'use client'
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Search, Plus, X, Edit, Trash2, ArrowRightCircle, Save, User, Car, Building2 } from 'lucide-react'
+import { Search, Plus, X, Edit, Trash2, ArrowRightCircle, Save, User, Car } from 'lucide-react'
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
 import { SearchableCombobox } from '@/components/ui/SearchableCombobox'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
@@ -29,7 +36,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   const [companyName, setCompanyName] = useState('')
   const [contactFirstName, setContactFirstName] = useState('')
   const [contactLastName, setContactLastName] = useState('')
-  const [customerMobile, setCustomerMobile] = useState('')
+  const [mobile, setMobile] = useState('')
   const [customerTelephone, setCustomerTelephone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerTin, setCustomerTin] = useState('')
@@ -60,7 +67,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user && !initialData) {
         const name = user.user_metadata?.first_name 
-          ? `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim()
+          ? \`\${user.user_metadata.first_name} \${user.user_metadata.last_name || ''}\`.trim()
           : user.email?.split('@')[0]
         setPreparedBy(name || 'Staff')
       } else if (initialData?.prepared_by) {
@@ -95,7 +102,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
           setFirstName(cust.first_name || '')
           setLastName(cust.last_name || '')
           setCompanyName(cust.company_name || cust.name || '')
-          setCustomerMobile(cust.mobile || '')
+          setMobile(cust.mobile || '')
           setCustomerTelephone(cust.telephone || '')
           setCustomerEmail(cust.email || '')
           setCustomerAddress(cust.address || '')
@@ -163,10 +170,10 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
         let nextSeq = 1
         const { data: latest } = await supabase.from('quick_sales').select('quick_sale_number').order('created_at', { ascending: false }).limit(1).maybeSingle()
         if (latest && latest.quick_sale_number) {
-          const match = latest.quick_sale_number.match(/QS-(\d+)/)
+          const match = latest.quick_sale_number.match(/QS-(\\d+)/)
           if (match) nextSeq = parseInt(match[1]) + 1
         }
-        const qsNumber = `QS-${nextSeq.toString().padStart(6, '0')}`
+        const qsNumber = \`QS-\${nextSeq.toString().padStart(6, '0')}\`
 
         const { data: qs, error: qsErr } = await supabase.from('quick_sales').insert({
           quick_sale_number: qsNumber,
@@ -223,9 +230,9 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
             }
           }
         }
-        router.push(`/quick-sale/${qsId}?pay=true`)
+        router.push(\`/quick-sale/\${qsId}?pay=true\`)
       } else {
-        router.push(`/quick-sale`)
+        router.push(\`/quick-sale\`)
       }
       
       router.refresh()
@@ -238,7 +245,12 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   // Add Customer Handlers
   const handleCreateNewCustomer = async () => {
     try {
-      const isDuplicate = await checkDuplicateCustomer(supabase, customerType, firstName, lastName, companyName)
+      const isDuplicate = await checkDuplicateCustomer(supabase, {
+        customerType,
+        firstName,
+        lastName,
+        companyName
+      })
 
       if (isDuplicate) {
         if (!confirm('A customer with a similar name already exists. Are you sure you want to create a duplicate?')) {
@@ -247,7 +259,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       }
 
       const builtName = buildLegacyName(customerType, firstName, lastName, companyName)
-      const contactPerson = customerType === 'company' && contactFirstName ? `${contactFirstName} ${contactLastName}`.trim() : null
+      const contactPerson = customerType === 'company' && contactFirstName ? \`\${contactFirstName} \${contactLastName}\`.trim() : null
 
       const { data, error } = await supabase.from('customers').insert({
         customer_type: customerType,
@@ -256,7 +268,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
         last_name: customerType === 'individual' ? lastName : null,
         company_name: customerType === 'company' ? companyName : null,
         contact_person: contactPerson,
-        mobile: customerMobile,
+        mobile: mobile,
         telephone: customerTelephone,
         email: customerEmail,
         address: customerAddress,
@@ -277,7 +289,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   const handleSaveCustomerChanges = async () => {
     try {
       const builtName = buildLegacyName(customerType, firstName, lastName, companyName)
-      const contactPerson = customerType === 'company' && contactFirstName ? `${contactFirstName} ${contactLastName}`.trim() : null
+      const contactPerson = customerType === 'company' && contactFirstName ? \`\${contactFirstName} \${contactLastName}\`.trim() : null
 
       const { error } = await supabase.from('customers').update({
         customer_type: customerType,
@@ -286,7 +298,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
         last_name: customerType === 'individual' ? lastName : null,
         company_name: customerType === 'company' ? companyName : null,
         contact_person: contactPerson,
-        mobile: customerMobile,
+        mobile: mobile,
         telephone: customerTelephone,
         email: customerEmail,
         address: customerAddress,
@@ -382,7 +394,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
               )}
               <button type="button" onClick={() => {
                 setCustomerType('individual')
-                setFirstName(''); setLastName(''); setCompanyName(''); setContactFirstName(''); setContactLastName(''); setCustomerMobile(''); setCustomerTelephone(''); setCustomerEmail(''); setCustomerAddress(''); setCustomerTin('');
+                setFirstName(''); setLastName(''); setCompanyName(''); setContactFirstName(''); setContactLastName(''); setMobile(''); setCustomerTelephone(''); setCustomerEmail(''); setCustomerAddress(''); setCustomerTin('');
                 setIsAddingCustomer(true)
               }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md transition" title="Add Customer"><Plus size={16} /></button>
             </div>
@@ -395,14 +407,14 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
                 <SearchableCombobox
                   options={vehicles.map(v => ({
                     id: v.id,
-                    name: `${v.plate_number}`,
-                    subtext: `${v.make} ${v.model} ${v.year || ''}`.trim()
+                    name: \`\${v.plate_number}\`,
+                    subtext: \`\${v.make} \${v.model} \${v.year || ''}\`.trim()
                   }))}
                   value={selectedVehicleId || ""}
                   onChange={setSelectedVehicleId}
                   placeholder={selectedCustomerId ? "Search or select vehicle..." : "Select customer first"}
                   searchPlaceholder="Type plate number..."
-                  
+                  disabled={!selectedCustomerId || vehicles.length === 0}
                 />
               </div>
               {selectedVehicleId && (
@@ -522,7 +534,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
                   type="number" 
                   min="0" step="0.01" 
                   value={discount} 
-                  onChange={e => setDiscount(e.target.value === '' ? '' : Number(e.target.value))} 
+                  onChange={e => setDiscount(e.target.value)} 
                   className="w-full border border-slate-300 rounded p-1 pl-6 text-right text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
                 />
               </div>
@@ -555,198 +567,12 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
         </button>
       </div>
 
-      {/* CUSTOMER MODAL */}
-      {(isAddingCustomer || isEditingCustomer) && (
-        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
-                {isAddingCustomer ? 'Add New Customer' : 'Edit Customer'}
-              </h2>
-              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="text-slate-400 hover:text-slate-600 transition">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto space-y-4">
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setCustomerType('individual')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'individual' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Individual</button>
-                <button type="button" onClick={() => setCustomerType('company')} className={`px-4 py-2 rounded-md text-sm font-medium transition ${customerType === 'company' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>Company</button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {customerType === 'individual' ? (
-                  <>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">First Name *</label>
-                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Last Name *</label>
-                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Company Name *</label>
-                      <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Corporation" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact First Name</label>
-                      <input type="text" value={contactFirstName} onChange={e => setContactFirstName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Juan" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Contact Last Name</label>
-                      <input type="text" value={contactLastName} onChange={e => setContactLastName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Dela Cruz" />
-                    </div>
-                  </>
-                )}
-
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Mobile</label>
-                  <input type="text" value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="09171234567" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Telephone</label>
-                  <input type="text" value={customerTelephone} onChange={e => setCustomerTelephone(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="042-123-4567" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="info@example.com" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">TIN</label>
-                  <input type="text" value={customerTin} onChange={e => setCustomerTin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="123-456-789-000" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                  <textarea value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} rows={2} className="w-full border border-slate-300 rounded-md p-2" placeholder="Complete address..."></textarea>
-                </div>
-              </div>
-              
-              {isAddingCustomer && (
-                <>
-                  <div className="border-t border-slate-200 mt-6 mb-4"></div>
-                  <h3 className="text-md font-semibold text-slate-800 flex items-center gap-2 mb-4">
-                    <Car size={16} className="text-slate-500"/> First Vehicle (Optional)
-                  </h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number <span className="text-red-500">*</span></label>
-                      <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Chassis Number / VIN</label>
-                      <input type="text" value={vin} onChange={e => setVin(e.target.value)} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="KNCSHX..." />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Make <span className="text-red-500">*</span></label>
-                      <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Model <span className="text-red-500">*</span></label>
-                      <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Year <span className="text-red-500">*</span></label>
-                      <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Engine Capacity</label>
-                      <input type="text" value={engineCapacity} onChange={e => setEngineCapacity(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2.8L" />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-                      <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
-                        <option value="">Select...</option>
-                        <option value="Automatic">Automatic</option>
-                        <option value="Manual">Manual</option>
-                      </select>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-            
-            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
-              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
-                Cancel
-              </button>
-              <button type="button" onClick={isAddingCustomer ? handleCreateNewCustomer : handleSaveCustomerChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                {isAddingCustomer ? 'Save New Customer' : 'Save Customer Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      
-      {/* VEHICLE MODAL */}
-      {(isAddingVehicle || isEditingVehicle) && (
-        <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                <Car size={18} className="text-slate-500"/>
-                {isAddingVehicle ? 'Add New Vehicle' : 'Edit Vehicle'}
-              </h2>
-              <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="text-slate-400 hover:text-slate-600 transition">
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Plate Number *</label>
-                  <input type="text" value={vehiclePlate} onChange={e => setVehiclePlate(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="ABC-1234" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Chassis Number / VIN</label>
-                  <input type="text" value={vin} onChange={e => setVin(e.target.value.toUpperCase())} className="w-full border border-slate-300 rounded-md p-2 uppercase" placeholder="KNCSHX..." />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Make <span className="text-red-500">*</span></label>
-                  <input type="text" value={vehicleMake} onChange={e => setVehicleMake(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Toyota" />
-                </div>
-                <div className="col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Model <span className="text-red-500">*</span></label>
-                  <input type="text" value={vehicleModel} onChange={e => setVehicleModel(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="Vios" />
-                </div>
-                <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Year <span className="text-red-500">*</span></label>
-                      <input type="text" value={vehicleYear} onChange={e => setVehicleYear(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2020" />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Engine Capacity</label>
-                      <input type="text" value={engineCapacity} onChange={e => setEngineCapacity(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="2.8L" />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Transmission</label>
-                      <select value={vehicleTransmission} onChange={e => setVehicleTransmission(e.target.value)} className="w-full border border-slate-300 rounded-md p-2">
-                    <option value="">Select...</option>
-                    <option value="Automatic">Automatic</option>
-                    <option value="Manual">Manual</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
-              <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
-                Cancel
-              </button>
-              <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
-                {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-    
+      ${customerModal}
+      ${vehicleModal}
     </div>
   )
 }
+`;
+
+fs.writeFileSync('src/components/quick-sale/QuickSaleForm.tsx', newForm);
+console.log('Successfully rewrote QuickSaleForm.tsx with SearchableCombobox and Modals!');

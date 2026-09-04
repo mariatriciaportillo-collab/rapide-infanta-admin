@@ -5,12 +5,13 @@ import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { ArrowLeft, Printer, FileText, CheckCircle, Edit, Building2, User as UserIcon, Car, ArrowRightCircle, DollarSign, X } from 'lucide-react'
 import { format } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function QuickSaleViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = React.use(params)
   const supabase = createClient()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [sale, setSale] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -64,6 +65,15 @@ export default function QuickSaleViewPage({ params }: { params: Promise<{ id: st
     load()
   }, [id, supabase])
 
+
+  useEffect(() => {
+    if (!loading && sale && sale.inventory_deducted && searchParams.get('pay') === 'true' && (sale.status === 'UNPAID' || sale.status === 'PARTIALLY PAID')) {
+      setPayAmount(sale.balance_due);
+      setShowPaymentModal(true);
+      // Clean up URL to prevent re-opening on refresh
+      router.replace(`/quick-sale/${sale.id}`);
+    }
+  }, [loading, sale, searchParams, router])
 
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!sale) return <div className="p-6 text-center text-red-500">Quick Sale not found</div>
