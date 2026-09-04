@@ -29,6 +29,7 @@ export default function AddPartPage() {
   
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [autoSuggestLabor, setAutoSuggestLabor] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,12 +85,11 @@ export default function AddPartPage() {
       stock_quantity: stockQuantity ? parseFloat(stockQuantity) : 0,
       reorder_level: reorderLevel ? parseFloat(reorderLevel) : 0,
       notes: notes.trim() || null,
-      is_active: isActive
-    }
+      is_active: isActive,
+        auto_suggest_labor: autoSuggestLabor
+      }
 
-    const { error: insertError } = await supabase
-      .from('parts')
-      .insert(payload)
+    const { data: newPart, error: insertError } = await supabase.from('parts').insert(payload).select('id').single()
 
     if (insertError) {
       setError(`Failed to save part: ${insertError.message}`)
@@ -97,7 +97,13 @@ export default function AddPartPage() {
       return
     }
 
-    router.push('/parts')
+    if (autoSuggestLabor) {
+          if (confirm('Part saved successfully! Set up a Labor Rule for this Part now?')) {
+            router.push(`/part-labor-rules/new?part_id=${newPart.id}`)
+            return
+          }
+        }
+        router.push('/parts')
     router.refresh()
   }
 
@@ -266,6 +272,30 @@ export default function AddPartPage() {
                 onChange={e => setReorderLevel(e.target.value)}
                 className="w-full border border-slate-300 rounded-md p-2" 
               />
+            </div>
+          </div>
+        </div>
+        
+        
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-6">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
+            <h3 className="font-semibold text-slate-800">AUTOMATION</h3>
+          </div>
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-semibold text-slate-800">Auto-Suggest Labor?</label>
+                <p className="text-xs text-slate-500 mt-1 max-w-lg">If Yes, selecting this part in a Quotation/Estimate can automatically suggest related repair labor (configured in Part-to-Labor Rules).</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer"
+                  checked={autoSuggestLabor}
+                  onChange={(e) => setAutoSuggestLabor(e.target.checked)}
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
             </div>
           </div>
         </div>

@@ -29,7 +29,7 @@ import {
   Clock,
   Shield,
   Building2
-} from 'lucide-react'
+, Cpu } from 'lucide-react'
 
 type Section = 'operations' | 'customers' | 'products' | 'inventory' | 'reports' | 'admin' | null
 
@@ -193,6 +193,14 @@ export function SidebarNav() {
         
         {openSection === 'products' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
+            <Link 
+              href="/part-labor-rules" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/part-labor-rules') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Cpu size={16} />
+              Part-to-Labor Rules
+            </Link>
             <Link 
               href="/labor-lookup" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2

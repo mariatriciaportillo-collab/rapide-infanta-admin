@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { checkDuplicateCustomer } from '@/utils/checkDuplicateCustomer'
 import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2, Edit, X } from 'lucide-react'
+import { usePartLaborAutomation } from '@/hooks/usePartLaborAutomation'
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
@@ -20,6 +21,7 @@ type LineItem = {
   quantity: number | ''
   unit_price: number | ''
   is_section_header: boolean
+  is_auto_suggested?: boolean
   
   item_type?: 'MANUAL' | 'LABOR' | 'PART' | 'PACKAGE' | 'PACKAGE_ITEM'
   package_id?: string | null
@@ -116,6 +118,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   const [discount, setDiscount] = useState<number>(0)
 
   const [items, setItems] = useState<LineItem[]>([])
+  const { handleDismissLabor } = usePartLaborAutomation(items, setItems)
   const [replacingItemId, setReplacingItemId] = useState<string | null>(null)
 
   // Labor Services for Combobox
@@ -123,6 +126,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   
   // Packages for Combobox
   const [packages, setPackages] = useState<any[]>([])
+  const [partLaborRules, setPartLaborRules] = useState<any[]>([])
+  const [dismissedLaborIds, setDismissedLaborIds] = useState<string[]>([])
   
   // Resolve Part Modal State
   const [isResolvePartModalOpen, setIsResolvePartModalOpen] = useState(false)
@@ -305,8 +310,17 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       if (data) setPackages(data)
     }
 
+    const fetchRules = async () => {
+      const { data } = await supabase
+        .from('part_labor_rules')
+        .select(`*, labor:labor_id(*), triggers:part_labor_rule_triggers(part_id)`)
+        .eq('active', true)
+      if (data) setPartLaborRules(data)
+    }
+
     fetchLabor()
     fetchPackages()
+    fetchRules()
   }, [supabase])
 
   // Handle outside click for dropdown
