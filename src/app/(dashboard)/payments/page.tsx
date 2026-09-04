@@ -56,8 +56,8 @@ export default function PaymentsList() {
       .select(`
         *,
         customers:customer_id(name, first_name, last_name, customer_type),
-        invoices:invoice_id(invoice_number),
-        quick_sales:quick_sale_id(quick_sale_number),
+        invoices:invoice_id(invoice_number, amount_paid),
+        quick_sales:quick_sale_id(quick_sale_number, amount_paid),
         quotations:quotation_id(quote_number)
       `)
       .neq('payment_type', 'DOWNPAYMENT')
@@ -199,7 +199,7 @@ export default function PaymentsList() {
                   <th className="px-4 py-3 font-semibold">Customer</th>
                   <th className="px-4 py-3 font-semibold">Ref. Document</th>
                   <th className="px-4 py-3 font-semibold">Method</th>
-                  <th className="px-4 py-3 font-semibold text-right">Amount Paid</th>
+                  <th className="px-4 py-3 font-semibold text-right">Total Paid</th>
                   <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
                 </tr>
               </thead>
@@ -230,7 +230,7 @@ export default function PaymentsList() {
                         {p.reference_number && p.reference_number !== 'N/A' && <span className="block text-slate-400">Ref: {p.reference_number}</span>}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-emerald-600">
-                        ₱{Number(p.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                        ₱{Number(p.invoices?.amount_paid || p.quick_sales?.amount_paid || p.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <TableActions align="center">
