@@ -129,54 +129,60 @@ export default function PaymentsList() {
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         {tab === 'downpayment' && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Quotation</th>
-                  <th className="px-4 py-3 font-semibold">Customer</th>
-                  <th className="px-4 py-3 font-semibold">Vehicle</th>
-                  <th className="px-4 py-3 font-semibold text-right">Quotation Total</th>
-                  <th className="px-4 py-3 font-semibold text-right">Required Downpayment</th>
-                  <th className="px-4 py-3 font-semibold text-right">Amount Paid</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Receipt</th>
-                  <th className="px-4 py-3 font-semibold text-center">Action</th>
+                  <th className="px-4 py-3 font-semibold w-24">Receipt No.</th>
+                  <th className="px-4 py-3 font-semibold w-full">Customer</th>
+                  <th className="px-4 py-3 font-semibold w-24">Quotation</th>
+                  <th className="px-4 py-3 font-semibold text-right w-32">Quotation Total</th>
+                  <th className="px-4 py-3 font-semibold text-right w-32">Amount Paid</th>
+                  <th className="px-4 py-3 font-semibold w-24 text-center">Status</th>
+                  <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 ) : downpayments.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-400">No pending downpayments</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No pending downpayments</td></tr>
                 ) : (
-                  downpayments.map(q => (
-                    <tr key={q.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
-                        <Link href={`/quotations/${q.id}`}>{q.quote_number}</Link>
-                      </td>
-                      <td className="px-4 py-3 text-slate-800">{formatCustomerName(q.customers)}</td>
-                      <td className="px-4 py-3 text-slate-600">
-                        {q.vehicles ? `${q.vehicles.make} ${q.vehicles.model} - ${q.vehicles.plate_number}` : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-600">₱{Number(q.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-800">₱{Number(q.required_downpayment_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-600">₱{Number(q.downpayment_paid_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? 'PAID' : (q.downpayment_status || 'PENDING')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <TableActions align="center">
-                          {(q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount)) ? (
-                            <TableAction icon={Printer} label="Print Downpayment Receipt" href={`/quotations/${q.id}/receipt`} />
-                          ) : (
-                            <TableAction icon={Banknote} label="Record Downpayment" onClick={() => handleOpenModal(q)} variant="success" />
-                          )}
-                        </TableActions>
-                      </td>
-                    </tr>
-                  ))
+                  downpayments.map(q => {
+                    const paymentsArr = Array.isArray(q.payments) ? q.payments : (q.payments ? [q.payments] : []);
+                    const receipt = paymentsArr.length > 0 && paymentsArr[paymentsArr.length - 1].customer_receipt 
+                      ? paymentsArr[paymentsArr.length - 1].customer_receipt 
+                      : '—';
+                    
+                    const isPaid = q.downpayment_status === 'PAID' || Number(q.downpayment_paid_amount) >= Number(q.required_downpayment_amount);
+                    
+                    return (
+                      <tr key={q.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-medium text-slate-800">{receipt}</td>
+                        <td className="px-4 py-3 text-slate-800 max-w-[200px] truncate" title={formatCustomerName(q.customers)}>
+                          {formatCustomerName(q.customers)}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
+                          <Link href={`/quotations/${q.id}`}>{q.quote_number}</Link>
+                        </td>
+                        <td className="px-4 py-3 text-right text-slate-600">₱{Number(q.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">₱{Number(q.downpayment_paid_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${isPaid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                            {isPaid ? 'PAID' : (q.downpayment_status || 'PENDING')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <TableActions align="center">
+                            {isPaid ? (
+                              <TableAction icon={Printer} label="Print Downpayment Receipt" href={`/quotations/${q.id}/receipt`} />
+                            ) : (
+                              <TableAction icon={Banknote} label="Record Downpayment" onClick={() => handleOpenModal(q)} variant="success" />
+                            )}
+                          </TableActions>
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -185,7 +191,7 @@ export default function PaymentsList() {
 
         {tab === 'history' && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                                 <tr>
                   <th className="px-4 py-3 font-semibold">Receipt No.</th>
