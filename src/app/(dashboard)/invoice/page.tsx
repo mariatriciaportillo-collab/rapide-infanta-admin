@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { Plus, Search, FileText } from 'lucide-react'
+import { Plus, Search, FileText, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function InvoiceList() {
@@ -52,8 +52,8 @@ export default function InvoiceList() {
                 <th className="px-4 py-3 font-semibold">Customer</th>
                 <th className="px-4 py-3 font-semibold">Vehicle</th>
                 <th className="px-4 py-3 font-semibold text-right">Total</th>
-                <th className="px-4 py-3 font-semibold text-right">Balance</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -75,9 +75,6 @@ export default function InvoiceList() {
                     <td className="px-4 py-3 text-right font-medium text-slate-800">
                       ₱{Number(s.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-amber-600">
-                      ₱{Number(s.balance_due).toLocaleString('en-US', {minimumFractionDigits: 2})}
-                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
                         s.status === 'PAID' ? 'bg-emerald-100 text-emerald-700' : 
@@ -85,6 +82,11 @@ export default function InvoiceList() {
                       }`}>
                         {s.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center align-middle">
+                      <Link href={`/invoice/${s.id}/print`} target="_blank" className="inline-flex items-center justify-center p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Print Billing Statement">
+                        <Printer size={18} />
+                      </Link>
                     </td>
                   </tr>
                 ))

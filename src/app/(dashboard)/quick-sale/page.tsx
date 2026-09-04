@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { Plus, Search, FileText } from 'lucide-react'
+import { Plus, Search, FileText, Printer } from 'lucide-react'
 import { format } from 'date-fns'
 
 export default function QuickSaleList() {
@@ -57,13 +57,14 @@ export default function QuickSaleList() {
                 <th className="px-4 py-3 font-semibold">Vehicle</th>
                 <th className="px-4 py-3 font-semibold text-right">Total</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
               ) : sales.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No quick sales found</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No quick sales found</td></tr>
               ) : (
                 sales.map(s => (
                   <tr key={s.id} className="hover:bg-slate-50">
