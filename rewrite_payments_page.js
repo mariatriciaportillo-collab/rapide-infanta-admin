@@ -1,4 +1,7 @@
-'use client'
+const fs = require('fs');
+let path = 'src/app/(dashboard)/payments/page.tsx';
+
+let newContent = `'use client'
 
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
@@ -28,7 +31,7 @@ export default function PaymentsList() {
     // 1. Fetch pending Quotation downpayments
     const { data: qData } = await supabase
       .from('quotations')
-      .select(`id, quotation_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number)`)
+      .select(\`id, quotation_number, created_at, grand_total, required_downpayment_amount, downpayment_paid_amount, downpayment_status, customers:customer_id(name, first_name, last_name, customer_type), vehicles:vehicle_id(make, model, plate_number)\`)
       .eq('status', 'APPROVED')
       .eq('downpayment_required', true)
       .neq('downpayment_status', 'PAID')
@@ -39,13 +42,13 @@ export default function PaymentsList() {
     // 2. Fetch Payment History
     const { data: payData } = await supabase
       .from('payments')
-      .select(`
+      .select(\`
         *,
         customers:customer_id(name, first_name, last_name, customer_type),
         invoices:invoice_id(invoice_number),
         quick_sales:quick_sale_id(quick_sale_number),
         quotations:quotation_id(quotation_number)
-      `)
+      \`)
       .order('created_at', { ascending: false })
       .limit(50)
       
@@ -61,7 +64,7 @@ export default function PaymentsList() {
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
     if (c.customer_type === 'company') return c.name
-    return c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()
+    return c.name || \`\${c.first_name || ''} \${c.last_name || ''}\`.trim()
   }
 
   const handleOpenModal = (q: any) => {
@@ -99,13 +102,13 @@ export default function PaymentsList() {
       <div className="flex gap-4 mb-6 border-b border-slate-200">
         <button 
           onClick={() => setTab('downpayment')}
-          className={`pb-2 px-2 font-medium text-sm transition ${tab === 'downpayment' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+          className={\`pb-2 px-2 font-medium text-sm transition \${tab === 'downpayment' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}\`}
         >
           Downpayment
         </button>
         <button 
           onClick={() => setTab('history')}
-          className={`pb-2 px-2 font-medium text-sm transition ${tab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+          className={\`pb-2 px-2 font-medium text-sm transition \${tab === 'history' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}\`}
         >
           Payment History
         </button>
@@ -135,11 +138,11 @@ export default function PaymentsList() {
                   downpayments.map(q => (
                     <tr key={q.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
-                        <Link href={`/quotations/${q.id}`}>{q.quotation_number}</Link>
+                        <Link href={\`/quotations/\${q.id}\`}>{q.quotation_number}</Link>
                       </td>
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(q.customers)}</td>
                       <td className="px-4 py-3 text-slate-600">
-                        {q.vehicles ? `${q.vehicles.make} ${q.vehicles.model} - ${q.vehicles.plate_number}` : '-'}
+                        {q.vehicles ? \`\${q.vehicles.make} \${q.vehicles.model} - \${q.vehicles.plate_number}\` : '-'}
                       </td>
                       <td className="px-4 py-3 text-right text-slate-600">₱{Number(q.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                       <td className="px-4 py-3 text-right font-bold text-amber-600">₱{Number(q.required_downpayment_amount - (q.downpayment_paid_amount || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
@@ -184,11 +187,11 @@ export default function PaymentsList() {
                     <tr key={p.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-blue-600 hover:underline">
                         {p.invoices ? (
-                          <Link href={`/invoice/${p.invoice_id}/receipt`} target="_blank">{p.receipt_number}</Link>
+                          <Link href={\`/invoice/\${p.invoice_id}/receipt\`} target="_blank">{p.receipt_number}</Link>
                         ) : p.quick_sales ? (
-                          <Link href={`/quick-sale/${p.quick_sale_id}/receipt`} target="_blank">{p.receipt_number}</Link>
+                          <Link href={\`/quick-sale/\${p.quick_sale_id}/receipt\`} target="_blank">{p.receipt_number}</Link>
                         ) : p.quotation_id ? (
-                          <Link href={`/quotations/${p.quotation_id}`} target="_blank">{p.receipt_number}</Link>
+                          <Link href={\`/quotations/\${p.quotation_id}\`} target="_blank">{p.receipt_number}</Link>
                         ) : (
                           <span>{p.receipt_number}</span>
                         )}
@@ -197,11 +200,11 @@ export default function PaymentsList() {
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(p.customers)}</td>
                       <td className="px-4 py-3 text-slate-600">
                         {p.invoices ? (
-                          <Link href={`/invoice/${p.invoice_id}`} className="hover:underline">{p.invoices.invoice_number}</Link>
+                          <Link href={\`/invoice/\${p.invoice_id}\`} className="hover:underline">{p.invoices.invoice_number}</Link>
                         ) : p.quick_sales ? (
-                          <Link href={`/quick-sale/${p.quick_sale_id}`} className="hover:underline">{p.quick_sales.quick_sale_number}</Link>
+                          <Link href={\`/quick-sale/\${p.quick_sale_id}\`} className="hover:underline">{p.quick_sales.quick_sale_number}</Link>
                         ) : p.quotations ? (
-                          <Link href={`/quotations/${p.quotation_id}`} className="hover:underline">{p.quotations.quotation_number}</Link>
+                          <Link href={\`/quotations/\${p.quotation_id}\`} className="hover:underline">{p.quotations.quotation_number}</Link>
                         ) : '-'}
                       </td>
                       <td className="px-4 py-3 text-slate-600 text-xs">
@@ -306,3 +309,6 @@ export default function PaymentsList() {
     </div>
   )
 }
+`
+
+fs.writeFileSync(path, newContent);

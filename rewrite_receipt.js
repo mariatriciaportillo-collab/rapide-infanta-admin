@@ -1,4 +1,7 @@
-'use client'
+const fs = require('fs');
+let path = 'src/components/payments/PaymentReceipt.tsx';
+
+let newContent = `'use client'
 
 import React from 'react'
 import { Printer } from 'lucide-react'
@@ -39,7 +42,7 @@ export function PaymentReceipt({
 }: ReceiptProps) {
   
   const lastPayment = payments.length > 0 ? payments[payments.length - 1] : null
-  const receiptNo = lastPayment?.id ? `REC-${lastPayment.id.substring(0, 8).toUpperCase()}` : 'N/A'
+  const receiptNo = lastPayment?.id ? \`REC-\${lastPayment.id.substring(0, 8).toUpperCase()}\` : 'N/A'
   const receiptDate = lastPayment ? new Date(lastPayment.created_at) : new Date()
   const receivedBy = lastPayment?.received_by || 'Staff'
   
@@ -140,13 +143,16 @@ export function PaymentReceipt({
           </div>
         </div>
 
-        <style dangerouslySetInnerHTML={{__html: `
+        <style dangerouslySetInnerHTML={{__html: \`
           @media print {
             body { background: white; margin: 0; padding: 0; }
             @page { margin: 0.5in; }
           }
-        `}} />
+        \`}} />
       </div>
     </div>
   )
 }
+`
+
+fs.writeFileSync(path, newContent);
