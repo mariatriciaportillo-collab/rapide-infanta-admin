@@ -286,21 +286,11 @@ const handleComplete = async () => {
               <span>- ₱{Number(sale.discount_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
             </div>
           )}
-
           <div className="h-px bg-slate-200 my-1"></div>
-          <div className="flex justify-between items-end text-slate-900 font-bold mb-2">
+          <div className="flex justify-between items-end text-slate-900 font-bold">
             <span className="text-sm uppercase tracking-wider">Grand Total</span>
-            <span className="text-lg">₱{Number(sale.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            <span className="text-2xl tracking-tight">₱{Math.max(0, Number(sale.subtotal) - Number(sale.discount_amount || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
           </div>
-          <div className="flex justify-between items-end text-emerald-700 font-bold mb-2">
-            <span className="text-sm uppercase tracking-wider">Total Paid</span>
-            <span className="text-lg">₱{Number(sale.amount_paid || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-          </div>
-          <div className="border-t border-slate-300 pt-3 flex justify-between items-end text-red-600 font-bold">
-            <span className="text-sm uppercase tracking-wider">Balance Due</span>
-            <span className="text-2xl tracking-tight">₱{Number(sale.balance_due ?? sale.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-          </div>
-
         </div>
       </div>
 

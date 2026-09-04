@@ -425,18 +425,16 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
               <span>- ₱{Number(inv.discount_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
             </div>
           )}
+          {Number(inv.downpayment_applied) > 0 && (
+            <div className="flex justify-between text-blue-600 text-sm font-medium">
+              <span>Downpayment</span>
+              <span>- ₱{Number(inv.downpayment_applied).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            </div>
+          )}
           <div className="h-px bg-slate-200 my-1"></div>
-          <div className="flex justify-between items-end text-slate-900 font-bold mb-2">
+          <div className="flex justify-between items-end text-slate-900 font-bold">
             <span className="text-sm uppercase tracking-wider">Grand Total</span>
-            <span className="text-lg">₱{Number(inv.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-          </div>
-          <div className="flex justify-between items-end text-emerald-700 font-bold mb-2">
-            <span className="text-sm uppercase tracking-wider">Total Paid</span>
-            <span className="text-lg">₱{Number(inv.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-          </div>
-          <div className="border-t border-slate-300 pt-3 flex justify-between items-end text-red-600 font-bold">
-            <span className="text-sm uppercase tracking-wider">Balance Due</span>
-            <span className="text-2xl tracking-tight">₱{Number(inv.balance_due).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            <span className="text-2xl tracking-tight">₱{Math.max(0, Number(inv.subtotal) - Number(inv.discount_amount || 0) - Number(inv.downpayment_applied || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
           </div>
         </div>
       </div>

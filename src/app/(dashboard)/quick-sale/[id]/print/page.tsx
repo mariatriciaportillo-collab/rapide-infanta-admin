@@ -141,11 +141,12 @@ export default function QuickSalePrintPage({ params }: { params: Promise<{ id: s
             <div className="h-0.5 bg-slate-800 my-1"></div>
             <div className="flex justify-between text-slate-900 font-bold text-lg">
               <span>Grand Total</span>
-              <span>₱{Number(sale.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              <span>₱{Math.max(0, Number(sale.subtotal) - Number(sale.discount_amount || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Footer, Legal, and Signatures */}
       <div className="mt-8 px-8 pt-2 border-t-2 border-slate-800 grid grid-cols-2 gap-8 page-break-inside-avoid pb-4">

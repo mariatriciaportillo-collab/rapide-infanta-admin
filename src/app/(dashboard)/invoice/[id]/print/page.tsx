@@ -267,28 +267,21 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
                 <span>- ₱{Number(inv.discount_amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
             )}
-            <div className="h-0.5 bg-slate-800 my-1"></div>
-            <div className="flex justify-between text-slate-900 font-bold text-lg mb-1">
-              <span>Grand Total</span>
-              <span>₱{Number(inv.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-            </div>
             {Number(inv.downpayment_applied) > 0 && (
-              <div className="flex justify-between text-slate-600 font-medium text-sm">
-                <span>Less: Downpayment</span>
-                <span>₱{Number(inv.downpayment_applied).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+              <div className="flex justify-between text-slate-600 text-sm">
+                <span>Downpayment</span>
+                <span>- ₱{Number(inv.downpayment_applied).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
             )}
-            <div className="flex justify-between text-slate-600 font-bold text-sm">
-              <span>Total Paid</span>
-              <span>₱{Number(inv.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-            </div>
-            <div className="flex justify-between text-slate-900 font-bold text-xl mt-1 border-t border-slate-300 pt-1">
-              <span>Balance Due</span>
-              <span>₱{Number(inv.balance_due).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+            <div className="h-0.5 bg-slate-800 my-1"></div>
+            <div className="flex justify-between text-slate-900 font-bold text-lg">
+              <span>Grand Total</span>
+              <span>₱{Math.max(0, Number(inv.subtotal) - Number(inv.discount_amount || 0) - Number(inv.downpayment_applied || 0)).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* Footer */}
       <div className="mt-4 px-8 pt-2 border-t-2 border-slate-800 flex justify-between gap-6 page-break-inside-avoid">
