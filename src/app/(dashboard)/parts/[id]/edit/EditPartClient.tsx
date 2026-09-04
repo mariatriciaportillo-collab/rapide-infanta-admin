@@ -31,6 +31,7 @@ export function EditPartClient({ id }: { id: string }) {
   
   const [notes, setNotes] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [autoSuggestLabor, setAutoSuggestLabor] = useState(false)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +68,7 @@ export function EditPartClient({ id }: { id: string }) {
     setReorderLevel(data.reorder_level?.toString() || '0')
     setNotes(data.notes || '')
     setIsActive(data.is_active !== false)
+    setAutoSuggestLabor(data.auto_suggest_labor === true)
     
     setIsLoading(false)
   }
@@ -124,6 +126,7 @@ export function EditPartClient({ id }: { id: string }) {
       reorder_level: reorderLevel ? parseFloat(reorderLevel) : 0,
       notes: notes.trim() || null,
       is_active: isActive,
+      auto_suggest_labor: autoSuggestLabor,
       updated_at: new Date().toISOString()
     }
 
@@ -317,7 +320,31 @@ export function EditPartClient({ id }: { id: string }) {
           </div>
         </div>
         
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-8">
+        
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-6">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
+          <h3 className="font-semibold text-slate-800">AUTOMATION</h3>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-semibold text-slate-800">Auto-Suggest Labor?</label>
+              <p className="text-xs text-slate-500 mt-1 max-w-lg">If Yes, selecting this part in a Quotation/Estimate can automatically suggest related repair labor (configured in Part-to-Labor Rules).</p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={autoSuggestLabor}
+                onChange={(e) => setAutoSuggestLabor(e.target.checked)}
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-visible mb-8">
           <div className="p-6 space-y-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>

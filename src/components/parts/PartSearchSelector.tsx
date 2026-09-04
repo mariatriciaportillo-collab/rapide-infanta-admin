@@ -16,6 +16,7 @@ type Part = {
   unit: string
   cost: number
   selling_price?: number | null
+  auto_suggest_labor?: boolean | null
   brands: any
 }
 
