@@ -2,15 +2,21 @@ const fs = require('fs');
 const path = 'src/components/payments/PaymentReceipt.tsx';
 let content = fs.readFileSync(path, 'utf8');
 
+// Ensure useRouter is imported
+if (!content.includes("useRouter")) {
+  content = content.replace("import React from 'react'", "import React from 'react'\nimport { useRouter } from 'next/navigation'");
+}
+
+// Ensure component uses router
+if (!content.includes("const router = useRouter()")) {
+  const compRegex = /(export function PaymentReceipt\([^)]+\)\s*\{)/;
+  content = content.replace(compRegex, `$1\n  const router = useRouter()`);
+}
+
+// Replace window.history.back()
 content = content.replace(
-  /<div className="max-w-3xl mx-auto flex justify-end mb-4 print:hidden">/,
-  `<div className="max-w-3xl mx-auto flex justify-between mb-4 print:hidden">
-        <button 
-          onClick={() => window.history.back()}
-          className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-md font-medium transition"
-        >
-          ← Back
-        </button>`
+  /onClick=\{[^}]*window\.history\.back\(\)[^}]*\}/,
+  `onClick={() => {\n          if (window.history.length > 2) {\n            router.back()\n          } else {\n            router.push('/payments')\n          }\n        }}`
 );
 
 fs.writeFileSync(path, content);

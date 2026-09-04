@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { Printer } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -38,6 +39,7 @@ export function PaymentReceipt({
   status,
   payments
 }: ReceiptProps) {
+  const router = useRouter()
   
   const lastPayment = payments.length > 0 ? payments[payments.length - 1] : null
   const receiptNo = lastPayment?.customer_receipt || 'N/A'
@@ -50,7 +52,13 @@ export function PaymentReceipt({
     <div className="min-h-screen bg-slate-100 p-4 sm:p-8 font-sans">
       <div className="max-w-3xl mx-auto flex justify-between mb-4 print:hidden">
         <button 
-          onClick={() => window.history.back()}
+          onClick={() => {
+          if (window.history.length > 2) {
+            router.back()
+          } else {
+            router.push('/payments')
+          }
+        }}
           className="flex items-center gap-2 bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-md font-medium transition"
         >
           ← Back
