@@ -68,7 +68,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
           status: computedStatus
         }).eq('id', data.id).then();
 
-        setInv(data)
+        setInv({ ...data })
       }
       setLoading(false)
     }
@@ -101,7 +101,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     window.location.reload()
   }
 
-  const handleRecordPayment = async () => {
+    const handleRecordPayment = async () => {
     const amount = Number(payAmount)
     if (!amount || amount <= 0) return alert('Invalid amount')
     if (amount > Number(inv.balance_due)) return alert('Cannot overpay')
@@ -122,6 +122,10 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
       : user?.email?.split('@')[0] || 'Unknown User'
 
+    let pType = 'PARTIAL PAYMENT'
+    if (amount >= Number(inv.balance_due) && Number(inv.amount_paid) === 0) pType = 'FULL PAYMENT'
+    else if (amount >= Number(inv.balance_due)) pType = 'FINAL PAYMENT'
+
     const { data: payment, error: payErr } = await supabase.from('payments').insert({
       receipt_number: receiptNumber,
       invoice_id: inv.id,
@@ -129,27 +133,44 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
       amount_paid: amount,
       payment_method: payMethod,
       reference_number: payRef,
-      received_by: receivedBy
+      received_by: receivedBy,
+      payment_type: pType
     }).select().single()
 
     if (payErr) { alert(payErr.message); setIsSubmitting(false); return; }
 
-    // Update Invoice
-    const newAmountPaid = Number(inv.amount_paid) + amount
-    const newBalanceDue = Number(inv.grand_total) - newAmountPaid
+    // DO NOT rely on cached inv.amount_paid for calculations because it might be stale.
+    // However, since we auto-calculated it on load, it should be safe. 
+    // To be strictly robust, we fetch all payments for this invoice now and recalculate.
+    const quotationId = inv.estimates?.quotation_id || null;
+    let paymentQuery = supabase.from('payments').select('*');
+    if (quotationId) {
+      paymentQuery = paymentQuery.or(`invoice_id.eq.${inv.id},quotation_id.eq.${quotationId}`);
+    } else {
+      paymentQuery = paymentQuery.eq('invoice_id', inv.id);
+    }
+    const { data: payments } = await paymentQuery;
+    
+    const validPayments = (payments || []).filter(p => Number(p.amount_paid) > 0);
+    const totalPaid = validPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+    const newBalanceDue = Math.max(0, Number(inv.grand_total) - totalPaid);
+    
     let newStatus = 'UNPAID'
     if (newBalanceDue <= 0) newStatus = 'PAID'
-    else if (newAmountPaid > 0) newStatus = 'PARTIALLY PAID'
+    else if (totalPaid > 0) newStatus = 'PARTIALLY PAID'
 
     await supabase.from('invoices').update({
-      amount_paid: newAmountPaid,
+      amount_paid: totalPaid,
       balance_due: newBalanceDue,
       status: newStatus
     }).eq('id', inv.id)
 
+    setIsSubmitting(false)
     setShowPaymentModal(false)
-    window.location.reload()
+    
+    router.push(`/invoice/${inv.id}/receipt`)
   }
+
 
   return (
     <div className="p-6 max-w-5xl mx-auto pb-24 relative">

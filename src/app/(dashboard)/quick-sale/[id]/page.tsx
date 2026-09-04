@@ -57,7 +57,7 @@ export default function QuickSaleViewPage({ params }: { params: Promise<{ id: st
           status: computedStatus
         }).eq('id', data.id).then();
 
-        setSale(data)
+        setSale({ ...data })
       }
       setLoading(false)
     }
@@ -89,7 +89,7 @@ const handleComplete = async () => {
   }
 
 
-  const handleRecordPayment = async () => {
+    const handleRecordPayment = async () => {
     const amount = Number(payAmount)
     if (!amount || amount <= 0) return alert('Invalid amount')
     if (amount > Number(sale.balance_due)) return alert('Cannot overpay')
@@ -110,6 +110,10 @@ const handleComplete = async () => {
       ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
       : user?.email?.split('@')[0] || 'Unknown User'
 
+    let pType = 'PARTIAL PAYMENT'
+    if (amount >= Number(sale.balance_due) && Number(sale.amount_paid) === 0) pType = 'FULL PAYMENT'
+    else if (amount >= Number(sale.balance_due)) pType = 'FINAL PAYMENT'
+
     const { data: payment, error: payErr } = await supabase.from('payments').insert({
       receipt_number: receiptNumber,
       quick_sale_id: sale.id,
@@ -117,27 +121,36 @@ const handleComplete = async () => {
       amount_paid: amount,
       payment_method: payMethod,
       reference_number: payRef,
-      received_by: receivedBy
+      received_by: receivedBy,
+      payment_type: pType,
+      source_type: 'QUICKSALE',
+      source_reference: sale.quick_sale_number
     }).select().single()
 
     if (payErr) { alert(payErr.message); setIsSubmitting(false); return; }
 
-    // Update Quick Sale
-    const newAmountPaid = Number(sale.amount_paid || 0) + amount
-    const newBalanceDue = Number(sale.grand_total) - newAmountPaid
+    const { data: payments } = await supabase.from('payments').select('*').eq('quick_sale_id', sale.id);
+    
+    const validPayments = (payments || []).filter(p => Number(p.amount_paid) > 0);
+    const totalPaid = validPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+    const newBalanceDue = Math.max(0, Number(sale.grand_total) - totalPaid);
+    
     let newStatus = 'UNPAID'
     if (newBalanceDue <= 0) newStatus = 'PAID'
-    else if (newAmountPaid > 0) newStatus = 'PARTIALLY PAID'
+    else if (totalPaid > 0) newStatus = 'PARTIALLY PAID'
 
     await supabase.from('quick_sales').update({
-      amount_paid: newAmountPaid,
+      amount_paid: totalPaid,
       balance_due: newBalanceDue,
       status: newStatus
     }).eq('id', sale.id)
 
+    setIsSubmitting(false)
     setShowPaymentModal(false)
-    window.location.reload()
+    
+    router.push(`/quick-sale/${sale.id}/receipt`)
   }
+
 
   return (
     <div className="p-6 max-w-5xl mx-auto pb-24">
@@ -174,6 +187,12 @@ const handleComplete = async () => {
             </button>
           )}
           
+                    {sale.inventory_deducted && (sale.status === 'PAID' || sale.status === 'PARTIALLY PAID' || Number(sale.amount_paid) > 0) && (
+            <Link href={`/quick-sale/${sale.id}/receipt`} className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
+              <FileText size={16} /> View Receipt
+            </Link>
+          )}
+
           {sale.inventory_deducted && (sale.status === 'UNPAID' || sale.status === 'PARTIALLY PAID') && (
             <button onClick={() => { setPayAmount(sale.balance_due); setShowPaymentModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2 shadow-sm">
               <DollarSign size={16} /> Record Payment
