@@ -109,13 +109,22 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
     setIsSubmitting(true)
     
     // Create Payment
-    const { data: latest } = await supabase.from('payments').select('receipt_number').ilike('receipt_number', 'PAY-%').order('receipt_number', { ascending: false }).limit(1).single()
+    const { data: latest } = await supabase.from('payments').select('receipt_number').ilike('receipt_number', 'PAY-%').order('receipt_number', { ascending: false }).limit(1).maybeSingle()
     let nextSeq = 1
     if (latest && latest.receipt_number) {
       const match = latest.receipt_number.match(/PAY-(\d+)/)
       if (match) nextSeq = parseInt(match[1]) + 1
     }
     const receiptNumber = `PAY-${nextSeq.toString().padStart(6, '0')}`
+
+    // Generate Customer Receipt (PR-xxxxx)
+    let nextPrSeq = 1
+    const { data: latestPr } = await supabase.from('payments').select('customer_receipt').ilike('customer_receipt', 'PR-%').order('customer_receipt', { ascending: false }).limit(1).maybeSingle()
+    if (latestPr && latestPr.customer_receipt) {
+      const match = latestPr.customer_receipt.match(/PR-(\d+)/)
+      if (match) nextPrSeq = parseInt(match[1]) + 1
+    }
+    const customerReceipt = `PR-${nextPrSeq.toString().padStart(5, '0')}`
 
     const { data: { user } } = await supabase.auth.getUser()
     const receivedBy = user?.user_metadata?.first_name 
@@ -128,6 +137,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
 
     const { data: payment, error: payErr } = await supabase.from('payments').insert({
       receipt_number: receiptNumber,
+      customer_receipt: customerReceipt,
       invoice_id: inv.id,
       customer_id: inv.customer_id,
       amount_paid: amount,

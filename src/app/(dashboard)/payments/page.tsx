@@ -206,8 +206,7 @@ export default function PaymentsList() {
                   history.map(p => (
                     <tr key={p.id} className="hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-800">
-                        {p.customer_receipt || 'PENDING'}
-                        <span className="block text-[10px] text-slate-400 font-normal">Internal: {p.receipt_number}</span>
+                        {p.customer_receipt}
                       </td>
                       <td className="px-4 py-3 text-slate-600">{format(new Date(p.created_at), 'MMM d, yyyy')}</td>
                       <td className="px-4 py-3 text-slate-800">{formatCustomerName(p.customers)}</td>

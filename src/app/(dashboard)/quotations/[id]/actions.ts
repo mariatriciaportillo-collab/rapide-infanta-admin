@@ -176,6 +176,15 @@ export async function recordDownpayment(quotationId: string, amount: number, met
   }
   const receiptNumber = `PAY-${nextSeq.toString().padStart(6, '0')}`
 
+  // Generate Customer Receipt (DP-xxxxx)
+  let nextDpSeq = 1
+  const { data: latestDp } = await supabase.from('payments').select('customer_receipt').ilike('customer_receipt', 'DP-%').order('customer_receipt', { ascending: false }).limit(1).maybeSingle()
+  if (latestDp && latestDp.customer_receipt) {
+    const match = latestDp.customer_receipt.match(/DP-(\d+)/)
+    if (match) nextDpSeq = parseInt(match[1]) + 1
+  }
+  const customerReceipt = `DP-${nextDpSeq.toString().padStart(5, '0')}`
+
   const { data: { user } } = await supabase.auth.getUser()
   const receivedBy = user?.user_metadata?.first_name 
     ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
@@ -184,6 +193,7 @@ export async function recordDownpayment(quotationId: string, amount: number, met
   // Insert payment
   const { error: payErr } = await supabase.from('payments').insert({
     receipt_number: receiptNumber,
+    customer_receipt: customerReceipt,
     customer_id: quote.customer_id,
     amount_paid: amount,
     payment_method: method,
