@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 import { Plus, Edit, Printer, Banknote, Search, Filter } from 'lucide-react'
 import { format } from 'date-fns'
 import { TableActions, TableAction } from '@/components/ui/TableActions'
@@ -12,6 +13,9 @@ export default function QuickSaleList() {
   const router = useRouter()
   const [sales, setSales] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 10
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
@@ -23,7 +27,7 @@ export default function QuickSaleList() {
         .select(`
           *,
           customers:customer_id(name, first_name, last_name, customer_type)
-        `)
+        `, { count: 'exact' })
         .order('created_at', { ascending: false })
       
       if (statusFilter !== 'ALL') {
@@ -35,13 +39,14 @@ export default function QuickSaleList() {
         query = query.or(`quick_sale_number.ilike.%${q}%, customers.name.ilike.%${q}%, customers.first_name.ilike.%${q}%, customers.last_name.ilike.%${q}%`)
       }
 
-      const { data } = await query
+      const { data, count } = await query.range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
+      if (count !== null) setTotalCount(count)
       if (data) setSales(data)
       setLoading(false)
     }
     const timer = setTimeout(load, 300)
     return () => clearTimeout(timer)
-  }, [supabase, searchQuery, statusFilter])
+  }, [supabase, searchQuery, statusFilter, currentPage])
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
@@ -70,7 +75,7 @@ export default function QuickSaleList() {
               type="text" 
               placeholder="Search by Quick Sale No. or Customer..." 
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -78,7 +83,7 @@ export default function QuickSaleList() {
             <Filter size={16} className="text-slate-500" />
             <select 
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
+              onChange={e => { setStatusFilter(e.target.value); setCurrentPage(1); }}
               className="border border-slate-300 rounded-md py-2 pl-3 pr-8 bg-white text-sm"
             >
               <option value="ALL">All Statuses</option>
@@ -150,6 +155,7 @@ export default function QuickSaleList() {
             </tbody>
           </table>
         </div>
+        <Pagination totalCount={totalCount} pageSize={pageSize} currentPage={currentPage} onPageChange={setCurrentPage} />
       </div>
     </div>
   )

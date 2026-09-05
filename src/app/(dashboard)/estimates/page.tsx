@@ -1,15 +1,23 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { UrlPagination } from '@/components/ui/UrlPagination'
 import { format } from 'date-fns'
 
-export default async function EstimatesPage() {
+export default async function EstimatesPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams
+  const currentPage = parseInt(params.page || '1', 10)
+  const pageSize = 10
+  const from = (currentPage - 1) * pageSize
+  const to = from + pageSize - 1
+
   const supabase = await createClient()
 
   // Fetch estimates ordered by newest first
-  const { data: estimates, error } = await supabase
+  const { data: estimates, count, error } = await supabase
     .from('estimates')
-    .select('*')
+    .select('*, customers(name, first_name, last_name, customer_type), vehicles(make, model, plate_number)', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -83,6 +91,7 @@ export default async function EstimatesPage() {
           </tbody>
         </table>
       </div>
+      <UrlPagination totalCount={count || 0} pageSize={pageSize} currentPage={currentPage} />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { TableActions, TableAction } from '@/components/ui/TableActions'
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 import { Plus, Search, FileText, Printer, Eye, Banknote } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -11,22 +12,27 @@ export default function InvoiceList() {
   const supabase = createClient()
   const [invoices, setInvoices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const pageSize = 10
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
+      const { data, count } = await supabase
         .from('invoices')
         .select(`
           *,
           customers:customer_id(name, first_name, last_name, customer_type),
           vehicles:vehicle_id(plate_number, make, model)
-        `)
+        `, { count: 'exact' })
         .order('created_at', { ascending: false })
+        .range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
       if (data) setInvoices(data)
+      if (count !== null) setTotalCount(count)
       setLoading(false)
     }
     load()
-  }, [supabase])
+  }, [supabase, currentPage])
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
@@ -95,6 +101,7 @@ export default function InvoiceList() {
             </tbody>
           </table>
         </div>
+        <Pagination totalCount={totalCount} pageSize={pageSize} currentPage={currentPage} onPageChange={setCurrentPage} />
       </div>
     </div>
   )

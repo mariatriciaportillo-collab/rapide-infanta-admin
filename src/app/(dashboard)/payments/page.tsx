@@ -4,6 +4,7 @@ import { TableActions, TableAction } from '@/components/ui/TableActions'
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 import { format } from 'date-fns'
 import { X, Printer, Banknote } from 'lucide-react'
 import { recordDownpayment } from '@/app/(dashboard)/quotations/[id]/actions'
@@ -14,6 +15,10 @@ export default function PaymentsList() {
   const [downpayments, setDownpayments] = useState<any[]>([])
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [dpPage, setDpPage] = useState(1)
+  const [histPage, setHistPage] = useState(1)
+  const [histTotal, setHistTotal] = useState(0)
+  const pageSize = 10
 
   // Modal State
   const [showModal, setShowModal] = useState(false)
@@ -51,7 +56,7 @@ export default function PaymentsList() {
     setDownpayments(activeQs);
 
     // 2. Fetch Payment History
-    const { data: payData } = await supabase
+    const { data: payData, count: payCount } = await supabase
       .from('payments')
       .select(`
         *,
@@ -59,19 +64,20 @@ export default function PaymentsList() {
         invoices:invoice_id(invoice_number, amount_paid),
         quick_sales:quick_sale_id(quick_sale_number, amount_paid),
         quotations:quotation_id(quote_number)
-      `)
+      `, { count: 'exact' })
       .neq('payment_type', 'DOWNPAYMENT')
       .order('created_at', { ascending: false })
-      .limit(50)
+      .range((histPage - 1) * pageSize, histPage * pageSize - 1)
       
     setHistory(payData || [])
+    if (payCount !== null) setHistTotal(payCount)
     
     setLoading(false)
   }
 
   useEffect(() => {
     loadData()
-  }, [supabase])
+  }, [supabase, histPage])
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
@@ -103,6 +109,8 @@ export default function PaymentsList() {
       setIsSubmitting(false)
     }
   }
+
+  const dpToDisplay = downpayments.slice((dpPage - 1) * pageSize, dpPage * pageSize)
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -144,10 +152,10 @@ export default function PaymentsList() {
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
                   <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
-                ) : downpayments.length === 0 ? (
+                ) : dpToDisplay.length === 0 ? (
                   <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No pending downpayments</td></tr>
                 ) : (
-                  downpayments.map(q => {
+                  dpToDisplay.map(q => {
                     const paymentsArr = Array.isArray(q.payments) ? q.payments : (q.payments ? [q.payments] : []);
                     const receipt = paymentsArr.length > 0 && paymentsArr[paymentsArr.length - 1].customer_receipt 
                       ? paymentsArr[paymentsArr.length - 1].customer_receipt 
