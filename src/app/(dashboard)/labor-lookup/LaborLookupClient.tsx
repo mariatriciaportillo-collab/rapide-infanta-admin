@@ -43,7 +43,7 @@ type Props = {
   services: Service[]
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export function LaborLookupClient({ makes, models, services }: Props) {
   const supabase = createClient()
@@ -173,7 +173,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Labor Rate Lookup</h1>
+          <h1 className="text-3xl font-medium text-slate-900 tracking-tight">Labor Rate Lookup</h1>
           <p className="text-slate-500 mt-1">Search for a service or vehicle to view saved labor reference rates.</p>
         </div>
         <Link 
@@ -290,7 +290,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </div>
                     </div>
                   ) : paginatedRates.length === 0 ? (
-                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg ">
                       <p className="text-slate-600 font-medium mb-4">No vehicle-specific labor rates found for this criteria.</p>
                       <Link 
                         href={`/labor-lookup/new?service_id=${selectedService.id}`}
@@ -300,36 +300,31 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </Link>
                     </div>
                   ) : (
-                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-slate-50 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
-                              <th className="px-6 py-3">Make</th>
-                              <th className="px-6 py-3">Model</th>
-                              <th className="px-6 py-3 text-right">Labor MT</th>
-                              <th className="px-6 py-3 text-right">Labor AT</th>
-                              <th className="px-6 py-3 text-center w-24">Actions</th>
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                          <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-3 font-semibold">Make</th>
+                              <th className="px-4 py-3 font-semibold">Model</th>
+                              <th className="px-4 py-3 text-right font-semibold">Labor MT</th>
+                              <th className="px-4 py-3 text-right font-semibold">Labor AT</th>
+                              <th className="px-4 py-3 w-24 font-semibold text-right w-16">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {paginatedRates.map(rate => (
-                              <tr key={rate.id} className="hover:bg-slate-50 transition">
-                                <td className="px-6 py-4 font-bold text-slate-800">{rate.vehicle_makes?.name || 'Unknown'}</td>
-                                <td className="px-6 py-4 font-medium text-slate-700">{rate.vehicle_models?.name || 'Unknown'}</td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                              <tr key={rate.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-medium text-slate-900">{rate.vehicle_makes?.name || 'Unknown'}</td>
+                                <td className="px-4 py-3 font-medium text-slate-700">{rate.vehicle_models?.name || 'Unknown'}</td>
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">
                                   {formatCurrency(rate.labor_manual)}
                                 </td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">
                                   {formatCurrency(rate.labor_automatic)}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                  <Link 
-                                    href={`/labor-lookup/${rate.id}/edit`}
-                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-                                  >
-                                    Edit
-                                  </Link>
+                                <td className="px-4 py-3 text-right">
+                                  <TableActions align="right"><TableAction icon={Edit} label="Edit" href={`/labor-lookup/${rate.id}/edit`} /></TableActions>
                                 </td>
                               </tr>
                             ))}
@@ -367,7 +362,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                     Make
                   </label>
                   <select 
-                    className="w-full px-4 py-3 border border-slate-300 rounded-md outline-none focus:border-blue-500 bg-white font-medium text-slate-800 shadow-sm"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-md outline-none focus:border-blue-500 bg-white font-medium text-slate-900 shadow-sm"
                     value={vehMakeId}
                     onChange={e => {
                       setVehMakeId(e.target.value)
@@ -384,7 +379,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                     Model
                   </label>
                   <select 
-                    className="w-full px-4 py-3 border border-slate-300 rounded-md outline-none focus:border-blue-500 bg-white font-medium text-slate-800 shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
+                    className="w-full px-4 py-3 border border-slate-300 rounded-md outline-none focus:border-blue-500 bg-white font-medium text-slate-900 shadow-sm disabled:bg-slate-100 disabled:text-slate-400"
                     value={vehModelId}
                     onChange={e => setVehModelId(e.target.value)}
                     disabled={!vehMakeId}
@@ -417,7 +412,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </div>
                     </div>
                   ) : paginatedRates.length === 0 ? (
-                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                    <div className="text-center py-12 px-4 border border-dashed border-slate-300 rounded-lg ">
                       <p className="text-slate-600 font-medium mb-4">No labor reference rates have been added for this vehicle yet.</p>
                       <Link 
                         href={`/labor-lookup/new?make_id=${vehMakeId}&model_id=${vehModelId}`}
@@ -427,42 +422,37 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                       </Link>
                     </div>
                   ) : (
-                    <div className="border border-slate-200 rounded-lg bg-white overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse bg-white">
-                          <thead>
-                            <tr className="bg-slate-100 text-slate-600 text-xs uppercase font-bold border-b border-slate-200">
-                              <th className="px-6 py-3 w-80">Labor / Service</th>
-                              <th className="px-6 py-3">Group</th>
-                              <th className="px-6 py-3">Category</th>
-                              <th className="px-6 py-3 text-right w-32">Labor MT</th>
-                              <th className="px-6 py-3 text-right w-32">Labor AT</th>
-                              <th className="px-6 py-3 text-center w-24">Actions</th>
+                        <table className="w-full text-left text-sm whitespace-nowrap">
+                          <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+                            <tr>
+                              <th className="px-4 py-3 w-80 font-semibold">Labor / Service</th>
+                              <th className="px-4 py-3 font-semibold">Group</th>
+                              <th className="px-4 py-3 font-semibold">Category</th>
+                              <th className="px-4 py-3 text-right w-32 font-semibold">Labor MT</th>
+                              <th className="px-4 py-3 text-right w-32 font-semibold">Labor AT</th>
+                              <th className="px-4 py-3 w-24 font-semibold text-right w-16">Actions</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
                             {paginatedRates.map(rate => (
-                              <tr key={rate.id} className="hover:bg-slate-50 transition">
-                                <td className="px-6 py-4 font-bold text-slate-800">{rate.labor_services?.name || 'Unknown'}</td>
-                                <td className="px-6 py-4 text-sm font-medium text-slate-600 bg-slate-50">
+                              <tr key={rate.id} className="hover:bg-slate-50">
+                                <td className="px-4 py-3 font-medium text-slate-900">{rate.labor_services?.name || 'Unknown'}</td>
+                                <td className="px-4 py-3 text-slate-500 text-xs">
                                   {rate.labor_services?.labor_groups?.name || '—'}
                                 </td>
-                                <td className="px-6 py-4 text-sm font-medium text-slate-600">
+                                <td className="px-4 py-3 text-sm font-medium text-slate-600">
                                   {rate.labor_services?.labor_categories?.name || '—'}
                                 </td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">
                                   {formatCurrency(rate.labor_manual)}
                                 </td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">
+                                <td className="px-4 py-3 text-right font-medium text-slate-900">
                                   {formatCurrency(rate.labor_automatic)}
                                 </td>
-                                <td className="px-6 py-4 text-center">
-                                  <Link 
-                                    href={`/labor-lookup/${rate.id}/edit`}
-                                    className="text-blue-600 hover:text-blue-800 font-medium text-sm transition"
-                                  >
-                                    Edit
-                                  </Link>
+                                <td className="px-4 py-3 text-right">
+                                  <TableActions align="right"><TableAction icon={Edit} label="Edit" href={`/labor-lookup/${rate.id}/edit`} /></TableActions>
                                 </td>
                               </tr>
                             ))}

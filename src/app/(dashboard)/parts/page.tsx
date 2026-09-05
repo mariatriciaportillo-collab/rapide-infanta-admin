@@ -7,7 +7,7 @@ import { createClient } from '@/utils/supabase/client'
 import { Plus, Search, Filter, Edit, Package, Loader2 } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export default function PartsListPage() {
   const supabase = createClient()
@@ -100,7 +100,7 @@ export default function PartsListPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Parts & Materials</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Parts & Materials</h1>
           <p className="text-slate-500 mt-1">Manage product inventory, pricing, and references</p>
         </div>
         <Link 
@@ -153,7 +153,7 @@ export default function PartsListPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                  <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
+                  <tr>
                     <th className="px-4 py-3 font-semibold">PART / PRODUCT</th>
                     <th className="px-4 py-3 font-semibold">PART NO.</th>
                     <th className="px-4 py-3 font-semibold">BRAND</th>
@@ -162,29 +162,29 @@ export default function PartsListPage() {
                     <th className="px-4 py-3 font-semibold">SELLING PRICE</th>
                     <th className="px-4 py-3 font-semibold">STOCK</th>
                     <th className="px-4 py-3 font-semibold">STATUS</th>
-                    <th className="px-4 py-3  text-right font-semibold w-16">ACTIONS</th>
+                    <th className="px-4 py-3 text-right font-semibold w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {parts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
-                                                <p className="text-base font-medium">No parts found matching your criteria.</p>
+                      <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                                                <p>No parts found matching your criteria.</p>
                         {searchQuery && <p className="text-sm mt-1">Try adjusting your search filters.</p>}
                       </td>
                     </tr>
                   ) : (
                     parts.map(part => (
                       <tr key={part.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-bold text-slate-900 truncate max-w-[250px]" title={part.name}>{part.name}</td>
-                        <td className="px-4 py-3 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 truncate max-w-[250px]" title={part.name}>{part.name}</td>
+                        <td className="px-4 py-3 text-slate-600">{part.part_number || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600">{part.brands?.name || '—'}</td>
                         <td className="px-4 py-3 text-slate-600 text-sm">
-                          <div className="font-bold text-slate-800">{part.part_groups?.name || '—'}</div>
-                          <div className="text-slate-500">{part.part_categories?.name}</div>
+                          <div className="font-medium text-slate-900">{part.part_groups?.name || '—'}</div>
+                          <div className="text-xs text-slate-500">{part.part_categories?.name}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-500 font-medium text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 font-bold text-blue-700 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-slate-500 text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
                             Number(part.stock_quantity) <= Number(part.reorder_level || 0) 

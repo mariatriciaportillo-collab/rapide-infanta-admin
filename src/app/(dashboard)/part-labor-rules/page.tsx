@@ -4,6 +4,7 @@ import { TableActions, TableAction } from '@/components/ui/TableActions'
 import React, { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react'
 
 export default function PartLaborRulesPage() {
@@ -11,6 +12,9 @@ export default function PartLaborRulesPage() {
   const [rules, setRules] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const PAGE_SIZE = 10
 
   const loadRules = async () => {
     setLoading(true)
@@ -25,7 +29,9 @@ export default function PartLaborRulesPage() {
       `)
       .order('created_at', { ascending: false })
       
+      
     if (data) setRules(data)
+    
     setLoading(false)
   }
 
@@ -57,7 +63,7 @@ export default function PartLaborRulesPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Part-to-Labor Rules</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Part-to-Labor Rules</h1>
           <p className="text-slate-500">Automatically suggest labor when specific repair parts are added to Quotations or Estimates.</p>
         </div>
         <Link 
@@ -76,7 +82,7 @@ export default function PartLaborRulesPage() {
               type="text" 
               placeholder="Search by rule, part, or labor..." 
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
               className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -100,9 +106,9 @@ export default function PartLaborRulesPage() {
               ) : filteredRules.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No rules found.</td></tr>
               ) : (
-                filteredRules.map(rule => (
+                filteredRules.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(rule => (
                   <tr key={rule.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-800">{rule.rule_name}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">{rule.rule_name}</td>
                     <td className="px-4 py-3 text-slate-600">
                       <div className="flex flex-col gap-1">
                         {rule.triggers?.map((t: any, idx: number) => (
@@ -114,14 +120,14 @@ export default function PartLaborRulesPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-800 font-medium">{rule.labor?.name || '-'}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${rule.rule_type === 'COMBINATION' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}>
+                      <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${rule.rule_type === 'COMBINATION' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700'}`}>
                         {rule.rule_type}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button 
                         onClick={() => toggleActive(rule.id, rule.active)}
-                        className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider transition ${rule.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                        className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase transition ${rule.active ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                       >
                         {rule.active ? 'Active' : 'Disabled'}
                       </button>
@@ -138,6 +144,7 @@ export default function PartLaborRulesPage() {
             </tbody>
           </table>
         </div>
+        <Pagination totalCount={filteredRules.length} pageSize={PAGE_SIZE} currentPage={page} onPageChange={setPage} />
       </div>
     </div>
   )

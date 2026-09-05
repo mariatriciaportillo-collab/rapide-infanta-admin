@@ -7,7 +7,7 @@ import { Plus, Search, Filter, Edit, Package, Loader2 } from 'lucide-react'
 import { Pagination } from '@/components/ui/Pagination'
 import { TableActions, TableAction } from '@/components/ui/TableActions'
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export default function PackagesListPage() {
   const supabase = createClient()
@@ -66,7 +66,7 @@ export default function PackagesListPage() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Packages</h1>
+          <h1 className="text-2xl font-medium text-slate-900">Packages</h1>
           <p className="text-slate-500 mt-1">Manage bundled services and parts</p>
         </div>
         <Link 
@@ -116,12 +116,12 @@ export default function PackagesListPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                  <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-4 py-3  w-2/5 font-semibold">PACKAGE NAME</th>
-                    <th className="px-4 py-3  w-1/5 font-semibold">CATEGORY</th>
-                    <th className="px-4 py-3  text-right w-1/5 font-semibold">PACKAGE PRICE</th>
-                    <th className="px-4 py-3  w-1/5 font-semibold">STATUS</th>
-                    <th className="px-4 py-3   w-16 text-right w-16 font-semibold">ACTIONS</th>
+                  <tr>
+                    <th className="px-4 py-3 w-2/5 font-semibold">PACKAGE NAME</th>
+                    <th className="px-4 py-3 w-1/5 font-semibold">CATEGORY</th>
+                    <th className="px-4 py-3 text-right w-1/5 font-semibold">PACKAGE PRICE</th>
+                    <th className="px-4 py-3 w-1/5 font-semibold">STATUS</th>
+                    <th className="px-4 py-3 w-16 text-right w-16 font-semibold">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -140,21 +140,21 @@ export default function PackagesListPage() {
                       return (
                         <tr key={pkg.id} className="hover:bg-slate-50">
                           <td className="px-4 py-3">
-                            <div className="font-bold text-slate-900">
+                            <div className="font-medium text-slate-900">
                               <Link href={`/packages/${pkg.id}/edit`} className="hover:underline">
                                 {pkg.name}
                               </Link>
                             </div>
-                            {pkg.package_code && <div className="text-xs font-mono text-slate-500 mt-0.5">{pkg.package_code}</div>}
+                            {pkg.package_code && <div className="text-xs  text-slate-500 mt-0.5">{pkg.package_code}</div>}
                           </td>
-                          <td className="px-4 py-3 text-slate-700 font-medium">
+                          <td className="px-4 py-3 text-slate-500">
                             {pkg.category || '—'}
                           </td>
-                          <td className="px-4 py-3 text-right font-medium text-slate-800">
+                          <td className="px-4 py-3 text-right font-medium text-slate-900">
                             {pkgPrice !== null ? `₱${pkgPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
+                            <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
                               pkg.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                             }`}>
                               {pkg.is_active ? 'Active' : 'Inactive'}

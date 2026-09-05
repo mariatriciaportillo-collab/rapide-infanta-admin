@@ -27,7 +27,7 @@ type Props = {
   categories: Category[]
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export function LaborChargesClient({ groups, categories }: Props) {
   const supabase = createClient()
@@ -178,19 +178,19 @@ export function LaborChargesClient({ groups, categories }: Props) {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr>
-                    <th className="px-6 py-3">Labor / Service</th>
-                    <th className="px-6 py-3">Group</th>
-                    <th className="px-6 py-3">Category</th>
-                    <th className="px-6 py-3 text-right">Std. Hrs</th>
-                    <th className="px-6 py-3 text-right">Rate</th>
-                    <th className="px-6 py-3 text-center">Status</th>
-                    <th className="px-6 py-3"></th>
+                    <th className="px-4 py-3 py-3 font-semibold">Labor / Service</th>
+                    <th className="px-4 py-3 py-3 font-semibold">Group</th>
+                    <th className="px-4 py-3 py-3 font-semibold">Category</th>
+                    <th className="px-4 py-3 py-3 text-right font-semibold">Std. Hrs</th>
+                    <th className="px-4 py-3 py-3 text-right font-semibold">Rate</th>
+                    <th className="px-4 py-3 py-3 text-center font-semibold">Status</th>
+                    <th className="px-4 py-3 py-3 font-semibold"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-100">
                   {paginatedServices.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-slate-500">
@@ -200,8 +200,8 @@ export function LaborChargesClient({ groups, categories }: Props) {
                     </tr>
                   ) : (
                     paginatedServices.map(service => (
-                      <tr key={service.id} className="hover:bg-slate-50 transition">
-                        <td className="px-6 py-4">
+                      <tr key={service.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
                           <div className="font-bold text-slate-800">{service.name}</div>
                           {service.notes && (
                             <div className="text-xs text-slate-400 mt-1 flex items-start gap-1 max-w-xs">
@@ -210,24 +210,24 @@ export function LaborChargesClient({ groups, categories }: Props) {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 font-medium text-slate-700">
+                        <td className="px-4 py-3 font-medium text-slate-700">
                           {service.labor_groups?.name || '-'}
                         </td>
-                        <td className="px-6 py-4 text-slate-600">
+                        <td className="px-4 py-3 text-slate-600">
                           {service.labor_categories?.name || '-'}
                         </td>
-                        <td className="px-6 py-4 text-right text-slate-600">
+                        <td className="px-4 py-3 text-right text-slate-600">
                           {service.standard_hours ? service.standard_hours.toFixed(1) : '-'}
                         </td>
-                        <td className="px-6 py-4 text-right font-bold text-slate-700">
+                        <td className="px-4 py-3 text-right font-bold text-slate-700">
                           {formatCurrency(service.rate)}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-4 py-3 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-semibold ${service.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                             {service.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-4 py-3 text-right">
                           <Link 
                             href={`/labor-charges/${service.id}/edit`} 
                             className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded inline-flex transition"

@@ -31,7 +31,7 @@ type Props = {
   models: Model[]
 }
 
-const PAGE_SIZE = 25
+const PAGE_SIZE = 10
 
 export function PartsLookupClient({ makes, models }: Props) {
   const supabase = createClient()
@@ -223,7 +223,7 @@ export function PartsLookupClient({ makes, models }: Props) {
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <h1 className="text-2xl font-medium text-slate-900 flex items-center gap-2">
             <Car size={24} className="text-blue-600" />
             Parts Lookup
           </h1>
@@ -337,26 +337,26 @@ export function PartsLookupClient({ makes, models }: Props) {
               
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
+                  <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                     <tr>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Year</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Engine</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Trans</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Category</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Part Reference</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Brand</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs">Source</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-wider text-xs text-center">Action</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Year</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Engine</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Trans</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Category</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Part Reference</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Brand</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold">Source</th>
+                      <th className="px-4 py-3 px-4 uppercase tracking-wider font-semibold text-right w-16">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {paginatedLookups.map((item) => (
-                      <tr key={item.id} className="hover:bg-slate-50 transition">
-                        <td className="py-3 px-4 font-medium text-slate-700">{item.yearDisplay}</td>
-                        <td className="py-3 px-4 text-slate-600">{item.engine_capacity || 'Any'}</td>
-                        <td className="py-3 px-4 text-slate-600">{item.transmission || 'Any'}</td>
-                        <td className="py-3 px-4 font-semibold text-slate-800">{item.category}</td>
-                        <td className="py-3 px-4">
+                      <tr key={item.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 px-4 font-medium text-slate-700">{item.yearDisplay}</td>
+                        <td className="px-4 py-3 px-4 text-slate-600">{item.engine_capacity || 'Any'}</td>
+                        <td className="px-4 py-3 px-4 text-slate-600">{item.transmission || 'Any'}</td>
+                        <td className="px-4 py-3 px-4 font-semibold text-slate-800">{item.category}</td>
+                        <td className="px-4 py-3 px-4">
                           {item.part_id ? (
                             <div>
                               <Link href={`/parts/${item.part_id}/edit`} className="text-blue-600 hover:underline font-medium block truncate max-w-[200px]" title={item.part_name || ''}>
@@ -368,15 +368,15 @@ export function PartsLookupClient({ makes, models }: Props) {
                             <span className="font-medium text-slate-700">{item.part_number || item.part_name || '—'}</span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{item.brand || '—'}</td>
-                        <td className="py-3 px-4">
+                        <td className="px-4 py-3 px-4 text-slate-600">{item.brand || '—'}</td>
+                        <td className="px-4 py-3 px-4">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             item.source === 'Manual Reference' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
                           }`}>
                             {item.source}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center">
+                        <td className="px-4 py-3 px-4 text-right">
                           <TableActions align="center">
                             {item.source === 'Manual Reference' && item.raw_id && (
                               <TableAction icon={Edit} label="Edit Manual Reference" href={`/parts-lookup/${item.raw_id}/edit`} />
