@@ -74,6 +74,7 @@ export default function EditCustomerPage({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     setIsSubmitting(true)
     setError(null)
 
@@ -101,12 +102,14 @@ export default function EditCustomerPage({
       const { error: updateError } = await supabase
         .from('customers')
         .update({
-          customer_type: customerType.toUpperCase(),
+          customer_type: customerType,
           name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
           contact_last_name: customerType === 'company' ? cleanContactLast : null,
+          company_name: customerType === 'company' ? cleanName : null,
+          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,
           mobile: mobile.trim(),
           telephone: customerType === 'company' ? telephone.trim() : null,
           email: email.trim(),
@@ -117,12 +120,17 @@ export default function EditCustomerPage({
         })
         .eq('id', id)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        setError(updateError.message || updateError.details || 'Unable to update customer.')
+        setIsSubmitting(false)
+        return
+      }
 
       router.push(`/customers/${id}`)
     } catch (err: any) {
-      console.error(err)
-      setError(err.message || 'An error occurred while saving.')
+      console.log('Save Error:', err)
+      const errorMsg = err?.message || err?.details || err?.hint || 'An error occurred while saving.'
+      setError(errorMsg)
       setIsSubmitting(false)
     }
   }

@@ -78,7 +78,7 @@ export default function QuickSaleViewPage({ params }: { params: Promise<{ id: st
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!sale) return <div className="p-6 text-center text-red-500">Quick Sale not found</div>
 
-  const isCompany = sale.customers?.customer_type?.toLowerCase() === 'company'
+  const isCompany = sale.customers?.customer_type === 'company'
 
 const handleComplete = async () => {
     if (!confirm('Complete this Quick Sale and Push to Payments? This will deduct inventory and lock the record.')) return;

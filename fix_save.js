@@ -1,50 +1,32 @@
 const fs = require('fs');
-let file = fs.readFileSync('src/components/quotations/QuotationForm.tsx', 'utf8');
 
-// 1. Replace the old delete logic in the edit block.
-const oldDeleteRegex = /\/\/ Delete old items so we can insert cleanly\s*await supabase\.from\('quotation_items'\)\.delete\(\)\.eq\('quotation_id', quote\.id\)/;
-file = file.replace(oldDeleteRegex, `// We will delete removed items AFTER upserting the new/updated ones.`);
+function fixFile(file) {
+  let content = fs.readFileSync(file, 'utf8');
 
-// 2. Add the idMap logic right before itemsToInsert
-const itemsToInsertRegex = /(\/\/ 3\. Insert Line Items\s*const itemsToInsert = items)/;
-const idMapLogic = `// 3. Prepare Line Items
-      // Generate fresh IDs for this specific save attempt to prevent 23505 on retries
-      const existingDbIds = new Set((initialData?.quotation_items || []).map((i: any) => i.id));
-      const idMap = new Map<string, string>();
-      
-      items.forEach(item => {
-        if (existingDbIds.has(item.id)) {
-          idMap.set(item.id, item.id);
-        } else {
-          idMap.set(item.id, crypto.randomUUID());
-        }
-      });
+  // Fix error handling in handleSave
+  content = content.replace(/if \(insertError\) throw insertError\n\n      router\.push\(`\/customers\/\$\{data\.id\}`\)/g, 
+    "if (insertError) {\n        setError(insertError.message || insertError.details || 'Unable to save customer.')\n        setIsSubmitting(false)\n        return\n      }\n\n      if (!data || !data.id) {\n        setError('Save successful but no ID returned.')\n        setIsSubmitting(false)\n        return\n      }\n\n      router.push(`/customers/${data.id}`)");
 
-      const itemsToInsert = items`;
-file = file.replace(itemsToInsertRegex, idMapLogic);
+  content = content.replace(/if \(updateError\) throw updateError\n\n      router\.push\(`\/customers\/\$\{id\}`\)/g, 
+    "if (updateError) {\n        setError(updateError.message || updateError.details || 'Unable to update customer.')\n        setIsSubmitting(false)\n        return\n      }\n\n      router.push(`/customers/${id}`)");
 
-// 3. Update the mapping in itemsToInsert to use idMap
-file = file.replace(/id: item\.id,/, 'id: idMap.get(item.id),');
-file = file.replace(/parent_item_id: item\.parent_item_id \|\| null,/, 'parent_item_id: item.parent_item_id ? idMap.get(item.parent_item_id) : null,');
+  // Fix payload in insert/update
+  // Add company_name and contact_person
+  if (file.includes('new/page.tsx')) {
+    content = content.replace(/contact_last_name: customerType === 'company' \? cleanContactLast : null,/g, 
+      "contact_last_name: customerType === 'company' ? cleanContactLast : null,\n          company_name: customerType === 'company' ? cleanCompanyName : null,\n          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,");
+  } else {
+    // in edit/page.tsx, cleanCompanyName is cleanName
+    content = content.replace(/contact_last_name: customerType === 'company' \? cleanContactLast : null,/g, 
+      "contact_last_name: customerType === 'company' ? cleanContactLast : null,\n          company_name: customerType === 'company' ? cleanName : null,\n          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,");
+  }
+  
+  // Make sure customerType is lowercase
+  content = content.replace(/customer_type: customerType\.toUpperCase\(\)/g, "customer_type: customerType");
 
-// 4. Change insert to upsert and add delete logic
-const insertRegex = /const { error: itemsError } = await supabase\s*\.from\('quotation_items'\)\s*\.insert\(itemsToInsert\)/;
-const upsertLogic = `const { error: itemsError } = await supabase
-          .from('quotation_items')
-          .upsert(itemsToInsert) // Use upsert instead of insert
-          
-      // Delete removed items if editing
-      if (isEditingQuote && initialData?.quotation_items) {
-        const currentItemIds = new Set(itemsToInsert.map(i => i.id));
-        const itemsToDelete = initialData.quotation_items
-          .filter((i: any) => !currentItemIds.has(i.id))
-          .map((i: any) => i.id);
-          
-        if (itemsToDelete.length > 0) {
-          const { error: delErr } = await supabase.from('quotation_items').delete().in('id', itemsToDelete);
-          if (delErr) console.error("Failed to delete removed items", delErr);
-        }
-      }`;
-file = file.replace(insertRegex, upsertLogic);
+  fs.writeFileSync(file, content);
+  console.log(`Fixed ${file}`);
+}
 
-fs.writeFileSync('src/components/quotations/QuotationForm.tsx', file);
+fixFile('src/app/(dashboard)/customers/new/page.tsx');
+fixFile('src/app/(dashboard)/customers/[id]/edit/page.tsx');

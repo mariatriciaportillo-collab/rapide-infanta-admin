@@ -33,7 +33,7 @@ export default async function ViewEstimatePage({
   const items = estimate.estimate_items.sort((a: any, b: any) => a.sort_order - b.sort_order)
   const normalizedStatus = (estimate.status || 'DRAFT').toUpperCase()
   
-  const isCompany = estimate.customer_type?.toLowerCase() === 'company'
+  const isCompany = estimate.customer_type === 'company'
 
   return (
     <div className="pb-12 max-w-5xl mx-auto">

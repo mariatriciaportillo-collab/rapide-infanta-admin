@@ -53,8 +53,8 @@ export default async function CustomerDetailsPage({
     .eq('customer_id', id)
     .order('created_at', { ascending: false })
 
-  const isCompany = customer.customer_type?.toLowerCase() === 'company'
-  const displayName = customer.customer_type?.toLowerCase() === 'company' && customer.name
+  const isCompany = customer.customer_type === 'company'
+  const displayName = customer.customer_type === 'company' && customer.name
     ? customer.name
     : [customer.first_name, customer.last_name].filter(Boolean).join(' ') || 'Unnamed Customer'
 

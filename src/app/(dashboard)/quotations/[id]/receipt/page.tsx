@@ -28,7 +28,7 @@ export default async function QuotationReceiptPage({ params }: { params: Promise
   const totalPaid = validPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0)
 
   const customerName = quote.customers 
-    ? (quote.customers.customer_type?.toLowerCase() === 'company' ? quote.customers.company_name : `${quote.customers.first_name} ${quote.customers.last_name}`).trim()
+    ? (quote.customers.customer_type === 'company' ? quote.customers.company_name : `${quote.customers.first_name} ${quote.customers.last_name}`).trim()
     : 'Unknown Customer'
     
   const vehicleInfo = quote.vehicles 

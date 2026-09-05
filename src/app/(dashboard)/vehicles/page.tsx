@@ -106,7 +106,7 @@ export default async function VehiclesPage({
                         {vehicle.customers ? (
                           <div>
                             <Link href={`/customers/${vehicle.customers.id}`} className="font-medium text-slate-700 hover:text-blue-600 hover:underline flex items-center gap-2">
-                              {vehicle.customers.customer_type?.toLowerCase() === 'company' ? (
+                              {vehicle.customers.customer_type === 'company' ? (
                                 <Building2 size={16} className="text-slate-400" />
                               ) : (
                                 <User size={16} className="text-slate-400" />

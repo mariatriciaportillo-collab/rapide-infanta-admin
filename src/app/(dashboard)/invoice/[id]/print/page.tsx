@@ -37,7 +37,7 @@ export default function InvoicePrintPage({ params }: { params: Promise<{ id: str
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!inv) return <div className="p-6 text-center text-red-500">Not found</div>
 
-  const isCompany = inv.customers?.customer_type?.toLowerCase() === 'company'
+  const isCompany = inv.customers?.customer_type === 'company'
   const customerName = isCompany ? inv.customers?.company_name : `${inv.customers?.first_name} ${inv.customers?.last_name}`
 
   return (

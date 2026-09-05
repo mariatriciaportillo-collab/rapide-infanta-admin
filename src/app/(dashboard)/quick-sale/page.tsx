@@ -50,7 +50,7 @@ export default function QuickSaleList() {
 
   const formatCustomerName = (c: any) => {
     if (!c) return 'Unknown'
-    if (c.customer_type?.toLowerCase() === 'company') return c.name
+    if (c.customer_type === 'company') return c.name
     return c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()
   }
 

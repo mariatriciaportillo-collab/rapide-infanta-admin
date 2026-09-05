@@ -49,7 +49,7 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
     router.replace(`?tab=${tabId}`, { scroll: false })
   }
 
-  const isCompany = customer.customer_type?.toLowerCase() === 'company'
+  const isCompany = customer.customer_type === 'company'
   const displayContactPerson = isCompany 
     ? [customer.first_name, customer.last_name].filter(Boolean).join(' ') 
     : null

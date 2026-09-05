@@ -48,7 +48,7 @@ export default function EstimatePrintPage({
   if (loading) return <div className="p-6 text-center">Loading document...</div>
   if (!estimate) return <div className="p-6 text-center text-red-500">Document not found</div>
 
-  const isCompany = estimate.customer_type?.toLowerCase() === 'company'
+  const isCompany = estimate.customer_type === 'company'
 
   return (
     <div className="bg-white text-black min-h-screen w-full max-w-[210mm] mx-auto print:w-full print:max-w-none print:m-0 font-sans text-sm pb-10">

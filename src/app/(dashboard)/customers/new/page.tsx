@@ -36,6 +36,7 @@ export default function NewCustomerPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     setIsSubmitting(true)
     setError(null)
 
@@ -71,13 +72,15 @@ export default function NewCustomerPage() {
       const { data, error: insertError } = await supabase
         .from('customers')
         .insert({
-          customer_type: customerType.toUpperCase(),
+          customer_type: customerType,
           // Generate legacy name column value
           name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
           contact_last_name: customerType === 'company' ? cleanContactLast : null,
+          company_name: customerType === 'company' ? cleanCompanyName : null,
+          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,
           mobile: mobile.trim(),
           telephone: customerType === 'company' ? telephone.trim() : null,
           email: email.trim(),
@@ -88,12 +91,23 @@ export default function NewCustomerPage() {
         .select()
         .single()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        setError(insertError.message || insertError.details || 'Unable to save customer.')
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!data || !data.id) {
+        setError('Save successful but no ID returned.')
+        setIsSubmitting(false)
+        return
+      }
 
       router.push(`/customers/${data.id}`)
     } catch (err: any) {
-      console.error(err)
-      setError(err.message || 'An error occurred while saving.')
+      console.log('Save Error:', err)
+      const errorMsg = err?.message || err?.details || err?.hint || 'An error occurred while saving.'
+      setError(errorMsg)
       setIsSubmitting(false)
     }
   }
