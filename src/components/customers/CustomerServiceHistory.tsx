@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { FileText, Car, Filter, Calendar, History } from 'lucide-react'
 import Link from 'next/link'
+import { Pagination } from '@/components/ui/Pagination'
 import { format } from 'date-fns'
 
 type Props = {
@@ -12,6 +13,8 @@ type Props = {
 
 export function CustomerServiceHistory({ invoices, vehicles }: Props) {
   const [selectedVehicle, setSelectedVehicle] = useState('all')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 10
 
   const filteredInvoices = invoices.filter(inv => {
     if (selectedVehicle === 'all') return true
@@ -19,7 +22,7 @@ export function CustomerServiceHistory({ invoices, vehicles }: Props) {
   })
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6 flex flex-col">
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col">
       <div className="p-4 border-b border-slate-200 bg-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h3 className="font-semibold text-slate-800 flex items-center gap-2">
           <History className="text-slate-500" size={18} />
@@ -31,7 +34,7 @@ export function CustomerServiceHistory({ invoices, vehicles }: Props) {
             <Filter size={16} className="text-slate-500" />
             <select 
               value={selectedVehicle}
-              onChange={e => setSelectedVehicle(e.target.value)}
+              onChange={e => { setSelectedVehicle(e.target.value); setPage(1); }}
               className="border border-slate-300 rounded-md py-1.5 pl-3 pr-8 bg-white text-sm"
             >
               <option value="all">All Vehicles</option>
@@ -63,7 +66,7 @@ export function CustomerServiceHistory({ invoices, vehicles }: Props) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredInvoices.map(inv => {
+              {filteredInvoices.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(inv => {
                 // Generate description
                 const items = inv.invoice_items || []
                 // Only take top 3 items to avoid massive text, join by comma
@@ -106,6 +109,9 @@ export function CustomerServiceHistory({ invoices, vehicles }: Props) {
             </tbody>
           </table>
         </div>
+      )}
+      {filteredInvoices.length > 0 && (
+        <Pagination totalCount={filteredInvoices.length} pageSize={PAGE_SIZE} currentPage={page} onPageChange={setPage} />
       )}
     </div>
   )

@@ -1,9 +1,10 @@
-import { createClient } from '@/utils/supabase/server'
+const fs = require('fs');
+
+let pageContent = `import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { notFound } from 'next/navigation'
 import { CustomerTabs } from '@/components/customers/CustomerTabs'
-import { Suspense } from 'react'
 
 export default async function CustomerDetailsPage({
   params,
@@ -69,15 +70,17 @@ export default async function CustomerDetailsPage({
         </h2>
       </div>
 
-      <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading details...</div>}>
-        <CustomerTabs 
+      <CustomerTabs 
         customer={customer}
         vehicles={vehicles || []}
         estimates={estimates || []}
         invoices={invoices || []}
         quickSales={quickSales || []}
       />
-      </Suspense>
     </div>
   )
 }
+`
+
+fs.writeFileSync('src/app/(dashboard)/customers/[id]/page.tsx', pageContent);
+console.log('Updated page.tsx');
