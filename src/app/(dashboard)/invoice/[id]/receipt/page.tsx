@@ -38,7 +38,7 @@ export default async function InvoiceReceiptPage({ params }: { params: Promise<{
   else if (totalPaid > 0) status = 'PARTIALLY PAID';
 
   const customerName = inv.customers 
-    ? (inv.customers.customer_type === 'company' ? inv.customers.company_name : `${inv.customers.first_name} ${inv.customers.last_name}`).trim()
+    ? (inv.customers.customer_type?.toLowerCase() === 'company' ? inv.customers.company_name : `${inv.customers.first_name} ${inv.customers.last_name}`).trim()
     : 'Unknown Customer'
     
   const vehicleInfo = inv.vehicles 

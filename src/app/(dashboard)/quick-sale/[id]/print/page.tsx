@@ -37,7 +37,7 @@ export default function QuickSalePrintPage({ params }: { params: Promise<{ id: s
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!sale) return <div className="p-6 text-center text-red-500">Not found</div>
 
-  const isCompany = sale.customers?.customer_type === 'company'
+  const isCompany = sale.customers?.customer_type?.toLowerCase() === 'company'
   const customerName = isCompany ? sale.customers?.company_name : `${sale.customers?.first_name} ${sale.customers?.last_name}`
 
   return (

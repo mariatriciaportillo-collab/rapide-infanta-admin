@@ -28,7 +28,7 @@ export default async function QuickSaleReceiptPage({ params }: { params: Promise
   else if (totalPaid > 0) status = 'PARTIALLY PAID';
 
   const customerName = sale.customers 
-    ? (sale.customers.customer_type === 'company' ? sale.customers.company_name : `${sale.customers.first_name} ${sale.customers.last_name}`).trim()
+    ? (sale.customers.customer_type?.toLowerCase() === 'company' ? sale.customers.company_name : `${sale.customers.first_name} ${sale.customers.last_name}`).trim()
     : 'Unknown Customer'
     
   const vehicleInfo = sale.vehicles 

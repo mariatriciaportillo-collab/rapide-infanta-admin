@@ -71,7 +71,7 @@ export default function NewCustomerPage() {
       const { data, error: insertError } = await supabase
         .from('customers')
         .insert({
-          customer_type: customerType,
+          customer_type: customerType.toUpperCase(),
           // Generate legacy name column value
           name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
           first_name: customerType === 'individual' ? cleanFirstName : null,

@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { UrlPagination } from '@/components/ui/UrlPagination'
 
 function formatCustomerName(customer: any) {
-  if (customer.customer_type === 'company' && customer.name) {
+  if (customer.customer_type?.toLowerCase() === 'company' && customer.name) {
     return customer.name
   }
   const parts = [customer.first_name, customer.last_name].filter(Boolean)
@@ -146,7 +146,7 @@ export default async function CustomersPage({
                       <tr key={customer.id} className="hover:bg-slate-50">
                         <td className="px-4 py-3">
                           <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
-                            {customer.customer_type === 'company' ? (
+                            {customer.customer_type?.toLowerCase() === 'company' ? (
                               <Building2 size={16} className="text-slate-400" />
                             ) : (
                               <User size={16} className="text-slate-400" />
@@ -182,7 +182,7 @@ export default async function CustomersPage({
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
-                            {customer.customer_type === 'company' && displayContactPerson && (
+                            {customer.customer_type?.toLowerCase() === 'company' && displayContactPerson && (
                               <span className="text-slate-700 font-medium text-xs">Attn: {displayContactPerson}</span>
                             )}
                             {customer.mobile ? (

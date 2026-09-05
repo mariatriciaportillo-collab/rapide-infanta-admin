@@ -48,7 +48,7 @@ export default function QuotationPrintPage({
   if (loading) return <div className="p-6 text-center">Loading document...</div>
   if (!quote) return <div className="p-6 text-center text-red-500">Document not found</div>
 
-  const isCompany = quote.customer_type === 'company'
+  const isCompany = quote.customer_type?.toLowerCase() === 'company'
 
   return (
     <div className="bg-white text-black min-h-screen w-full max-w-[210mm] mx-auto print:w-full print:max-w-none print:m-0 font-sans text-sm pb-10">

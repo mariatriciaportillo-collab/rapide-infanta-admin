@@ -37,7 +37,7 @@ export default function PaymentReceiptPrintPage({ params }: { params: Promise<{ 
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!payment) return <div className="p-6 text-center text-red-500">Not found</div>
 
-  const isCompany = payment.customers?.customer_type === 'company'
+  const isCompany = payment.customers?.customer_type?.toLowerCase() === 'company'
   const customerName = isCompany ? payment.customers?.company_name : `${payment.customers?.first_name} ${payment.customers?.last_name}`
 
   // Compute what the previous balance was (rough estimate since we might have multiple payments)

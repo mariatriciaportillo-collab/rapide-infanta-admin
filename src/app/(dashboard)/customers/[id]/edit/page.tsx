@@ -101,7 +101,7 @@ export default function EditCustomerPage({
       const { error: updateError } = await supabase
         .from('customers')
         .update({
-          customer_type: customerType,
+          customer_type: customerType.toUpperCase(),
           name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanName),
           first_name: customerType === 'individual' ? cleanFirstName : null,
           last_name: customerType === 'individual' ? cleanLastName : null,

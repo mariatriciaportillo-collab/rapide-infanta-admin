@@ -32,7 +32,7 @@ export default async function ViewQuotationPage({
   // Sort items by sort_order
   const items = quote.quotation_items.sort((a: any, b: any) => a.sort_order - b.sort_order)
   
-  const isCompany = quote.customer_type === 'company'
+  const isCompany = quote.customer_type?.toLowerCase() === 'company'
   const { data: est } = await supabase.from('estimates').select('id').eq('quotation_id', quote.id).maybeSingle()
 
   return (

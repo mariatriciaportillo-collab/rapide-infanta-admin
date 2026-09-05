@@ -79,7 +79,7 @@ export default function InvoiceViewPage({ params }: { params: Promise<{ id: stri
   if (loading) return <div className="p-6 text-center">Loading...</div>
   if (!inv) return <div className="p-6 text-center text-red-500">Invoice not found</div>
 
-  const isCompany = inv.customers?.customer_type === 'company'
+  const isCompany = inv.customers?.customer_type?.toLowerCase() === 'company'
 
 
   const handlePushToPayments = async () => {

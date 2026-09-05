@@ -49,7 +49,7 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
     router.replace(`?tab=${tabId}`, { scroll: false })
   }
 
-  const isCompany = customer.customer_type === 'company'
+  const isCompany = customer.customer_type?.toLowerCase() === 'company'
   const displayContactPerson = isCompany 
     ? [customer.first_name, customer.last_name].filter(Boolean).join(' ') 
     : null
@@ -105,9 +105,7 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
                 Contact: {displayContactPerson}
               </div>
             )}
-            {vehicles.length > 0 && (
-              <Pagination totalCount={vehicles.length} pageSize={PAGE_SIZE} currentPage={vehiclesPage} onPageChange={setVehiclesPage} />
-            )}
+            
             
             <div className="space-y-3 text-sm mt-6">
               {customer.mobile && (
@@ -142,9 +140,7 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
                 <p className="text-sm text-slate-700 whitespace-pre-wrap">{customer.notes}</p>
               </div>
             )}
-            {vehicles.length > 0 && (
-              <Pagination totalCount={vehicles.length} pageSize={PAGE_SIZE} currentPage={vehiclesPage} onPageChange={setVehiclesPage} />
-            )}
+            
             
             <div className="mt-6 pt-6 border-t border-slate-100 flex justify-between items-center">
               <div className="text-xs text-slate-500">
@@ -247,12 +243,11 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
                 </tbody>
               </table>
             )}
-            {quickSales.length > 0 && (
-              <Pagination totalCount={quickSales.length} pageSize={PAGE_SIZE} currentPage={salesPage} onPageChange={setSalesPage} />
-            )}
             {estimates.length > 0 && (
               <Pagination totalCount={estimates.length} pageSize={PAGE_SIZE} currentPage={estimatesPage} onPageChange={setEstimatesPage} />
             )}
+            
+            
           </div>
         )}
 
@@ -309,9 +304,8 @@ export function CustomerTabs({ customer, vehicles, estimates, invoices, quickSal
             {quickSales.length > 0 && (
               <Pagination totalCount={quickSales.length} pageSize={PAGE_SIZE} currentPage={salesPage} onPageChange={setSalesPage} />
             )}
-            {estimates.length > 0 && (
-              <Pagination totalCount={estimates.length} pageSize={PAGE_SIZE} currentPage={estimatesPage} onPageChange={setEstimatesPage} />
-            )}
+            
+            
           </div>
         )}
       </div>

@@ -1157,7 +1157,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
                           >
                             <div>
                               <div className="font-semibold text-slate-800 text-sm">{searchDisplayName}</div>
-                              {cust.customer_type === 'company' && cust.contact_person && (
+                              {cust.customer_type?.toLowerCase() === 'company' && cust.contact_person && (
                                 <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                                   <User size={12} /> Contact: {formatContactPerson(cust.contact_person)}
                                 </div>

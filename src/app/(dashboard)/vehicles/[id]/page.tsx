@@ -40,7 +40,7 @@ export default async function VehicleDetailPage({
     .order('created_at', { ascending: false })
 
   const owner = vehicle.customers
-  const isCompany = owner?.customer_type === 'company'
+  const isCompany = owner?.customer_type?.toLowerCase() === 'company'
 
   return (
     <div className="pb-24">
