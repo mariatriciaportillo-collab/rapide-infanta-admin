@@ -15,7 +15,7 @@ export default async function VehiclesPage({
   const q = params.q
   
   const currentPage = parseInt(params.page || '1', 10)
-  const pageSize = 25
+  const pageSize = 10
 
   let query = supabase
     .from('vehicles')

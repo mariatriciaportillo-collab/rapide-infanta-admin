@@ -185,12 +185,12 @@ export default function PartsListPage() {
                         </td>
                         <td className="px-4 py-3 text-slate-500 text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
                         <td className="px-4 py-3 font-medium text-slate-900 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
+                        <td className="px-4 py-3 whitespace-nowrap font-medium text-sm">
+                          <span className={
                             Number(part.stock_quantity) <= Number(part.reorder_level || 0) 
-                              ? 'bg-red-50 text-red-700 border border-red-200' 
-                              : 'bg-green-50 text-green-700 border border-green-200'
-                          }`}>
+                              ? 'text-red-600 uppercase' 
+                              : 'text-emerald-600 uppercase'
+                          }>
                             {part.stock_quantity} {part.unit}
                           </span>
                         </td>
