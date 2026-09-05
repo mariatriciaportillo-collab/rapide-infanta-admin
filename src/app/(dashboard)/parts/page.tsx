@@ -97,10 +97,10 @@ export default function PartsListPage() {
   }, [searchQuery, filterActive])
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Parts & Materials</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Parts & Materials</h1>
           <p className="text-slate-500 mt-1">Manage product inventory, pricing, and references</p>
         </div>
         <Link 
@@ -165,7 +165,7 @@ export default function PartsListPage() {
                     <th className="px-6 py-3 font-medium text-right">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-100">
                   {parts.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="px-6 py-12 text-center text-slate-500">
@@ -176,7 +176,7 @@ export default function PartsListPage() {
                     </tr>
                   ) : (
                     parts.map(part => (
-                      <tr key={part.id} className="hover:bg-slate-50 transition">
+                      <tr key={part.id} className="hover:bg-slate-50">
                         <td className="px-6 py-4 font-bold text-slate-900">{part.name}</td>
                         <td className="px-6 py-4 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
                         <td className="px-6 py-4 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
@@ -184,9 +184,9 @@ export default function PartsListPage() {
                           <div className="font-bold text-slate-800">{part.part_groups?.name || '—'}</div>
                           <div className="text-slate-500">{part.part_categories?.name}</div>
                         </td>
-                        <td className="px-6 py-4 text-slate-500 font-medium">₱{Number(part.cost || 0).toFixed(2)}</td>
-                        <td className="px-6 py-4 font-bold text-blue-700">₱{Number(part.selling_price).toFixed(2)}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-slate-500 font-medium text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold text-blue-700 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
+                        <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide ${
                             Number(part.stock_quantity) <= Number(part.reorder_level || 0) 
                               ? 'bg-red-50 text-red-700 border border-red-200' 
@@ -195,14 +195,14 @@ export default function PartsListPage() {
                             {part.stock_quantity} {part.unit}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide ${
                             part.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>
                             {part.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3 text-right">
                         <TableActions align="right">
                           <TableAction icon={Edit} label="Edit Part" href={`/parts/${part.id}/edit`} />
                         </TableActions>

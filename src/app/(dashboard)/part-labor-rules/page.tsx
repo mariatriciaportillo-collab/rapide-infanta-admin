@@ -91,7 +91,7 @@ export default function PartLaborRulesPage() {
                 <th className="px-4 py-3 font-semibold">Suggested Labor</th>
                 <th className="px-4 py-3 font-semibold">Type</th>
                 <th className="px-4 py-3 font-semibold text-center">Status</th>
-                <th className="px-4 py-3 font-semibold text-center">Action</th>
+                <th className="px-4 py-3 font-semibold text-right w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -126,7 +126,7 @@ export default function PartLaborRulesPage() {
                         {rule.active ? 'Active' : 'Disabled'}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-right">
                       <TableActions align="center">
                         <TableAction icon={Edit2} label="Edit Rule" href={`/part-labor-rules/${rule.id}/edit`} />
                         <TableAction icon={Trash2} label="Delete Rule" onClick={() => handleDelete(rule.id, rule.rule_name)} variant="destructive" />

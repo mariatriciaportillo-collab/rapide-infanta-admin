@@ -354,7 +354,7 @@ export default function NewPurchaseOrderPage() {
                           className={`w-full p-2 border rounded-md text-sm outline-none focus:border-blue-500 ${isSubmitting && !item.qty ? 'border-red-500' : 'border-slate-300'}`}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-right">
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₱</span>
                           <input 
@@ -370,7 +370,7 @@ export default function NewPurchaseOrderPage() {
                       <td className="px-4 py-3 text-right font-bold text-slate-800">
                         ₱{lineTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-right">
                         <TableActions align="center">
                           <TableAction 
                             icon={Trash2} 

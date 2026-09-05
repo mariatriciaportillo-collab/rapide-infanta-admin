@@ -159,10 +159,10 @@ export default function PurchaseOrdersPage() {
   }, [searchQuery])
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Purchase Orders</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Purchase Orders</h1>
           <p className="text-slate-500 mt-1">Manage orders from suppliers and receive inventory.</p>
         </div>
         <Link 
@@ -206,7 +206,7 @@ export default function PurchaseOrdersPage() {
                     <th className="px-6 py-3 font-medium">STATUS</th>
                     <th className="px-6 py-3 font-medium text-right">ITEMS</th>
                     <th className="px-6 py-3 font-medium text-right">AMOUNT</th>
-                    <th className="px-6 py-3 font-medium">ACTIONS</th>
+                    <th className="px-6 py-3 font-medium text-right w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -240,7 +240,7 @@ export default function PurchaseOrdersPage() {
                           <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                             {format(new Date(po.order_date || po.created_at), 'MMM d, yyyy')}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
                               po.status === 'RECEIVED' ? 'bg-green-50 text-green-700 border-green-200' :
                               po.status === 'PARTIALLY RECEIVED' ? 'bg-blue-50 text-blue-700 border-blue-200' :
@@ -262,7 +262,7 @@ export default function PurchaseOrdersPage() {
                           <td className="px-6 py-4 text-right font-medium text-slate-800">
                             ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
                               <Link 
                                 href={`/purchase-orders/${po.id}`}

@@ -6,7 +6,7 @@ export default function ReportPlaceholderPage() {
   const [filter, setFilter] = useState('This Month')
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Invoices Report</h1>
         <div className="flex gap-2">

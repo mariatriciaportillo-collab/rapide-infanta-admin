@@ -35,19 +35,19 @@ export default async function VehiclesPage({
   const totalCount = count || 0
 
   return (
-    <div className="pb-24">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-slate-800">Vehicles</h2>
+        <h1 className="text-2xl font-bold text-slate-800">Vehicles</h1>
         <Link 
           href="/vehicles/new" 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm"
         >
           <Plus size={18} />
           Add Vehicle
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6 flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
         <div className="p-4 border-b border-slate-200 bg-slate-50 shrink-0 flex justify-between items-center">
           <form className="relative max-w-md w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -67,16 +67,16 @@ export default async function VehiclesPage({
           </div>
         ) : (
           <div className="flex-1 overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-3">Plate No</th>
-                  <th className="px-6 py-3">Vehicle Details</th>
-                  <th className="px-6 py-3">Customer</th>
-                  <th className="px-6 py-3">Added</th>
+                  <th className="px-4 py-3 font-semibold">Plate No</th>
+                  <th className="px-4 py-3 font-semibold">Vehicle Details</th>
+                  <th className="px-4 py-3 font-semibold">Customer</th>
+                  <th className="px-4 py-3 font-semibold">Added</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100">
                 {vehicles?.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-slate-500">
@@ -85,13 +85,13 @@ export default async function VehiclesPage({
                   </tr>
                 ) : (
                   vehicles?.map((vehicle) => (
-                    <tr key={vehicle.id} className="hover:bg-slate-50 transition">
-                      <td className="px-6 py-4">
+                    <tr key={vehicle.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3">
                         <Link href={`/vehicles/${vehicle.id}`} className="font-bold text-blue-600 hover:underline uppercase">
                           {vehicle.plate_number}
                         </Link>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <Car size={16} className="text-slate-400" />
                           <span className="font-medium text-slate-700">
@@ -102,7 +102,7 @@ export default async function VehiclesPage({
                           <div className="text-xs text-slate-500 mt-1 ml-6">{vehicle.transmission}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-3">
                         {vehicle.customers ? (
                           <div>
                             <Link href={`/customers/${vehicle.customers.id}`} className="font-medium text-slate-700 hover:text-blue-600 hover:underline flex items-center gap-2">

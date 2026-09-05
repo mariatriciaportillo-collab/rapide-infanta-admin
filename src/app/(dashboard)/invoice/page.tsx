@@ -54,7 +54,7 @@ export default function InvoiceList() {
                 <th className="px-4 py-3 font-semibold">Vehicle</th>
                 <th className="px-4 py-3 font-semibold text-right">Total</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
+                <th className="px-4 py-3 font-semibold  w-16 text-right w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -84,7 +84,7 @@ export default function InvoiceList() {
                         {s.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center align-middle">
+                    <td className="px-4 py-3  align-middle text-right">
                       <TableActions align="center">
                         <TableAction icon={Printer} label="Print Billing Statement" href={`/invoice/${s.id}/print`} />
                       </TableActions>

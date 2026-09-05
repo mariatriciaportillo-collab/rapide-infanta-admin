@@ -82,10 +82,10 @@ export default function SuppliersListPage() {
   }, [searchQuery, filterActive])
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Suppliers</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Suppliers</h1>
           <p className="text-slate-500 mt-1">Manage vendor accounts for parts and materials</p>
         </div>
         <Link 
@@ -165,14 +165,14 @@ export default function SuppliersListPage() {
                           <div className="text-slate-500">{supplier.email}</div>
                         </td>
                         <td className="px-6 py-4 text-slate-600 font-medium">{supplier.payment_terms || '—'}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
                             supplier.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
                             {supplier.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3 text-right">
                         <TableActions align="right">
                           <TableAction icon={Edit} label="Edit Supplier" href={`/suppliers/${supplier.id}/edit`} />
                         </TableActions>

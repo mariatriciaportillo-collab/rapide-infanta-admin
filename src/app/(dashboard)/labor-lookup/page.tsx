@@ -20,7 +20,7 @@ export default async function LaborLookupPage() {
     .order('name')
 
   return (
-    <div className="pb-24">
+    <div className="p-6 max-w-7xl mx-auto">
       <LaborLookupClient 
         makes={makes || []} 
         models={models || []} 

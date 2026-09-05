@@ -212,10 +212,10 @@ export default function InventoryListPage() {
   }
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Inventory</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Inventory</h1>
           <p className="text-slate-500 mt-1">Operational stock overview and traceability</p>
         </div>
         <div className="flex gap-3">
@@ -283,7 +283,7 @@ export default function InventoryListPage() {
                     <th className="px-6 py-3 font-medium">STATUS</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-100">
                   {parts.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
@@ -300,7 +300,7 @@ export default function InventoryListPage() {
                       const status = getStatusDisplay(stock, reorder)
                       
                       return (
-                        <tr key={part.id} className="hover:bg-slate-50 transition">
+                        <tr key={part.id} className="hover:bg-slate-50">
                           <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
                             <Link href={`/inventory/${part.id}`}>{part.name}</Link>
                           </td>
@@ -313,7 +313,7 @@ export default function InventoryListPage() {
                           <td className="px-6 py-4 font-bold text-slate-800 text-right">
                             ₱{stockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${status.color.replace('bg-', 'border-').replace('-100', '-200')} ${status.color}`}>
                               {status.icon} {status.label}
                             </span>

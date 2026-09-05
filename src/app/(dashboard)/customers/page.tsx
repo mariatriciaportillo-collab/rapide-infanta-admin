@@ -82,19 +82,19 @@ export default async function CustomersPage({
   const totalCount = count || 0
 
   return (
-    <div className="pb-24">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-slate-800">Customers</h2>
+        <h1 className="text-2xl font-bold text-slate-800">Customers</h1>
         <Link 
           href="/customers/new" 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm"
         >
           <Plus size={18} />
           Add Customer
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6 flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
         <div className="p-4 border-b border-slate-200 bg-slate-50 shrink-0">
           <form className="relative max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -114,17 +114,17 @@ export default async function CustomersPage({
           </div>
         ) : (
           <div className="flex-1 overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
+            <table className="w-full text-left text-sm whitespace-nowrap">
+              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                 <tr>
-                  <th className="px-6 py-3">Customer / Company</th>
-                  <th className="px-6 py-3">Plate Number</th>
-                  <th className="px-6 py-3">Contact</th>
-                  <th className="px-6 py-3">Vehicles</th>
-                  <th className="px-6 py-3">Added</th>
+                  <th className="px-4 py-3 font-semibold">Customer / Company</th>
+                  <th className="px-4 py-3 font-semibold">Plate Number</th>
+                  <th className="px-4 py-3 font-semibold">Contact</th>
+                  <th className="px-4 py-3 font-semibold">Vehicles</th>
+                  <th className="px-4 py-3 font-semibold">Added</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-100">
                 {customers?.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-slate-500">
@@ -143,8 +143,8 @@ export default async function CustomersPage({
                     const hiddenCount = vehicleCount > 2 ? vehicleCount - 2 : 0
 
                     return (
-                      <tr key={customer.id} className="hover:bg-slate-50 transition">
-                        <td className="px-6 py-4">
+                      <tr key={customer.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3">
                           <Link href={`/customers/${customer.id}`} className="font-semibold text-blue-600 hover:underline flex items-center gap-2">
                             {customer.customer_type === 'company' ? (
                               <Building2 size={16} className="text-slate-400" />
@@ -154,7 +154,7 @@ export default async function CustomersPage({
                             {displayName}
                           </Link>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           {vehicleCount === 0 ? (
                             <span className="text-slate-400 italic">No vehicle</span>
                           ) : (
@@ -180,7 +180,7 @@ export default async function CustomersPage({
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <div className="flex flex-col gap-1">
                             {customer.customer_type === 'company' && displayContactPerson && (
                               <span className="text-slate-700 font-medium text-xs">Attn: {displayContactPerson}</span>
@@ -195,7 +195,7 @@ export default async function CustomersPage({
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <span className="flex items-center gap-1.5 text-slate-700 font-medium">
                             <Car size={16} className="text-slate-400" />
                             {vehicleCount}

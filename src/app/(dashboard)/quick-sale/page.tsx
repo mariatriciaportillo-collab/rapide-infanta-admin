@@ -99,7 +99,7 @@ export default function QuickSaleList() {
                 <th className="px-4 py-3 font-semibold w-full">Customer</th>
                 <th className="px-4 py-3 font-semibold text-right w-32">Total</th>
                 <th className="px-4 py-3 font-semibold w-32 text-center">Status</th>
-                <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
+                <th className="px-4 py-3 font-semibold  w-16 text-right w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -128,12 +128,12 @@ export default function QuickSaleList() {
                         ₱{Number(s.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className={`inline-block px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${badgeClass}`}>
+                        <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${badgeClass}`}>
                           {displayStatus}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <TableActions align="center">
+                      <td className="px-4 py-3 text-right">
+                        <TableActions align="right">
                           {s.status === 'DRAFT' ? (
                             <TableAction icon={Edit} label="Edit Quick Sale" href={`/quick-sale/${s.id}`} />
                           ) : s.status === 'PAID' ? (

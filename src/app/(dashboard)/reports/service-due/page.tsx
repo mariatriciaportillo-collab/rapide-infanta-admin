@@ -77,7 +77,7 @@ export default function ServiceDueReportPage() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Service Due Report</h1>
@@ -142,7 +142,7 @@ export default function ServiceDueReportPage() {
                         <div className="font-medium text-slate-800">{h.service_name || '-'}</div>
                         {h.oil_type && <div className="text-sm text-slate-500">{h.oil_type}</div>}
                       </td>
-                      <td className="p-4 text-sm text-slate-600">
+                      <td className="p-4 text-sm text-slate-600 text-right">
                         {format(new Date(h.service_date), 'MMM d, yyyy')}
                         <br/>
                         <span className="text-xs text-slate-400">{h.mileage ? h.mileage.toLocaleString() + ' km' : ''}</span>
@@ -150,7 +150,7 @@ export default function ServiceDueReportPage() {
                       <td className="p-4 font-medium text-slate-800">
                         {h.next_due_date ? format(new Date(h.next_due_date), 'MMM d, yyyy') : '-'}
                       </td>
-                      <td className="p-4 font-medium text-slate-800">
+                      <td className="p-4 font-medium text-slate-800 text-right">
                         {h.next_due_mileage ? h.next_due_mileage.toLocaleString() + ' km' : '-'}
                       </td>
                       <td className="p-4 text-center">

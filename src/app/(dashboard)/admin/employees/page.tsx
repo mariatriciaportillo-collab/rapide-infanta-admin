@@ -31,7 +31,7 @@ export default function EmployeesPage() {
   )
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-slate-800">Employees</h1>
         <Link href="/admin/employees/new" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition">
@@ -61,7 +61,7 @@ export default function EmployeesPage() {
                 <th className="p-4 font-medium">Roles</th>
                 <th className="p-4 font-medium">Branch</th>
                 <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium">Actions</th>
+                <th className="p-4 font-medium text-right w-16">Actions</th>
               </tr>
             </thead>
             <tbody>

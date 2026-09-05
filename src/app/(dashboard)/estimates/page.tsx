@@ -12,12 +12,12 @@ export default async function EstimatesPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div>
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-slate-800">Estimates</h2>
+        <h1 className="text-2xl font-bold text-slate-800">Estimates</h1>
         <Link 
           href="/estimates/new" 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition flex items-center gap-2 shadow-sm"
         >
           New Estimate
         </Link>
@@ -29,20 +29,20 @@ export default async function EstimatesPage() {
         </div>
       )}
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <table className="w-full text-left text-sm text-slate-600">
-          <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
+        <table className="w-full text-left text-sm whitespace-nowrap">
+          <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3">Quote No.</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Customer</th>
-              <th className="px-4 py-3">Vehicle</th>
-              <th className="px-4 py-3">Total</th>
-              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3 font-semibold">Quote No.</th>
+              <th className="px-4 py-3 font-semibold">Date</th>
+              <th className="px-4 py-3 font-semibold">Customer</th>
+              <th className="px-4 py-3 font-semibold">Vehicle</th>
+              <th className="px-4 py-3 font-semibold text-right">Total</th>
+              <th className="px-4 py-3 font-semibold">Status</th>
               
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-slate-100">
             {estimates?.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
@@ -51,7 +51,7 @@ export default async function EstimatesPage() {
               </tr>
             ) : (
               estimates?.map((q) => (
-                <tr key={q.id} className="hover:bg-slate-50 transition">
+                <tr key={q.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-blue-600 hover:text-blue-800 hover:underline"><Link href={`/estimates/${q.id}`}>{q.estimate_number}</Link></td>
                   <td className="px-4 py-3">
                     {q.created_at ? format(new Date(q.created_at), 'MMM d, yyyy') : '-'}
@@ -64,7 +64,7 @@ export default async function EstimatesPage() {
                     <div className="font-medium text-slate-900">{q.vehicle_plate}</div>
                     <div className="text-xs text-slate-500">{q.vehicle_make} {q.vehicle_model}</div>
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                  <td className="px-4 py-3 font-medium text-slate-900 text-right">
                     ₱{Number(q.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3">

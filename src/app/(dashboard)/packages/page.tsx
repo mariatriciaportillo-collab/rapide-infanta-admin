@@ -63,10 +63,10 @@ export default function PackagesListPage() {
   }, [searchQuery, filterActive])
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Packages</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Packages</h1>
           <p className="text-slate-500 mt-1">Manage bundled services and parts</p>
         </div>
         <Link 
@@ -121,7 +121,7 @@ export default function PackagesListPage() {
                     <th className="px-6 py-3 font-medium w-1/5">CATEGORY</th>
                     <th className="px-6 py-3 font-medium text-right w-1/5">PACKAGE PRICE</th>
                     <th className="px-6 py-3 font-medium w-1/5">STATUS</th>
-                    <th className="px-6 py-3 font-medium text-center w-16">ACTIONS</th>
+                    <th className="px-6 py-3 font-medium  w-16 text-right w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -140,7 +140,7 @@ export default function PackagesListPage() {
 
                       return (
                         <tr key={pkg.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <div className="font-bold text-slate-900">
                               <Link href={`/packages/${pkg.id}/edit`} className="hover:underline">
                                 {pkg.name}
@@ -154,14 +154,14 @@ export default function PackagesListPage() {
                           <td className="px-6 py-4 text-right font-medium text-slate-800">
                             {pkgPrice !== null ? `₱${pkgPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${
                               pkg.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
                             }`}>
                               {pkg.is_active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center">
+                          <td className="px-6 py-4 text-right">
                             <TableActions align="center">
                               <TableAction icon={Edit} label="Edit Package" href={`/packages/${pkg.id}/edit`} />
                             </TableActions>

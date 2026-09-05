@@ -9,7 +9,7 @@ export default async function PartsLookupPage() {
   const { data: models } = await supabase.from('vehicle_models').select('*').order('name')
   
   return (
-    <div className="pb-24">
+    <div className="p-6 max-w-7xl mx-auto">
       <PartsLookupClient 
         makes={makes || []} 
         models={models || []} 

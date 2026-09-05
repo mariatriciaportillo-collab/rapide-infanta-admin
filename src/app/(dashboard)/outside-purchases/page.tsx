@@ -149,10 +149,10 @@ export default function OutsidePurchasesPage() {
   }, [searchQuery])
 
   return (
-    <div className="pb-12">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-slate-800">Outside Purchase</h1>
+          <h1 className="text-2xl font-bold text-slate-800">Outside Purchase</h1>
           <p className="text-slate-500 mt-1">Record parts or materials purchased outside the regular purchase order process.</p>
         </div>
         <Link 
@@ -196,7 +196,7 @@ export default function OutsidePurchasesPage() {
                     <th className="px-6 py-3 font-medium">SUPPLIER</th>
                     <th className="px-6 py-3 font-medium text-right">ITEMS</th>
                     <th className="px-6 py-3 font-medium text-right">TOTAL AMOUNT</th>
-                    <th className="px-6 py-3 font-medium">ACTIONS</th>
+                    <th className="px-6 py-3 font-medium text-right w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -236,7 +236,7 @@ export default function OutsidePurchasesPage() {
                           <td className="px-6 py-4 text-right font-medium text-slate-800">
                             ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-3">
                             <Link 
                               href={`/outside-purchases/${p.id}`}
                               className="text-sm font-medium text-blue-600 hover:text-blue-800"

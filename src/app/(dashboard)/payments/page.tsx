@@ -138,7 +138,7 @@ export default function PaymentsList() {
                   <th className="px-4 py-3 font-semibold text-right w-32">Quotation Total</th>
                   <th className="px-4 py-3 font-semibold text-right w-32">Amount Paid</th>
                   <th className="px-4 py-3 font-semibold w-24 text-center">Status</th>
-                  <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
+                  <th className="px-4 py-3 font-semibold  w-16 text-right w-16">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -171,7 +171,7 @@ export default function PaymentsList() {
                             {isPaid ? 'PAID' : (q.downpayment_status || 'PENDING')}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-right">
                           <TableActions align="center">
                             {isPaid ? (
                               <TableAction icon={Printer} label="Print Downpayment Receipt" href={`/quotations/${q.id}/receipt`} />
@@ -200,7 +200,7 @@ export default function PaymentsList() {
                   <th className="px-4 py-3 font-semibold">Ref. Document</th>
                   <th className="px-4 py-3 font-semibold">Method</th>
                   <th className="px-4 py-3 font-semibold text-right">Total Paid</th>
-                  <th className="px-4 py-3 font-semibold text-center w-16">Action</th>
+                  <th className="px-4 py-3 font-semibold  w-16 text-right w-16">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -232,7 +232,7 @@ export default function PaymentsList() {
                       <td className="px-4 py-3 text-right font-bold text-emerald-600">
                         ₱{Number(p.invoices?.amount_paid || p.quick_sales?.amount_paid || p.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-4 py-3 text-right">
                         <TableActions align="center">
                           {p.invoices ? (
                             <TableAction icon={Printer} label="Print Payment Receipt" href={`/invoice/${p.invoice_id}/receipt`} />
