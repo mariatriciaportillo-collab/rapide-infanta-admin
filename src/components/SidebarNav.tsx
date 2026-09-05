@@ -133,50 +133,6 @@ export function SidebarNav() {
         )}
       </div>
 
-      {/* CUSTOMER ACCOUNTS */}
-      <div className="mt-2">
-        <button 
-          onClick={() => toggleSection('customers')}
-          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
-            ${isCustomerAccountsActive && openSection !== 'customers' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
-        >
-          <div className="flex items-center gap-2">
-            <Users size={18} />
-            Customer Accounts
-          </div>
-          {openSection === 'customers' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </button>
-        
-        {openSection === 'customers' && (
-          <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
-            <Link 
-              href="/customers" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/customers') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <User size={16} />
-              Customers
-            </Link>
-            <Link 
-              href="/vehicles" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/vehicles') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <Car size={16} />
-              Vehicles
-            </Link>
-            <Link 
-              href="/service-history" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/service-history') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <History size={16} />
-              Service History
-            </Link>
-          </div>
-        )}
-      </div>
-
       {/* PRODUCTS & SERVICES */}
       <div className="mt-2">
         <button 
@@ -193,30 +149,6 @@ export function SidebarNav() {
         
         {openSection === 'products' && (
           <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
-            <Link 
-              href="/part-labor-rules" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/part-labor-rules') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <Cpu size={16} />
-              Part-to-Labor Rules
-            </Link>
-            <Link 
-              href="/labor-lookup" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/labor-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <Search size={16} />
-              Labor Lookup
-            </Link>
-            <Link 
-              href="/parts-lookup" 
-              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
-                ${pathname?.startsWith('/parts-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
-            >
-              <Search size={16} />
-              Parts Lookup
-            </Link>
             <Link 
               href="/labor-charges" 
               className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
@@ -240,6 +172,30 @@ export function SidebarNav() {
             >
               <Box size={16} />
               Packages
+            </Link>
+            <Link 
+              href="/part-labor-rules" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/part-labor-rules') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Cpu size={16} />
+              Part-to-Labor Rules
+            </Link>
+            <Link 
+              href="/labor-lookup" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/labor-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Search size={16} />
+              Labor Lookup
+            </Link>
+            <Link 
+              href="/parts-lookup" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/parts-lookup') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Search size={16} />
+              Parts Lookup
             </Link>
           </div>
         )}
@@ -300,6 +256,50 @@ export function SidebarNav() {
             >
               <Truck size={16} />
               Suppliers
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* CUSTOMER ACCOUNTS */}
+      <div className="mt-2">
+        <button 
+          onClick={() => toggleSection('customers')}
+          className={`w-full px-3 py-2 rounded-md transition font-medium flex justify-between items-center whitespace-nowrap
+            ${isCustomerAccountsActive && openSection !== 'customers' ? 'text-white font-semibold' : 'text-slate-300 hover:bg-slate-700 hover:text-white'}`}
+        >
+          <div className="flex items-center gap-2">
+            <Users size={18} />
+            Customer Accounts
+          </div>
+          {openSection === 'customers' ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+        
+        {openSection === 'customers' && (
+          <div className="ml-4 flex flex-col gap-1 mt-1 border-l border-slate-700 pl-2">
+            <Link 
+              href="/customers" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/customers') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <User size={16} />
+              Customers
+            </Link>
+            <Link 
+              href="/vehicles" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/vehicles') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <Car size={16} />
+              Vehicles
+            </Link>
+            <Link 
+              href="/service-history" 
+              className={`px-3 py-2 rounded-md transition font-medium text-sm flex items-center gap-2
+                ${pathname?.startsWith('/service-history') ? 'bg-slate-700 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'}`}
+            >
+              <History size={16} />
+              Service History
             </Link>
           </div>
         )}
