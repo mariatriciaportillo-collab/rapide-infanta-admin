@@ -111,18 +111,18 @@ export default function ServiceDueReportPage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr className="bg-slate-100 text-slate-600 text-sm border-b border-slate-200">
-                <th className="p-4 font-medium">Customer / Vehicle</th>
-                <th className="p-4 font-medium">Last Service</th>
-                <th className="p-4 font-medium">Last Date & Mileage</th>
-                <th className="p-4 font-medium">Next Due Date</th>
-                <th className="p-4 font-medium">Next Due Mileage</th>
-                <th className="p-4 font-medium text-center">Status</th>
+                <th className="p-4 font-semibold">Customer / Vehicle</th>
+                <th className="p-4 font-semibold">Last Service</th>
+                <th className="p-4 font-semibold">Last Date & Mileage</th>
+                <th className="p-4 font-semibold">Next Due Date</th>
+                <th className="p-4 font-semibold">Next Due Mileage</th>
+                <th className="p-4  text-center font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan={6} className="p-8 text-center text-slate-500">Loading service schedule...</td></tr>
               ) : filtered.length === 0 ? (

@@ -114,22 +114,21 @@ export default function PackagesListPage() {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium w-2/5">PACKAGE NAME</th>
-                    <th className="px-6 py-3 font-medium w-1/5">CATEGORY</th>
-                    <th className="px-6 py-3 font-medium text-right w-1/5">PACKAGE PRICE</th>
-                    <th className="px-6 py-3 font-medium w-1/5">STATUS</th>
-                    <th className="px-6 py-3 font-medium  w-16 text-right w-16">ACTIONS</th>
+                    <th className="px-4 py-3  w-2/5 font-semibold">PACKAGE NAME</th>
+                    <th className="px-4 py-3  w-1/5 font-semibold">CATEGORY</th>
+                    <th className="px-4 py-3  text-right w-1/5 font-semibold">PACKAGE PRICE</th>
+                    <th className="px-4 py-3  w-1/5 font-semibold">STATUS</th>
+                    <th className="px-4 py-3   w-16 text-right w-16 font-semibold">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {packages.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex justify-center mb-3"><Package className="text-slate-300" size={40} /></div>
-                        <p className="text-base font-medium">No packages found.</p>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
+                                                <p className="text-base font-medium">No packages found.</p>
                       </td>
                     </tr>
                   ) : (
@@ -139,7 +138,7 @@ export default function PackagesListPage() {
                         : null;
 
                       return (
-                        <tr key={pkg.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
+                        <tr key={pkg.id} className="hover:bg-slate-50">
                           <td className="px-4 py-3">
                             <div className="font-bold text-slate-900">
                               <Link href={`/packages/${pkg.id}/edit`} className="hover:underline">
@@ -148,10 +147,10 @@ export default function PackagesListPage() {
                             </div>
                             {pkg.package_code && <div className="text-xs font-mono text-slate-500 mt-0.5">{pkg.package_code}</div>}
                           </td>
-                          <td className="px-6 py-4 text-slate-700 font-medium">
+                          <td className="px-4 py-3 text-slate-700 font-medium">
                             {pkg.category || '—'}
                           </td>
-                          <td className="px-6 py-4 text-right font-medium text-slate-800">
+                          <td className="px-4 py-3 text-right font-medium text-slate-800">
                             {pkgPrice !== null ? `₱${pkgPrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '—'}
                           </td>
                           <td className="px-4 py-3">
@@ -161,8 +160,8 @@ export default function PackagesListPage() {
                               {pkg.is_active ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-right">
-                            <TableActions align="center">
+                          <td className="px-4 py-3 text-right">
+                            <TableActions align="right">
                               <TableAction icon={Edit} label="Edit Package" href={`/packages/${pkg.id}/edit`} />
                             </TableActions>
                           </td>

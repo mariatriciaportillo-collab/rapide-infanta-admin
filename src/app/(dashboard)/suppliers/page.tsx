@@ -136,37 +136,36 @@ export default function SuppliersListPage() {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium">SUPPLIER NAME</th>
-                    <th className="px-6 py-3 font-medium">CONTACT PERSON</th>
-                    <th className="px-6 py-3 font-medium">PHONE / EMAIL</th>
-                    <th className="px-6 py-3 font-medium">PAYMENT TERMS</th>
-                    <th className="px-6 py-3 font-medium">STATUS</th>
-                    <th className="px-6 py-3 font-medium text-right">ACTIONS</th>
+                    <th className="px-4 py-3 font-semibold">SUPPLIER NAME</th>
+                    <th className="px-4 py-3 font-semibold">CONTACT PERSON</th>
+                    <th className="px-4 py-3 font-semibold">PHONE / EMAIL</th>
+                    <th className="px-4 py-3 font-semibold">PAYMENT TERMS</th>
+                    <th className="px-4 py-3 font-semibold">STATUS</th>
+                    <th className="px-4 py-3  text-right font-semibold w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {suppliers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex justify-center mb-3"><Truck className="text-slate-300" size={40} /></div>
-                        <p className="text-base font-medium">No suppliers found matching your criteria.</p>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
+                                                <p className="text-base font-medium">No suppliers found matching your criteria.</p>
                       </td>
                     </tr>
                   ) : (
                     suppliers.map(supplier => (
-                      <tr key={supplier.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                        <td className="px-6 py-4 font-bold text-slate-900">{supplier.name}</td>
-                        <td className="px-6 py-4 text-slate-700 font-medium">{supplier.contact_person || '—'}</td>
-                        <td className="px-6 py-4 text-slate-600 text-sm">
+                      <tr key={supplier.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-bold text-slate-900">{supplier.name}</td>
+                        <td className="px-4 py-3 text-slate-700 font-medium">{supplier.contact_person || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 text-sm">
                           <div className="font-medium text-slate-800">{supplier.mobile || supplier.telephone || '—'}</div>
                           <div className="text-slate-500">{supplier.email}</div>
                         </td>
-                        <td className="px-6 py-4 text-slate-600 font-medium">{supplier.payment_terms || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 font-medium">{supplier.payment_terms || '—'}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${
+                          <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border ${
                             supplier.is_active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
                             {supplier.is_active ? 'Active' : 'Inactive'}

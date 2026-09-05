@@ -26,7 +26,7 @@ function ItemsModal({ transaction, onClose }: { transaction: any, onClose: () =>
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[85vh]">
-        <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+        <div className="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
           <div>
             <h3 className="font-bold text-slate-800 text-lg">Transaction Items</h3>
             <p className="text-sm text-slate-500 font-mono mt-0.5">{transaction.reference_number}</p>
@@ -37,14 +37,14 @@ function ItemsModal({ transaction, onClose }: { transaction: any, onClose: () =>
         </div>
         
         <div className="overflow-y-auto p-6 flex-1">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr className="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider">
-                <th className="px-6 py-3 font-bold border-b border-slate-200">Product</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Direction</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Qty</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Unit Cost</th>
-                <th className="px-6 py-3 font-bold border-b border-slate-200 text-right">Value</th>
+                <th className="px-4 py-3  border-b border-slate-200 font-semibold">Product</th>
+                <th className="px-4 py-3  border-b border-slate-200 text-right font-semibold">Direction</th>
+                <th className="px-4 py-3  border-b border-slate-200 text-right font-semibold">Qty</th>
+                <th className="px-4 py-3  border-b border-slate-200 text-right font-semibold">Unit Cost</th>
+                <th className="px-4 py-3  border-b border-slate-200 text-right font-semibold">Value</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -57,15 +57,15 @@ function ItemsModal({ transaction, onClose }: { transaction: any, onClose: () =>
                 
                 return (
                   <tr key={i} className="hover:bg-slate-50">
-                    <td className="px-6 py-3 text-sm text-slate-800 font-medium">{m.parts?.name || 'Unknown Product'}</td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-600">{direction}</td>
-                    <td className={`px-6 py-3 text-sm text-right font-medium ${qty > 0 ? 'text-green-600' : qty < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                    <td className="px-4 py-3 text-sm text-slate-800 font-medium">{m.parts?.name || 'Unknown Product'}</td>
+                    <td className="px-4 py-3 text-sm text-right text-slate-600">{direction}</td>
+                    <td className={`px-4 py-3 text-sm text-right font-medium ${qty > 0 ? 'text-green-600' : qty < 0 ? 'text-red-600' : 'text-slate-600'}`}>
                       {sign}{qty}
                     </td>
-                    <td className="px-6 py-3 text-sm text-right text-slate-600">
+                    <td className="px-4 py-3 text-sm text-right text-slate-600">
                       ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-6 py-3 text-sm text-right font-medium text-slate-800">
+                    <td className="px-4 py-3 text-sm text-right font-medium text-slate-800">
                       ₱{val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                   </tr>
@@ -187,23 +187,22 @@ export default function StockAdjustmentsPage() {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium">ADJUSTMENT NO.</th>
-                    <th className="px-6 py-3 font-medium">DATE</th>
-                    <th className="px-6 py-3 font-medium">REASON</th>
-                    <th className="px-6 py-3 font-medium text-right">ITEMS</th>
-                    <th className="px-6 py-3 font-medium text-right">VALUE</th>
-                    <th className="px-6 py-3 font-medium text-right w-16">ACTIONS</th>
+                    <th className="px-4 py-3 font-semibold">ADJUSTMENT NO.</th>
+                    <th className="px-4 py-3 font-semibold">DATE</th>
+                    <th className="px-4 py-3 font-semibold">REASON</th>
+                    <th className="px-4 py-3  text-right font-semibold">ITEMS</th>
+                    <th className="px-4 py-3  text-right font-semibold">VALUE</th>
+                    <th className="px-4 py-3  text-right w-16 font-semibold">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {transactions.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex justify-center mb-3"><Settings className="text-slate-300" size={40} /></div>
-                        <p className="text-base font-medium">No transactions found.</p>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
+                                                <p className="text-base font-medium">No transactions found.</p>
                       </td>
                     </tr>
                   ) : (
@@ -218,17 +217,17 @@ export default function StockAdjustmentsPage() {
                       }, 0)
                       
                       return (
-                        <tr key={t.id} className="hover:bg-slate-50 transition border-b border-slate-100 last:border-0">
-                          <td className="px-6 py-4 font-bold text-slate-800">
+                        <tr key={t.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-3 font-bold text-slate-800">
                             {t.reference_number}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
+                          <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
                             {format(new Date(t.created_at), 'MMM d, yyyy')}
                           </td>
-                          <td className="px-6 py-4 text-slate-700 font-medium">
+                          <td className="px-4 py-3 text-slate-700 font-medium">
                             {t.reason || '—'}
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-4 py-3 text-right">
                             <button 
                               type="button"
                               onClick={(e) => { e.preventDefault(); setSelectedTransaction(t); }}
@@ -237,7 +236,7 @@ export default function StockAdjustmentsPage() {
                               {numItems}
                             </button>
                           </td>
-                          <td className="px-6 py-4 text-right font-medium text-slate-800">
+                          <td className="px-4 py-3 text-right font-medium text-slate-800">
                             ₱{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">

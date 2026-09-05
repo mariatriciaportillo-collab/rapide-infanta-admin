@@ -151,43 +151,42 @@ export default function PartsListPage() {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium">PART / PRODUCT</th>
-                    <th className="px-6 py-3 font-medium">PART NO.</th>
-                    <th className="px-6 py-3 font-medium">BRAND</th>
-                    <th className="px-6 py-3 font-medium">GROUP / CATEGORY</th>
-                    <th className="px-6 py-3 font-medium">COST</th>
-                    <th className="px-6 py-3 font-medium">SELLING PRICE</th>
-                    <th className="px-6 py-3 font-medium">STOCK</th>
-                    <th className="px-6 py-3 font-medium">STATUS</th>
-                    <th className="px-6 py-3 font-medium text-right">ACTIONS</th>
+                    <th className="px-4 py-3 font-semibold">PART / PRODUCT</th>
+                    <th className="px-4 py-3 font-semibold">PART NO.</th>
+                    <th className="px-4 py-3 font-semibold">BRAND</th>
+                    <th className="px-4 py-3 font-semibold">GROUP / CATEGORY</th>
+                    <th className="px-4 py-3 font-semibold text-right">Cost</th>
+                    <th className="px-4 py-3 font-semibold">SELLING PRICE</th>
+                    <th className="px-4 py-3 font-semibold">STOCK</th>
+                    <th className="px-4 py-3 font-semibold">STATUS</th>
+                    <th className="px-4 py-3  text-right font-semibold w-16">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {parts.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex justify-center mb-3"><Package className="text-slate-300" size={40} /></div>
-                        <p className="text-base font-medium">No parts found matching your criteria.</p>
+                      <td colSpan={9} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
+                                                <p className="text-base font-medium">No parts found matching your criteria.</p>
                         {searchQuery && <p className="text-sm mt-1">Try adjusting your search filters.</p>}
                       </td>
                     </tr>
                   ) : (
                     parts.map(part => (
                       <tr key={part.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 font-bold text-slate-900">{part.name}</td>
-                        <td className="px-6 py-4 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
-                        <td className="px-6 py-4 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
-                        <td className="px-6 py-4 text-slate-600 text-sm">
+                        <td className="px-4 py-3 font-bold text-slate-900 truncate max-w-[250px]" title={part.name}>{part.name}</td>
+                        <td className="px-4 py-3 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 text-sm">
                           <div className="font-bold text-slate-800">{part.part_groups?.name || '—'}</div>
                           <div className="text-slate-500">{part.part_categories?.name}</div>
                         </td>
-                        <td className="px-6 py-4 text-slate-500 font-medium text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
-                        <td className="px-6 py-4 font-bold text-blue-700 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-slate-500 font-medium text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-bold text-blue-700 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide ${
+                          <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
                             Number(part.stock_quantity) <= Number(part.reorder_level || 0) 
                               ? 'bg-red-50 text-red-700 border border-red-200' 
                               : 'bg-green-50 text-green-700 border border-green-200'
@@ -196,7 +195,7 @@ export default function PartsListPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide ${
+                          <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
                             part.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>
                             {part.is_active ? 'Active' : 'Inactive'}

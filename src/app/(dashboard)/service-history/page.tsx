@@ -57,18 +57,18 @@ export default function ServiceHistoryPage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr className="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
-                <th className="p-4 font-medium">Date</th>
-                <th className="p-4 font-medium">Customer / Vehicle</th>
-                <th className="p-4 font-medium">Service / Oil Type</th>
-                <th className="p-4 font-medium">Mileage</th>
-                <th className="p-4 font-medium">Invoice</th>
-                <th className="p-4 font-medium">Next Due</th>
+                <th className="p-4 font-semibold">Date</th>
+                <th className="p-4 font-semibold">Customer / Vehicle</th>
+                <th className="p-4 font-semibold">Service / Oil Type</th>
+                <th className="p-4 font-semibold">Mileage</th>
+                <th className="p-4 font-semibold">Invoice</th>
+                <th className="p-4 font-semibold">Next Due</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan={6} className="p-4 text-center text-slate-500">Loading history...</td></tr>
               ) : filtered.length === 0 ? (

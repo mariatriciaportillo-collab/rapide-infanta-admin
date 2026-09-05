@@ -76,7 +76,7 @@ export default async function EstimatesPage({ searchParams }: { searchParams: Pr
                     ₱{Number(q.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium uppercase tracking-wider
+                    <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase
                       ${q.status === 'APPROVED' ? 'bg-green-100 text-green-700' : 
                         q.status === 'REJECTED' ? 'bg-red-100 text-red-700' : 
                         'bg-yellow-100 text-yellow-700'}`}

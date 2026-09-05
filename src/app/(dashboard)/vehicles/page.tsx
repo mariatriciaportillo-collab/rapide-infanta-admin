@@ -121,7 +121,7 @@ export default async function VehiclesPage({
                           <span className="text-slate-400 italic">No customer linked</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-500">
+                      <td className="px-4 py-3 text-slate-500">
                         {format(new Date(vehicle.created_at), 'MMM d, yyyy')}
                       </td>
                     </tr>

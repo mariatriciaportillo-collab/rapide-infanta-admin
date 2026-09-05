@@ -83,7 +83,7 @@ export default function PartLaborRulesPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 font-semibold">Rule Name</th>
@@ -127,7 +127,7 @@ export default function PartLaborRulesPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <TableActions align="center">
+                      <TableActions align="right">
                         <TableAction icon={Edit2} label="Edit Rule" href={`/part-labor-rules/${rule.id}/edit`} />
                         <TableAction icon={Trash2} label="Delete Rule" onClick={() => handleDelete(rule.id, rule.rule_name)} variant="destructive" />
                       </TableActions>

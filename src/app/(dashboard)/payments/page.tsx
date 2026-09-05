@@ -180,7 +180,7 @@ export default function PaymentsList() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <TableActions align="center">
+                          <TableActions align="right">
                             {isPaid ? (
                               <TableAction icon={Printer} label="Print Downpayment Receipt" href={`/quotations/${q.id}/receipt`} />
                             ) : (
@@ -241,7 +241,7 @@ export default function PaymentsList() {
                         ₱{Number(p.invoices?.amount_paid || p.quick_sales?.amount_paid || p.amount_paid).toLocaleString('en-US', {minimumFractionDigits: 2})}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <TableActions align="center">
+                        <TableActions align="right">
                           {p.invoices ? (
                             <TableAction icon={Printer} label="Print Payment Receipt" href={`/invoice/${p.invoice_id}/receipt`} />
                           ) : p.quick_sales ? (
@@ -264,7 +264,7 @@ export default function PaymentsList() {
       {showModal && selectedQuote && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h2 className="text-lg font-bold text-slate-800">Record Downpayment</h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
@@ -323,7 +323,7 @@ export default function PaymentsList() {
               </div>
             </div>
             
-            <div className="px-6 py-4 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+            <div className="px-4 py-3 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
               <button 
                 type="button" 
                 onClick={() => setShowModal(false)}

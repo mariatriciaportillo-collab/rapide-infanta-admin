@@ -271,24 +271,23 @@ export default function InventoryListPage() {
         ) : (
           <div className="flex flex-col flex-1">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr className="bg-slate-50 text-slate-500 text-sm border-b border-slate-200">
-                    <th className="px-6 py-3 font-medium">PART / PRODUCT</th>
-                    <th className="px-6 py-3 font-medium">PART NO.</th>
-                    <th className="px-6 py-3 font-medium">BRAND</th>
-                    <th className="px-6 py-3 font-medium text-right">CURRENT STOCK</th>
-                    <th className="px-6 py-3 font-medium text-right">COST</th>
-                    <th className="px-6 py-3 font-medium text-right">STOCK VALUE</th>
-                    <th className="px-6 py-3 font-medium">STATUS</th>
+                    <th className="px-4 py-3 font-semibold">PART / PRODUCT</th>
+                    <th className="px-4 py-3 font-semibold">PART NO.</th>
+                    <th className="px-4 py-3 font-semibold">BRAND</th>
+                    <th className="px-4 py-3  text-right font-semibold">CURRENT STOCK</th>
+                    <th className="px-4 py-3  text-right font-semibold">Cost</th>
+                    <th className="px-4 py-3  text-right font-semibold">STOCK VALUE</th>
+                    <th className="px-4 py-3 font-semibold">STATUS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {parts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
-                        <div className="flex justify-center mb-3"><ClipboardList className="text-slate-300" size={40} /></div>
-                        <p className="text-base font-medium">No items found matching your criteria.</p>
+                      <td colSpan={7} className="px-4 py-8 text-center text-slate-500 text-center text-slate-500">
+                                                <p className="text-base font-medium">No items found matching your criteria.</p>
                       </td>
                     </tr>
                   ) : (
@@ -301,20 +300,20 @@ export default function InventoryListPage() {
                       
                       return (
                         <tr key={part.id} className="hover:bg-slate-50">
-                          <td className="px-6 py-4 font-bold text-blue-600 hover:underline">
+                          <td className="px-4 py-3 font-bold text-blue-600 hover:underline">
                             <Link href={`/inventory/${part.id}`}>{part.name}</Link>
                           </td>
-                          <td className="px-6 py-4 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
-                          <td className="px-6 py-4 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
-                          <td className="px-6 py-4 font-bold text-slate-900 text-right text-base">{stock}</td>
-                          <td className="px-6 py-4 text-slate-500 text-right font-medium">
+                          <td className="px-4 py-3 text-slate-600 font-mono text-sm font-medium">{part.part_number || '—'}</td>
+                          <td className="px-4 py-3 text-slate-600 font-medium">{part.brands?.name || '—'}</td>
+                          <td className="px-4 py-3 font-bold text-slate-900 text-right text-base">{stock}</td>
+                          <td className="px-4 py-3 text-slate-500 text-right font-medium">
                             ₱{cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="px-6 py-4 font-bold text-slate-800 text-right">
+                          <td className="px-4 py-3 font-bold text-slate-800 text-right">
                             ₱{stockValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold tracking-wide border ${status.color.replace('bg-', 'border-').replace('-100', '-200')} ${status.color}`}>
+                            <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase border ${status.color.replace('bg-', 'border-').replace('-100', '-200')} ${status.color}`}>
                               {status.icon} {status.label}
                             </span>
                           </td>

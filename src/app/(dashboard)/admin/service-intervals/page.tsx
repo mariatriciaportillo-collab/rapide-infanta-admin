@@ -86,17 +86,17 @@ export default function ServiceIntervalsPage() {
         </div>
         
         <div className="overflow-x-auto p-4">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr className="text-slate-600 text-sm border-b border-slate-200">
-                <th className="pb-3 font-medium">Service Type</th>
-                <th className="pb-3 font-medium">Classification / Oil Type</th>
-                <th className="pb-3 font-medium">Time Interval (Months)</th>
-                <th className="pb-3 font-medium">Mileage Interval (km)</th>
-                <th className="pb-3 font-medium text-right">Actions</th>
+                <th className="pb-3 font-semibold">Service Type</th>
+                <th className="pb-3 font-semibold">Classification / Oil Type</th>
+                <th className="pb-3 font-semibold">Time Interval (Months)</th>
+                <th className="pb-3 font-semibold">Mileage Interval (km)</th>
+                <th className="pb-3  text-right font-semibold w-16">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan={5} className="py-8 text-center text-slate-500">Loading settings...</td></tr>
               ) : intervals.length === 0 ? (

@@ -54,17 +54,17 @@ export default function EmployeesPage() {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
+          <table className="w-full text-left text-sm whitespace-nowrap">
+            <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr className="bg-slate-50 text-slate-600 text-sm border-b border-slate-200">
-                <th className="p-4 font-medium">Name</th>
-                <th className="p-4 font-medium">Roles</th>
-                <th className="p-4 font-medium">Branch</th>
-                <th className="p-4 font-medium">Status</th>
-                <th className="p-4 font-medium text-right w-16">Actions</th>
+                <th className="p-4 font-semibold">Name</th>
+                <th className="p-4 font-semibold">Roles</th>
+                <th className="p-4 font-semibold">Branch</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4  text-right w-16 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr><td colSpan={5} className="p-4 text-center text-slate-500">Loading...</td></tr>
               ) : filtered.length === 0 ? (

@@ -51,7 +51,7 @@ export default function InvoiceList() {
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 font-semibold">Inv No.</th>
@@ -91,7 +91,7 @@ export default function InvoiceList() {
                       </span>
                     </td>
                     <td className="px-4 py-3  align-middle text-right">
-                      <TableActions align="center">
+                      <TableActions align="right">
                         <TableAction icon={Printer} label="Print Billing Statement" href={`/invoice/${s.id}/print`} />
                       </TableActions>
                     </td>
