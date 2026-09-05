@@ -90,8 +90,8 @@ export default async function EstimatesPage({ searchParams }: { searchParams: Pr
             )}
           </tbody>
         </table>
+            <UrlPagination totalCount={count || 0} pageSize={pageSize} currentPage={currentPage} />
       </div>
-      <UrlPagination totalCount={count || 0} pageSize={pageSize} currentPage={currentPage} />
     </div>
   )
 }

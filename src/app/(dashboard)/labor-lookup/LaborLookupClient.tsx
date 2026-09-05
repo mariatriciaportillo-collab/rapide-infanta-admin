@@ -302,7 +302,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                   ) : (
                     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
+                        <table className="w-full text-left text-sm">
                           <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                             <tr>
                               <th className="px-4 py-3 font-semibold">Make</th>
@@ -424,7 +424,7 @@ export function LaborLookupClient({ makes, models, services }: Props) {
                   ) : (
                     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm whitespace-nowrap">
+                        <table className="w-full text-left text-sm">
                           <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                             <tr>
                               <th className="px-4 py-3 w-80 font-semibold">Labor / Service</th>

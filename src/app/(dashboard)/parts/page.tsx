@@ -112,7 +112,7 @@ export default function PartsListPage() {
         </Link>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm flex flex-col">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mb-6 flex flex-col">
         <div className="p-4 border-b border-slate-200 flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50 shrink-0 rounded-t-lg">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -150,18 +150,17 @@ export default function PartsListPage() {
           </div>
         ) : (
           <div className="flex flex-col flex-1">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
+                          <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 font-semibold">PART / PRODUCT</th>
-                    <th className="px-4 py-3 font-semibold">PART NO.</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">PART NO.</th>
                     <th className="px-4 py-3 font-semibold">BRAND</th>
                     <th className="px-4 py-3 font-semibold">GROUP / CATEGORY</th>
-                    <th className="px-4 py-3 font-semibold text-right">Cost</th>
+                    <th className="px-4 py-3 font-semibold text-right whitespace-nowrap">Cost</th>
                     <th className="px-4 py-3 font-semibold">SELLING PRICE</th>
-                    <th className="px-4 py-3 font-semibold">STOCK</th>
-                    <th className="px-4 py-3 font-semibold">STATUS</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">STOCK</th>
+                    <th className="px-4 py-3 font-semibold whitespace-nowrap">STATUS</th>
                     <th className="px-4 py-3 text-right font-semibold w-16">ACTIONS</th>
                   </tr>
                 </thead>
@@ -177,14 +176,14 @@ export default function PartsListPage() {
                     parts.map(part => (
                       <tr key={part.id} className="hover:bg-slate-50">
                         <td className="px-4 py-3 font-medium text-slate-900 truncate max-w-[250px]" title={part.name}>{part.name}</td>
-                        <td className="px-4 py-3 text-slate-600">{part.part_number || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600">{part.brands?.name || '—'}</td>
-                        <td className="px-4 py-3 text-slate-600 text-sm">
+                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{part.part_number || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{part.brands?.name || '—'}</td>
+                        <td className="px-4 py-3 text-slate-600 text-sm min-w-[120px]">
                           <div className="font-medium text-slate-900">{part.part_groups?.name || '—'}</div>
                           <div className="text-xs text-slate-500">{part.part_categories?.name}</div>
                         </td>
-                        <td className="px-4 py-3 text-slate-500 text-right">₱{Number(part.cost || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 font-medium text-slate-900 text-right">₱{Number(part.selling_price).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-slate-500 text-right whitespace-nowrap">₱{Number(part.cost || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 font-medium text-slate-900 text-right whitespace-nowrap">₱{Number(part.selling_price).toFixed(2)}</td>
                         <td className="px-4 py-3 whitespace-nowrap font-medium text-sm">
                           <span className={
                             Number(part.stock_quantity) <= Number(part.reorder_level || 0) 
@@ -194,14 +193,14 @@ export default function PartsListPage() {
                             {part.stock_quantity} {part.unit}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${
                             part.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}>
                             {part.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
                         <TableActions align="right">
                           <TableAction icon={Edit} label="Edit Part" href={`/parts/${part.id}/edit`} />
                         </TableActions>
@@ -211,7 +210,6 @@ export default function PartsListPage() {
                   )}
                 </tbody>
               </table>
-            </div>
 
             {totalCount > 0 && (
               <Pagination 
