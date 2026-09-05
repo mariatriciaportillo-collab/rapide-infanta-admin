@@ -19,9 +19,9 @@ export default function ServiceHistoryPage() {
   const fetchHistory = async () => {
     setLoading(true)
     const { data } = await supabase
-      .from('service_history')
-      .select('*, vehicles(plate_number, make, model), customers(name), invoices(invoice_number)')
-      .order('service_date', { ascending: false })
+      .from('invoices')
+      .select('*, vehicles(plate_number, make, model), customers(name), invoice_items(description)')
+      .order('created_at', { ascending: false })
       .limit(200)
     
     if (data) setHistory(data)
@@ -32,8 +32,8 @@ export default function ServiceHistoryPage() {
     const term = search.toLowerCase()
     const plate = h.vehicles?.plate_number?.toLowerCase() || ''
     const cname = h.customers?.name?.toLowerCase() || ''
-    const sname = h.service_name?.toLowerCase() || ''
-    return plate.includes(term) || cname.includes(term) || sname.includes(term)
+    const items = h.invoice_items || []; const sname = items.map((i: any) => i.description).join(' ').toLowerCase();
+    return plate.includes(term) || cname.includes(term) || sname.includes(term) || (h.invoice_number && h.invoice_number.toLowerCase().includes(term))
   })
 
   return (
@@ -77,23 +77,23 @@ export default function ServiceHistoryPage() {
                 filtered.map(h => (
                   <tr key={h.id} className="border-b border-slate-100 hover:bg-slate-50">
                     <td className="p-4 text-sm whitespace-nowrap">
-                      {format(new Date(h.service_date), 'MMM d, yyyy')}
+                      {format(new Date(h.created_at), 'MMM d, yyyy')}
                     </td>
                     <td className="p-4">
                       <div className="font-medium text-slate-800">{h.customers?.name || '-'}</div>
                       <div className="text-sm text-slate-500">{h.vehicles?.plate_number} • {h.vehicles?.make} {h.vehicles?.model}</div>
                     </td>
                     <td className="p-4">
-                      <div className="font-medium text-slate-800">{h.service_name || '-'}</div>
-                      {h.oil_type && <div className="text-sm text-slate-500">{h.oil_type}</div>}
+                      <div className="font-medium text-slate-800">{h.invoice_items && h.invoice_items.length > 0 ? h.invoice_items.slice(0, 3).map((i: any) => i.description).filter(Boolean).join(', ') : 'General Service'}</div>
+                      
                     </td>
                     <td className="p-4 text-sm text-slate-600 text-right">
                       {h.mileage ? h.mileage.toLocaleString() + ' km' : '-'}
                     </td>
                     <td className="p-4 text-sm">
-                      {h.invoice_id ? (
-                        <Link href={`/invoice/${h.invoice_id}`} className="text-blue-600 hover:underline flex items-center gap-1">
-                          <FileText size={14} /> {h.invoices?.invoice_number || 'View'}
+                      {h.id ? (
+                        <Link href={`/invoice/${h.id}`} className="text-blue-600 hover:underline flex items-center gap-1">
+                          <FileText size={14} /> {h.invoice_number || 'View'}
                         </Link>
                       ) : '-'}
                     </td>

@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { CustomerServiceHistory } from '@/components/customers/CustomerServiceHistory'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Car, FileText, Phone, Mail, MapPin, Building2, User as UserIcon, Edit, Plus, FileSignature } from 'lucide-react'
 import { format } from 'date-fns'
@@ -35,6 +36,13 @@ export default async function CustomerDetailPage({
   const { data: quotations } = await supabase
     .from('quotations')
     .select('*')
+    .eq('customer_id', id)
+    .order('created_at', { ascending: false })
+
+  // 4. Fetch Service History (Invoices)
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select('*, vehicles(plate_number, make, model), invoice_items(description)')
     .eq('customer_id', id)
     .order('created_at', { ascending: false })
 
@@ -169,6 +177,9 @@ export default async function CustomerDetailPage({
               )}
             </div>
           </div>
+
+          {/* Service History */}
+          <CustomerServiceHistory invoices={invoices || []} vehicles={vehicles || []} />
 
           {/* Quotation History */}
           <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">

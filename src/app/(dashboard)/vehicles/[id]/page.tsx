@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import { CustomerServiceHistory } from '@/components/customers/CustomerServiceHistory'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Car, FileText, User as UserIcon, Building2, Edit } from 'lucide-react'
 import { format } from 'date-fns'
@@ -28,6 +29,13 @@ export default async function VehicleDetailPage({
   const { data: quotations } = await supabase
     .from('quotations')
     .select('*')
+    .eq('vehicle_id', id)
+    .order('created_at', { ascending: false })
+
+  // 3. Fetch Service History (Invoices)
+  const { data: invoices } = await supabase
+    .from('invoices')
+    .select('*, vehicles(plate_number, make, model), invoice_items(description)')
     .eq('vehicle_id', id)
     .order('created_at', { ascending: false })
 
@@ -108,18 +116,20 @@ export default async function VehicleDetailPage({
           </div>
         </div>
 
-        {/* Right Column: Quotation History */}
+        {/* Right Column: History */}
         <div className="col-span-1 lg:col-span-2 space-y-6">
+          <CustomerServiceHistory invoices={invoices || []} vehicles={vehicle ? [vehicle] : []} />
+
           <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
             <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
               <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                 <FileText size={18} className="text-slate-500" />
-                Service History ({quotations?.length || 0})
+                Quotation History ({quotations?.length || 0})
               </h3>
             </div>
             
             {(!quotations || quotations.length === 0) ? (
-              <div className="p-4 text-slate-500 text-sm italic">No service history found for this vehicle.</div>
+              <div className="p-4 text-slate-500 text-sm italic">No quotations found for this vehicle.</div>
             ) : (
               <table className="w-full text-left text-sm text-slate-600">
                 <thead className="bg-slate-50 text-slate-500 uppercase font-semibold text-xs border-b border-slate-200">
