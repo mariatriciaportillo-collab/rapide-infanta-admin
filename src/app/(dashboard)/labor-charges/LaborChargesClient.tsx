@@ -110,8 +110,8 @@ export function LaborChargesClient({ groups, categories }: Props) {
     setPage(1)
   }, [quickSearch, selectedGroup, selectedCategory])
 
-  const formatCurrency = (val: number | null | undefined) => {
-    if (val === null || val === undefined) return '-'
+  const formatCurrency = (val: number | null | undefined): React.ReactNode => {
+    if (val === null || val === undefined) return <span className="text-slate-400">—</span>
     return `₱${val.toLocaleString()}`
   }
 
@@ -202,7 +202,7 @@ export function LaborChargesClient({ groups, categories }: Props) {
                     paginatedServices.map(service => (
                       <tr key={service.id} className="hover:bg-slate-50">
                         <td className="px-4 py-3">
-                          <div className="font-bold text-slate-800">{service.name}</div>
+                          <div className="font-medium text-slate-900">{service.name}</div>
                           {service.notes && (
                             <div className="text-xs text-slate-400 mt-1 flex items-start gap-1 max-w-xs">
                               <Info size={12} className="mt-0.5 shrink-0" />
@@ -210,20 +210,20 @@ export function LaborChargesClient({ groups, categories }: Props) {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-medium text-slate-700">
-                          {service.labor_groups?.name || '-'}
+                        <td className="px-4 py-3 text-slate-600">
+                          {service.labor_groups?.name || <span className="text-slate-400">—</span>}
                         </td>
                         <td className="px-4 py-3 text-slate-600">
-                          {service.labor_categories?.name || '-'}
+                          {service.labor_categories?.name || <span className="text-slate-400">—</span>}
                         </td>
                         <td className="px-4 py-3 text-right text-slate-600">
-                          {service.standard_hours ? service.standard_hours.toFixed(1) : '-'}
+                          {service.standard_hours ? service.standard_hours.toFixed(1) : <span className="text-slate-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-slate-700">
+                        <td className="px-4 py-3 text-right text-slate-600">
                           {formatCurrency(service.rate)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${service.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                          <span className={`inline-flex px-2 py-1 rounded text-[10px] font-bold tracking-wider uppercase ${service.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}`}>
                             {service.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
