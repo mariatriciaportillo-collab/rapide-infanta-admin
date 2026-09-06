@@ -108,8 +108,6 @@ export default function EditCustomerPage({
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
           contact_last_name: customerType === 'company' ? cleanContactLast : null,
-          company_name: customerType === 'company' ? cleanName : null,
-          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,
           mobile: mobile.trim(),
           telephone: customerType === 'company' ? telephone.trim() : null,
           email: email.trim(),
@@ -138,7 +136,7 @@ export default function EditCustomerPage({
   if (isLoading) return <div className="p-8 text-center text-slate-500">Loading customer data...</div>
 
   return (
-    <form onSubmit={handleSave} className="pb-24 max-w-4xl">
+    <form onSubmit={handleSave} className="pb-24 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Link href={`/customers/${id}`} className="text-slate-400 hover:text-slate-600">
@@ -163,7 +161,7 @@ export default function EditCustomerPage({
       )}
 
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
-        <div className="mb-6 flex gap-4">
+        <div className="mb-6 flex gap-6">
           <button
             type="button"
             onClick={() => setCustomerType('individual')}
@@ -218,7 +216,7 @@ export default function EditCustomerPage({
                 <input required type="text" value={name} onChange={e => setName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Construction Corporation" />
               </div>
               
-              <div className="col-span-1 md:col-span-2 mb-2">
+              <div className="col-span-1 md:col-span-2 pt-2">
                 <h4 className="font-semibold text-slate-800 text-sm border-b pb-2">Contact Person</h4>
               </div>
               <div>

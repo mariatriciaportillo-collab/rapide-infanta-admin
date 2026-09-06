@@ -79,8 +79,6 @@ export default function NewCustomerPage() {
           last_name: customerType === 'individual' ? cleanLastName : null,
           contact_first_name: customerType === 'company' ? cleanContactFirst : null,
           contact_last_name: customerType === 'company' ? cleanContactLast : null,
-          company_name: customerType === 'company' ? cleanCompanyName : null,
-          contact_person: customerType === 'company' ? `${cleanContactFirst} ${cleanContactLast}`.trim() : null,
           mobile: mobile.trim(),
           telephone: customerType === 'company' ? telephone.trim() : null,
           email: email.trim(),
@@ -113,7 +111,7 @@ export default function NewCustomerPage() {
   }
 
   return (
-    <form onSubmit={handleSave} className="pb-24 max-w-4xl">
+    <form onSubmit={handleSave} className="pb-24 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
           <Link href="/customers" className="text-slate-400 hover:text-slate-600">
@@ -138,7 +136,7 @@ export default function NewCustomerPage() {
       )}
 
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-6">
-        <div className="mb-6 flex gap-4">
+        <div className="mb-6 flex gap-6">
           <button
             type="button"
             onClick={() => setCustomerType('individual')}
@@ -179,7 +177,7 @@ export default function NewCustomerPage() {
                 <input required type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full border border-slate-300 rounded-md p-2" placeholder="ABC Construction Corporation" />
               </div>
               
-              <div className="col-span-1 md:col-span-2 mb-2">
+              <div className="col-span-1 md:col-span-2 pt-2">
                 <h4 className="font-semibold text-slate-800 text-sm border-b pb-2">Contact Person</h4>
               </div>
               <div>
