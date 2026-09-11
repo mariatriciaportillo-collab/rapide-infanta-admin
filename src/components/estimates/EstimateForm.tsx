@@ -511,9 +511,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       const vPayload = {
         customer_id: customerRecord.id,
         plate_number: normalizedPlate,
-        vin: vin.trim() || null,
-        engine_capacity: engineCapacity.trim() || null,
-        make: vehicleMake || null,
+                        make: vehicleMake || null,
         model: vehicleModel || null,
         year: vehicleYear ? parseInt(vehicleYear) : null,
         transmission: vehicleTransmission || null
@@ -630,9 +628,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
     const payload = {
       customer_id: selectedCustomerId, // Make sure it stays linked
       plate_number: vehiclePlate.toUpperCase(),
-      vin: vin.trim() || null,
-      engine_capacity: engineCapacity.trim() || null,
-      make: vehicleMake,
+                  make: vehicleMake,
       model: vehicleModel,
       year: vehicleYear ? parseInt(vehicleYear) : null,
       transmission: vehicleTransmission
@@ -930,9 +926,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
         const vehiclePayload = {
           customer_id: finalCustomerId,
           plate_number: vehiclePlate.toUpperCase(),
-      vin: vin.trim() || null,
-      engine_capacity: engineCapacity.trim() || null,
-      make: vehicleMake,
+                  make: vehicleMake,
           model: vehicleModel,
           year: vehicleYear ? parseInt(vehicleYear) : null,
           transmission: vehicleTransmission

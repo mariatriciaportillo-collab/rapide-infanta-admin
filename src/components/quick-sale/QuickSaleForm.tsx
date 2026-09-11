@@ -317,9 +317,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
           make: vehicleMake,
           model: vehicleModel,
           year: vehicleYear,
-          vin: vin,
-          engine_capacity: engineCapacity,
-          transmission: vehicleTransmission
+                              transmission: vehicleTransmission
         }).select().single()
 
         if (error) throw new Error(error.message)
@@ -334,9 +332,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
           make: vehicleMake,
           model: vehicleModel,
           year: vehicleYear,
-          vin: vin,
-          engine_capacity: engineCapacity,
-          transmission: vehicleTransmission
+                              transmission: vehicleTransmission
         }).eq('id', selectedVehicleId)
 
         if (error) throw new Error(error.message)
