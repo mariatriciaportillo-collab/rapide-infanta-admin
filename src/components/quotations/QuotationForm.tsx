@@ -8,6 +8,7 @@ import { Plus, Trash2, ArrowLeft, Save, Search, User, Car, Building2, Edit, X } 
 import { usePartLaborAutomation } from '@/hooks/usePartLaborAutomation'
 import Link from 'next/link'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
+import { saveCustomerRecord } from '@/utils/customerSaveHelper'
 import { MakeModelSelector } from '@/components/vehicles/MakeModelSelector'
 import { YearSelector } from '@/components/vehicles/YearSelector'
 import { SearchableCombobox, ComboboxOption } from '@/components/ui/SearchableCombobox'
@@ -146,6 +147,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
 
   // Inline Edit State
   const [isAddingCustomer, setIsAddingCustomer] = useState(false)
+  const [isSavingCustomer, setIsSavingCustomer] = useState(false)
+  const [createdNewCustomerId, setCreatedNewCustomerId] = useState<string | null>(null)
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
   const [isAddingVehicle, setIsAddingVehicle] = useState(false)
   const [isEditingVehicle, setIsEditingVehicle] = useState(false)
@@ -443,6 +446,8 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   }
 
     const handleCreateNewCustomer = async () => {
+    if (isSavingCustomer) return;
+    setIsSavingCustomer(true);
     setError(null)
     
     const cleanFirstName = firstName.trim()
@@ -450,12 +455,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     const cleanCompanyName = companyName.trim()
     
     if (customerType === 'individual' && (!cleanFirstName || !cleanLastName)) {
-      setError("First Name and Last Name are required.")
-      return
+      setError("First Name and Last Name are required."); setIsSavingCustomer(false); return
     }
     if (customerType === 'company' && !cleanCompanyName) {
-      setError("Company Name is required.")
-      return
+      setError("Company Name is required."); setIsSavingCustomer(false); return
     }
 
     
@@ -467,37 +470,48 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     
     const normalizedPlate = vehiclePlate.replace(/[^A-Z0-9]/ig, '').toUpperCase()
     if (vehicleMake || vehicleModel || vehicleYear || normalizedPlate) {
-      if (!normalizedPlate) { setError("Plate Number is required."); return; }
-      if (!vehicleMake) { setError("Make is required."); return; }
-      if (!vehicleModel) { setError("Model is required."); return; }
-      if (!vehicleYear) { setError("Year is required."); return; }
+      if (!normalizedPlate) { setError("Plate Number is required."); setIsSavingCustomer(false); return; }
+      if (!vehicleMake) { setError("Make is required."); setIsSavingCustomer(false); return; }
+      if (!vehicleModel) { setError("Model is required."); setIsSavingCustomer(false); return; }
+      if (!vehicleYear) { setError("Year is required."); setIsSavingCustomer(false); return; }
     }
 
-    const payload = {
-      customer_type: customerType,
-      name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
-      first_name: customerType === 'individual' ? cleanFirstName : null,
-      last_name: customerType === 'individual' ? cleanLastName : null,
-      contact_first_name: customerType === 'company' ? contactFirstName.trim() : null,
-      contact_last_name: customerType === 'company' ? contactLastName.trim() : null,
-      mobile: customerMobile || null,
-      telephone: customerTelephone || null,
-      email: customerEmail || null,
-      address: customerAddress || null,
-      tin: customerTin || null
-    }
     
-    const { data: newCust, error: custErr } = await supabase.from('customers').insert([payload]).select().single()
+    let customerRecord = null;
     
-    if (custErr) {
-      setError(`Failed to create customer: ${custErr.message}`)
-      return
+    if (createdNewCustomerId) {
+      // Re-use already created customer to prevent duplicates if vehicle failed previously
+      const { data } = await supabase.from('customers').select('*').eq('id', createdNewCustomerId).single();
+      customerRecord = data;
+    } else {
+      const { data: newCust, error: custErr } = await saveCustomerRecord(supabase, {
+        customerType,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        companyName: cleanCompanyName,
+        contactFirstName,
+        contactLastName,
+        mobile: customerMobile,
+        telephone: customerTelephone,
+        email: customerEmail,
+        address: customerAddress,
+        tin: customerTin
+      })
+      
+      if (custErr) {
+        setError(`Failed to create customer: ${custErr.message}`)
+        setIsSavingCustomer(false)
+        return
+      }
+      customerRecord = newCust;
+      setCreatedNewCustomerId(newCust.id); // Save ID to prevent duplication on retry
     }
+  
     
     let newVeh = null;
     if (normalizedPlate) {
       const vPayload = {
-        customer_id: newCust.id,
+        customer_id: customerRecord.id,
         plate_number: normalizedPlate,
         vin: vin.trim() || null,
         engine_capacity: engineCapacity.trim() || null,
@@ -508,14 +522,16 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
       }
       const { data: vData, error: vErr } = await supabase.from('vehicles').insert([vPayload]).select().single()
       if (vErr) {
-        // Still proceed, just log error for vehicle
-        console.error("Failed to create vehicle:", vErr)
+        setError(`Customer created, but failed to create vehicle: ${vErr.message}. Please try saving the vehicle again.`)
+        setIsSavingCustomer(false)
+        return // Halt and keep modal open so user can fix vehicle and retry
       } else {
         newVeh = vData;
       }
     }
     
-    await handleSelectCustomer(newCust)
+    await handleSelectCustomer(customerRecord)
+    setCreatedNewCustomerId(null) // Reset on full success
     if (newVeh) {
       handleSelectVehicle(newVeh)
     }
@@ -524,7 +540,9 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
   }
 
   const handleSaveCustomerChanges = async () => {
-    if (!selectedCustomerId) return
+    if (isSavingCustomer) return;
+    setIsSavingCustomer(true);
+    if (!selectedCustomerId) { setIsSavingCustomer(false); return; }
     setError(null)
     
     const cleanFirstName = firstName.trim()
@@ -532,12 +550,10 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     const cleanCompanyName = companyName.trim()
     
     if (customerType === 'individual' && (!cleanFirstName || !cleanLastName)) {
-      setError("First Name and Last Name are required.")
-      return
+      setError("First Name and Last Name are required."); setIsSavingCustomer(false); return
     }
     if (customerType === 'company' && !cleanCompanyName) {
-      setError("Company Name is required.")
-      return
+      setError("Company Name is required."); setIsSavingCustomer(false); return
     }
 
     const payload = {
@@ -668,6 +684,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
     setCustomerSearch('')
     setIsAddingCustomer(false)
     setIsEditingCustomer(false)
+    setCreatedNewCustomerId(null)
     
     setVehiclePlate('')
     setVin('')
@@ -863,21 +880,21 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
           }
         }
 
-        const customerPayload = {
-          customer_type: customerType,
-          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
-          first_name: customerType === 'individual' ? cleanFirstName : null,
-          last_name: customerType === 'individual' ? cleanLastName : null,
-          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
-          contact_last_name: customerType === 'company' ? cleanContactLast : null,
+        const { data: newCust, error: custErr } = await saveCustomerRecord(supabase, {
+          customerType,
+          firstName: cleanFirstName,
+          lastName: cleanLastName,
+          companyName: cleanCompanyName,
+          contactFirstName: cleanContactFirst,
+          contactLastName: cleanContactLast,
           mobile: customerMobile,
-          telephone: customerType === 'company' ? customerTelephone : null,
+          telephone: customerTelephone,
           email: customerEmail,
           address: customerAddress,
-          tin: customerType === 'company' ? customerTin : null
-        };
+          tin: customerTin
+        })
 
-        const { data: newCust, error: custErr } = await supabase.from('customers').insert(customerPayload).select().single()
+        
         
         if (custErr) {
           console.error("[QUOTATION SAVE] Step 2 FAILED (Customer)", JSON.stringify(custErr, null, 2));
@@ -1790,7 +1807,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
                 {customerType === 'company' ? <Building2 size={18} className="text-slate-500"/> : <User size={18} className="text-slate-500"/>}
                 {isAddingCustomer ? 'Add New Customer' : 'Edit Customer'}
               </h2>
-              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="text-slate-400 hover:text-slate-600 transition">
+              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); setCreatedNewCustomerId(null); }} className="text-slate-400 hover:text-slate-600 transition">
                 <X size={20} />
               </button>
             </div>
@@ -1897,7 +1914,7 @@ export function QuotationForm({ initialData }: { initialData?: any }) {
             </div>
             
             <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
-              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
+              <button type="button" onClick={() => { setIsAddingCustomer(false); setIsEditingCustomer(false); setCreatedNewCustomerId(null); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
                 Cancel
               </button>
               <button type="button" onClick={isAddingCustomer ? handleCreateNewCustomer : handleSaveCustomerChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">

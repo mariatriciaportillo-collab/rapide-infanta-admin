@@ -7,6 +7,7 @@ import { checkDuplicateCustomer } from '@/utils/checkDuplicateCustomer'
 import { ArrowLeft, Save, Building2, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { buildLegacyName } from '@/utils/customer'
+import { saveCustomerRecord } from '@/utils/customerSaveHelper'
 
 export default function NewCustomerPage() {
   const router = useRouter()
@@ -69,25 +70,20 @@ export default function NewCustomerPage() {
     }
 
     try {
-      const { data, error: insertError } = await supabase
-        .from('customers')
-        .insert({
-          customer_type: customerType,
-          // Generate legacy name column value
-          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanCompanyName),
-          first_name: customerType === 'individual' ? cleanFirstName : null,
-          last_name: customerType === 'individual' ? cleanLastName : null,
-          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
-          contact_last_name: customerType === 'company' ? cleanContactLast : null,
-          mobile: mobile.trim(),
-          telephone: customerType === 'company' ? telephone.trim() : null,
-          email: email.trim(),
-          address: address.trim(),
-          tin: customerType === 'company' ? tin.trim() : null,
-          notes: notes.trim()
-        })
-        .select()
-        .single()
+      const { data, error: insertError } = await saveCustomerRecord(supabase, {
+        customerType,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        companyName: cleanCompanyName,
+        contactFirstName: cleanContactFirst,
+        contactLastName: cleanContactLast,
+        mobile,
+        telephone,
+        email,
+        address,
+        tin,
+        notes
+      })
 
       if (insertError) {
         setError(insertError.message || insertError.details || 'Unable to save customer.')

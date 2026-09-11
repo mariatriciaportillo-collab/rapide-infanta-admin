@@ -1,10 +1,29 @@
 const fs = require('fs');
 
-let content = fs.readFileSync('src/components/quick-sale/QuickSaleForm.tsx', 'utf8');
+const path = 'src/components/quick-sale/QuickSaleForm.tsx';
+let content = fs.readFileSync(path, 'utf8');
 
-// Replace the contact_person line with contact_first_name and contact_last_name
-content = content.replace(/contact_person: contactPerson,/g, 
-  "contact_first_name: customerType === 'company' ? contactFirstName : null,\n        contact_last_name: customerType === 'company' ? contactLastName : null,");
+if (!content.includes('saveCustomerRecord')) {
+  content = content.replace("import { buildLegacyName } from '@/utils/customer'", 
+    "import { buildLegacyName } from '@/utils/customer'\nimport { saveCustomerRecord } from '@/utils/customerSaveHelper'");
+}
 
-fs.writeFileSync('src/components/quick-sale/QuickSaleForm.tsx', content);
-console.log('Fixed QuickSaleForm.tsx');
+const insertRegex = /const \{ data, error \} = await supabase\.from\('customers'\)\.insert\(\{[\s\S]*?\}\)\.select\(\)\.single\(\)/;
+
+const newInsert = `const { data, error } = await saveCustomerRecord(supabase, {
+        customerType,
+        firstName,
+        lastName,
+        companyName,
+        contactFirstName,
+        contactLastName,
+        mobile: customerMobile,
+        telephone: customerTelephone,
+        email: customerEmail,
+        address: customerAddress,
+        tin: customerTin
+      })`;
+
+content = content.replace(insertRegex, newInsert);
+fs.writeFileSync(path, content);
+console.log('Fixed quick-sale');

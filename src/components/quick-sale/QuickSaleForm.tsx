@@ -6,6 +6,7 @@ import { Search, Plus, X, Edit, Trash2, ArrowRightCircle, Save, User, Car, Build
 import { PartSearchSelector } from '@/components/parts/PartSearchSelector'
 import { SearchableCombobox } from '@/components/ui/SearchableCombobox'
 import { formatCustomerName, formatContactPerson, buildLegacyName } from '@/utils/customer'
+import { saveCustomerRecord } from '@/utils/customerSaveHelper'
 import { checkDuplicateCustomer } from '@/utils/checkDuplicateCustomer'
 
 export function QuickSaleForm({ initialData }: { initialData?: any }) {
@@ -249,19 +250,19 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       const builtName = buildLegacyName(customerType, firstName, lastName, companyName)
       const contactPerson = customerType === 'company' && contactFirstName ? `${contactFirstName} ${contactLastName}`.trim() : null
 
-      const { data, error } = await supabase.from('customers').insert({
-        customer_type: customerType,
-        name: builtName,
-        first_name: customerType === 'individual' ? firstName : null,
-        last_name: customerType === 'individual' ? lastName : null,
-        contact_first_name: customerType === 'company' ? contactFirstName : null,
-        contact_last_name: customerType === 'company' ? contactLastName : null,
+      const { data, error } = await saveCustomerRecord(supabase, {
+        customerType,
+        firstName,
+        lastName,
+        companyName,
+        contactFirstName,
+        contactLastName,
         mobile: customerMobile,
         telephone: customerTelephone,
         email: customerEmail,
         address: customerAddress,
         tin: customerTin
-      }).select().single()
+      })
 
       if (error) throw new Error(error.message)
       

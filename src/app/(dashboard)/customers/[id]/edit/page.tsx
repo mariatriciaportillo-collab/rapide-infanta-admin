@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save, Building2, User as UserIcon } from 'lucide-react'
 import Link from 'next/link'
 import { buildLegacyName } from '@/utils/customer'
+import { saveCustomerRecord } from '@/utils/customerSaveHelper'
 
 export default function EditCustomerPage({
   params,
@@ -99,24 +100,21 @@ export default function EditCustomerPage({
     }
 
     try {
-      const { error: updateError } = await supabase
-        .from('customers')
-        .update({
-          customer_type: customerType,
-          name: buildLegacyName(customerType, cleanFirstName, cleanLastName, cleanName),
-          first_name: customerType === 'individual' ? cleanFirstName : null,
-          last_name: customerType === 'individual' ? cleanLastName : null,
-          contact_first_name: customerType === 'company' ? cleanContactFirst : null,
-          contact_last_name: customerType === 'company' ? cleanContactLast : null,
-          mobile: mobile.trim(),
-          telephone: customerType === 'company' ? telephone.trim() : null,
-          email: email.trim(),
-          address: address.trim(),
-          tin: customerType === 'company' ? tin.trim() : null,
-          notes: notes.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
+      const { error: updateError } = await saveCustomerRecord(supabase, {
+        id,
+        customerType,
+        firstName: cleanFirstName,
+        lastName: cleanLastName,
+        companyName: cleanName,
+        contactFirstName: cleanContactFirst,
+        contactLastName: cleanContactLast,
+        mobile,
+        telephone,
+        email,
+        address,
+        tin,
+        notes
+      })
 
       if (updateError) {
         setError(updateError.message || updateError.details || 'Unable to update customer.')
