@@ -78,12 +78,15 @@ export function PartGroupCategorySelector({
   const handleSelectGroup = (groupId: string) => {
     setSelectedGroupId(groupId)
     setSelectedCategoryId('') // Reset category when group changes
+    if (onCategorySelect) onCategorySelect(null)
     setGroupSearch('')
     setIsGroupOpen(false)
   }
 
   const handleSelectCategory = (categoryId: string) => {
+    const cat = categories.find(c => c.id === categoryId)
     setSelectedCategoryId(categoryId)
+    if (onCategorySelect) onCategorySelect(cat || null)
     setCategorySearch('')
     setIsCategoryOpen(false)
   }

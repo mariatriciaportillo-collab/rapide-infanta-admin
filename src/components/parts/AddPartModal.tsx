@@ -62,7 +62,11 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
 
   
   const handleCategorySelect = (cat: any) => {
-    if (!cat) return;
+    if (!cat) {
+      setCategoryName('');
+      setEngineOilClassification(null);
+      return;
+    }
     setCategoryName(cat.name);
     if (cat.name.toUpperCase() === 'ENGINE OIL') {
       setShowOilModal(true);
@@ -99,6 +103,7 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
       brand_id: brandId || null,
       group_id: groupId,
       category_id: categoryId,
+      engine_oil_classification: categoryName.toUpperCase() === 'ENGINE OIL' ? engineOilClassification : null,
       unit: unit,
       cost: Number(cost) || 0,
       selling_price: Number(sellingPrice) || 0,

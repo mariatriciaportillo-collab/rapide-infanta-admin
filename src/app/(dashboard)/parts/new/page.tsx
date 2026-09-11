@@ -40,7 +40,11 @@ export default function AddPartPage() {
 
   
   const handleCategorySelect = (cat: any) => {
-    if (!cat) return;
+    if (!cat) {
+      setCategoryName('');
+      setEngineOilClassification(null);
+      return;
+    }
     setCategoryName(cat.name);
     if (cat.name.toUpperCase() === 'ENGINE OIL') {
       setShowOilModal(true);
@@ -94,6 +98,7 @@ export default function AddPartPage() {
       brand_id: selectedBrandId || null,
       group_id: selectedGroupId,
       category_id: selectedCategoryId,
+      engine_oil_classification: categoryName.toUpperCase() === 'ENGINE OIL' ? engineOilClassification : null,
       unit: unit,
       cost: cost ? parseFloat(cost) : 0,
       selling_price: parseFloat(sellingPrice),

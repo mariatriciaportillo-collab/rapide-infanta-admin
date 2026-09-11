@@ -81,7 +81,11 @@ export function EditPartClient({ id }: { id: string }) {
 
   
   const handleCategorySelect = (cat: any) => {
-    if (!cat) return;
+    if (!cat) {
+      setCategoryName('');
+      setEngineOilClassification(null);
+      return;
+    }
     setCategoryName(cat.name);
     if (cat.name.toUpperCase() === 'ENGINE OIL') {
       setShowOilModal(true);
