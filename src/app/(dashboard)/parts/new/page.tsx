@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { ArrowLeft, Save } from 'lucide-react'
 import { PartGroupCategorySelector } from '@/components/parts/PartGroupCategorySelector'
+import { EngineOilClassificationModal } from '@/components/parts/EngineOilClassificationModal'
 import { BrandSelector } from '@/components/parts/BrandSelector'
 
 export default function AddPartPage() {
@@ -20,6 +21,9 @@ export default function AddPartPage() {
   const [selectedBrandId, setSelectedBrandId] = useState('')
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [selectedCategoryId, setSelectedCategoryId] = useState('')
+  const [categoryName, setCategoryName] = useState('')
+  const [engineOilClassification, setEngineOilClassification] = useState<string | null>(null)
+  const [showOilModal, setShowOilModal] = useState(false)
   const [unit, setUnit] = useState('pc')
   
   const [cost, setCost] = useState('')
@@ -34,6 +38,17 @@ export default function AddPartPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  
+  const handleCategorySelect = (cat: any) => {
+    if (!cat) return;
+    setCategoryName(cat.name);
+    if (cat.name.toUpperCase() === 'ENGINE OIL') {
+      setShowOilModal(true);
+    } else {
+      setEngineOilClassification(null);
+    }
+  }
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -177,11 +192,23 @@ export default function AddPartPage() {
 
             <div className="md:col-span-2">
               <PartGroupCategorySelector 
-                selectedGroupId={selectedGroupId}
-                setSelectedGroupId={setSelectedGroupId}
-                selectedCategoryId={selectedCategoryId}
-                setSelectedCategoryId={setSelectedCategoryId}
-              />
+                      selectedGroupId={selectedGroupId}
+                      setSelectedGroupId={setSelectedGroupId}
+                      selectedCategoryId={selectedCategoryId}
+                      setSelectedCategoryId={setSelectedCategoryId}
+                      onCategorySelect={handleCategorySelect}
+                    />
+                    {categoryName.toUpperCase() === 'ENGINE OIL' && (
+                      <div className="mt-3 p-3 bg-slate-50 border rounded-md flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-semibold text-slate-500 uppercase block mb-1">Oil Classification</span>
+                          <span className="text-sm text-slate-800 font-medium">{engineOilClassification || 'Not Selected'}</span>
+                        </div>
+                        <button type="button" onClick={() => setShowOilModal(true)} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                          Change
+                        </button>
+                      </div>
+                    )}
             </div>
             
             <div>
@@ -344,6 +371,13 @@ export default function AddPartPage() {
           </button>
         </div>
       </form>
+
+      <EngineOilClassificationModal
+        isOpen={showOilModal}
+        onClose={() => setShowOilModal(false)}
+        onSelect={setEngineOilClassification}
+        currentValue={engineOilClassification}
+      />
     </div>
   )
 }

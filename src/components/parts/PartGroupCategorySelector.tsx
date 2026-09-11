@@ -13,6 +13,7 @@ type Props = {
   selectedCategoryId: string
   setSelectedCategoryId: (val: string) => void
   disabled?: boolean
+  onCategorySelect?: (category: PartCategory | null) => void
 }
 
 export function PartGroupCategorySelector({ 
@@ -20,7 +21,8 @@ export function PartGroupCategorySelector({
   setSelectedGroupId, 
   selectedCategoryId, 
   setSelectedCategoryId, 
-  disabled 
+  disabled, 
+  onCategorySelect 
 }: Props) {
   const supabase = createClient()
   

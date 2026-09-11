@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { X, Save, AlertCircle } from 'lucide-react'
 import { BrandSelector } from '@/components/parts/BrandSelector'
 import { PartGroupCategorySelector } from '@/components/parts/PartGroupCategorySelector'
+import { EngineOilClassificationModal } from '@/components/parts/EngineOilClassificationModal'
 
 type Props = {
   onClose: () => void
@@ -22,6 +23,9 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
   const [brandId, setBrandId] = useState('')
   const [groupId, setGroupId] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [categoryName, setCategoryName] = useState('')
+  const [engineOilClassification, setEngineOilClassification] = useState<string | null>(null)
+  const [showOilModal, setShowOilModal] = useState(false)
   const [unit, setUnit] = useState('pcs')
   const [cost, setCost] = useState('0')
   const [sellingPrice, setSellingPrice] = useState('0')
@@ -56,6 +60,17 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
     if (val === '') setter('0')
   }
 
+  
+  const handleCategorySelect = (cat: any) => {
+    if (!cat) return;
+    setCategoryName(cat.name);
+    if (cat.name.toUpperCase() === 'ENGINE OIL') {
+      setShowOilModal(true);
+    } else {
+      setEngineOilClassification(null);
+    }
+  }
+  
   const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
 
@@ -147,7 +162,24 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
             </div>
 
             <div className="border-t border-slate-100 pt-6">
-              <PartGroupCategorySelector selectedGroupId={groupId} selectedCategoryId={categoryId} setSelectedGroupId={setGroupId} setSelectedCategoryId={setCategoryId} />
+              <PartGroupCategorySelector 
+                      selectedGroupId={groupId}
+                      setSelectedGroupId={setGroupId}
+                      selectedCategoryId={categoryId}
+                      setSelectedCategoryId={setCategoryId}
+                      onCategorySelect={handleCategorySelect}
+                    />
+                    {categoryName.toUpperCase() === 'ENGINE OIL' && (
+                      <div className="mt-3 p-3 bg-slate-50 border rounded-md flex items-center justify-between">
+                        <div>
+                          <span className="text-xs font-semibold text-slate-500 uppercase block mb-1">Oil Classification</span>
+                          <span className="text-sm text-slate-800 font-medium">{engineOilClassification || 'Not Selected'}</span>
+                        </div>
+                        <button type="button" onClick={() => setShowOilModal(true)} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                          Change
+                        </button>
+                      </div>
+                    )}
             </div>
             
             <div className="border-t border-slate-100 pt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -191,7 +223,13 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
             <Save size={18} /> {isSubmitting ? 'Saving...' : 'Save Product'}
           </button>
         </div>
-      </div>
+            <EngineOilClassificationModal
+        isOpen={showOilModal}
+        onClose={() => setShowOilModal(false)}
+        onSelect={setEngineOilClassification}
+        currentValue={engineOilClassification}
+      />
+    </div>
     </div>
   )
 }
