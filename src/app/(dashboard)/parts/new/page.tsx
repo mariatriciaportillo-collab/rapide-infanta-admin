@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import { checkDuplicatePart } from '@/utils/duplicateCheck'
 import { ArrowLeft, Save } from 'lucide-react'
 import { PartGroupCategorySelector } from '@/components/parts/PartGroupCategorySelector'
 import { EngineOilClassificationModal } from '@/components/parts/EngineOilClassificationModal'
@@ -76,19 +77,19 @@ export default function AddPartPage() {
       return
     }
 
-    // Duplicate part number check
-    if (partNumber.trim()) {
-      const { data: existingPart } = await supabase
-        .from('parts')
-        .select('id')
-        .ilike('part_number', partNumber.trim())
-        .maybeSingle()
-        
-      if (existingPart) {
-        setError(`A part with Part Number ${partNumber.trim()} already exists.`)
-        setIsSubmitting(false)
-        return
-      }
+    
+    const isDuplicate = await checkDuplicatePart(supabase, {
+      name: name.trim(),
+      part_number: partNumber.trim() || null,
+      brand_id: selectedBrandId || null,
+      category_id: selectedCategoryId,
+      engine_oil_classification: categoryName.toUpperCase() === 'ENGINE OIL' ? engineOilClassification : null
+    })
+
+    if (isDuplicate) {
+      setError("This Part / Material already exists. Please use or edit the existing record instead.")
+      setIsSubmitting(false)
+      return
     }
 
     const payload = {

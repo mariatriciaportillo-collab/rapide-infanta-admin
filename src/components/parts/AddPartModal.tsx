@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { checkDuplicatePart } from '@/utils/duplicateCheck'
 import { X, Save, AlertCircle } from 'lucide-react'
 import { BrandSelector } from '@/components/parts/BrandSelector'
 import { PartGroupCategorySelector } from '@/components/parts/PartGroupCategorySelector'
@@ -87,13 +88,19 @@ export function AddPartModal({ onClose, onSuccess }: Props) {
       return
     }
 
-    if (partNumber.trim()) {
-      const { data: existing } = await supabase.from('parts').select('id').eq('part_number', partNumber.trim()).single()
-      if (existing) {
-        setError("A part with this Part Number / SKU already exists.")
-        setIsSubmitting(false)
-        return
-      }
+    
+    const isDuplicate = await checkDuplicatePart(supabase, {
+      name: name.trim(),
+      part_number: partNumber.trim() || null,
+      brand_id: brandId || null,
+      category_id: categoryId,
+      engine_oil_classification: categoryName.toUpperCase() === 'ENGINE OIL' ? engineOilClassification : null
+    })
+
+    if (isDuplicate) {
+      setError("This Part / Material already exists. Please use or edit the existing record instead.")
+      setIsSubmitting(false)
+      return
     }
 
     const payload = {

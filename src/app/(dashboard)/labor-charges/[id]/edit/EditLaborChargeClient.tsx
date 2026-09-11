@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import { checkDuplicateLabor } from '@/utils/duplicateCheck'
 import { ArrowLeft, Save } from 'lucide-react'
 import { GroupCategorySelector } from '@/components/labor/GroupCategorySelector'
 
@@ -52,6 +53,19 @@ export function EditLaborChargeClient({ service }: { service: any }) {
       return
     }
 
+    
+    const isDuplicate = await checkDuplicateLabor(supabase, {
+      name: serviceName.trim(),
+      category_id: selectedCategoryId,
+      exclude_id: service.id
+    })
+
+    if (isDuplicate) {
+      setError("This Labor Charge already exists. Please use or edit the existing record instead.")
+      setIsSubmitting(false)
+      return
+    }
+
     const { error: updateError } = await supabase
       .from('labor_services')
       .update({
@@ -68,7 +82,7 @@ export function EditLaborChargeClient({ service }: { service: any }) {
 
     if (updateError) {
       if (updateError.code === '23505') {
-        setError("A service with this name already exists.")
+        setError("This Labor Charge already exists. Please use or edit the existing record instead.")
       } else {
         setError(`Failed to update: ${updateError.message}`)
       }
