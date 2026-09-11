@@ -27,6 +27,8 @@ export function normalizeUppercase(
         // Skip exclusions based on exact matches or substrings for sensitive fields
         if (
           excludeFields.includes(lowerKey) || 
+          lowerKey.includes('type') || 
+          lowerKey === 'customer_type' || 
           lowerKey.includes('email') || 
           lowerKey.includes('password') || 
           lowerKey.includes('url') ||
