@@ -240,12 +240,13 @@ export default function StockAdjustmentsPage() {
                             ₱{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
-                            <Link 
-                              href={t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                            >
-                              View
-                            </Link>
+                            <TableActions align="right">
+                              <TableAction 
+                                icon={Eye} 
+                                label="View Transaction" 
+                                href={t.type === 'SWAP' ? `/stock-swaps/${t.id}` : `/stock-adjustments/${t.id}`} 
+                              />
+                            </TableActions>
                           </td>
                         </tr>
                       )

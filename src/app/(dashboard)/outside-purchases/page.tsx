@@ -236,12 +236,13 @@ export default function OutsidePurchasesPage() {
                             ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
-                            <Link 
-                              href={`/outside-purchases/${p.id}`}
-                              className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                            >
-                              View
-                            </Link>
+                            <TableActions align="right">
+                              <TableAction 
+                                icon={Eye} 
+                                label="View Purchase" 
+                                href={`/outside-purchases/${p.id}`} 
+                              />
+                            </TableActions>
                           </td>
                         </tr>
                       )

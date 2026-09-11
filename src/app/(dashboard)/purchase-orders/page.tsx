@@ -262,22 +262,18 @@ export default function PurchaseOrdersPage() {
                             ₱{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <Link 
-                                href={`/purchase-orders/${po.id}`}
-                                className="text-sm font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Eye size={16} /> View
-                              </Link>
-                              <Link 
-                                href={`/print/purchase-orders/${po.id}`}
-                                className="text-sm font-bold text-slate-600 hover:text-slate-800 flex items-center gap-1.5 hover:bg-slate-100 px-3 py-1.5 rounded-md transition"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Printer size={16} /> Print
-                              </Link>
-                            </div>
+                            <TableActions align="right">
+                              <TableAction 
+                                icon={Eye} 
+                                label="View PO" 
+                                href={`/purchase-orders/${po.id}`} 
+                              />
+                              <TableAction 
+                                icon={Printer} 
+                                label="Print PO" 
+                                href={`/print/purchase-orders/${po.id}`} 
+                              />
+                            </TableActions>
                           </td>
                         </tr>
                       )
