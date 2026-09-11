@@ -48,7 +48,11 @@ export default function ServiceIntervalsPage() {
   const handleRemove = async (index: number) => {
     const item = intervals[index]
     if (!item.isNew && item.id) {
-      await supabase.from('service_intervals').delete().eq('id', item.id)
+      const { error } = await supabase.from('service_intervals').delete().eq('id', item.id)
+      if (error) {
+        alert("Failed to delete: " + error.message)
+        return
+      }
     }
     setIntervals(intervals.filter((_, i) => i !== index))
   }
@@ -72,26 +76,45 @@ export default function ServiceIntervalsPage() {
       }
     }
     setSaving(true)
+    let hasError = false
+    let errorMessage = ""
+    
     for (const item of intervals) {
       if (item.id && !item.isNew) {
-        await supabase.from('service_intervals').update({
+        const { error } = await supabase.from('service_intervals').update({
           service_type: item.service_type,
           classification: item.classification,
           months: item.months,
           kilometers: item.kilometers
         }).eq('id', item.id)
+        if (error) {
+          hasError = true
+          errorMessage = error.message
+          break
+        }
       } else {
-        await supabase.from('service_intervals').insert([{
+        const { error } = await supabase.from('service_intervals').insert([{
           service_type: item.service_type,
           classification: item.classification,
           months: item.months,
           kilometers: item.kilometers
         }])
+        if (error) {
+          hasError = true
+          errorMessage = error.message
+          break
+        }
       }
     }
+    
     await fetchIntervals()
     setSaving(false)
-    alert("Saved successfully.")
+    
+    if (hasError) {
+      alert("Failed to save: " + errorMessage)
+    } else {
+      alert("Saved successfully.")
+    }
   }
 
   return (
