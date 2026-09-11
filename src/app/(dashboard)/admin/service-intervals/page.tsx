@@ -4,6 +4,7 @@ import { TableActions, TableAction } from '@/components/ui/TableActions'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Save, Plus, Trash2, Edit2 } from 'lucide-react'
+import { ENGINE_OIL_CLASSIFICATIONS } from '@/components/parts/EngineOilClassificationModal'
 
 export default function ServiceIntervalsPage() {
   const supabase = createClient()
@@ -29,6 +30,14 @@ export default function ServiceIntervalsPage() {
     } else {
       updated[index][field] = value
     }
+    
+    if (field === 'service_type') {
+      const isOilChange = value?.toUpperCase().includes('OIL CHANGE') || value?.toUpperCase().includes('ENGINE OIL');
+      if (!isOilChange) {
+        updated[index]['classification'] = null;
+      }
+    }
+    
     setIntervals(updated)
   }
 
@@ -45,6 +54,23 @@ export default function ServiceIntervalsPage() {
   }
 
   const handleSave = async () => {
+    const combinations = new Set();
+    for (const item of intervals) {
+      const type = (item.service_type || '').trim().toUpperCase();
+      const cls = (item.classification || '').trim().toUpperCase();
+      const key = `${type}::${cls}`;
+      if (combinations.has(key)) {
+        alert(`Duplicate rule found for: ${item.service_type} - ${item.classification || 'Default'}. Please remove the duplicate before saving.`);
+        return;
+      }
+      combinations.add(key);
+      
+      const isOilChange = type.includes('OIL CHANGE') || type.includes('ENGINE OIL');
+      if (isOilChange && !item.classification) {
+        alert(`Please select an Oil Classification for the rule: ${item.service_type}`);
+        return;
+      }
+    }
     setSaving(true)
     for (const item of intervals) {
       if (item.id && !item.isNew) {
@@ -108,7 +134,34 @@ export default function ServiceIntervalsPage() {
                       <input type="text" value={item.service_type} onChange={e => handleUpdate(idx, 'service_type', e.target.value)} className="w-full border border-slate-300 rounded p-2 text-sm" />
                     </td>
                     <td className="py-3 pr-4">
-                      <input type="text" value={item.classification} onChange={e => handleUpdate(idx, 'classification', e.target.value)} className="w-full border border-slate-300 rounded p-2 text-sm" />
+                      {(() => {
+                        const isOilChange = item.service_type?.toUpperCase().includes('OIL CHANGE') || item.service_type?.toUpperCase().includes('ENGINE OIL');
+                        if (isOilChange) {
+                          return (
+                            <select 
+                              value={item.classification || ''} 
+                              onChange={e => handleUpdate(idx, 'classification', e.target.value)} 
+                              className="w-full border border-slate-300 rounded p-2 text-sm bg-white"
+                            >
+                              <option value="">Select Oil Type...</option>
+                              {ENGINE_OIL_CLASSIFICATIONS.map(cls => (
+                                <option key={cls} value={cls}>{cls}</option>
+                              ))}
+                            </select>
+                          )
+                        } else {
+                          return (
+                            <input 
+                              type="text" 
+                              value={item.classification || ''} 
+                              onChange={e => handleUpdate(idx, 'classification', e.target.value)} 
+                              className="w-full border border-slate-300 rounded p-2 text-sm text-slate-400 bg-slate-50 cursor-not-allowed" 
+                              placeholder="N/A"
+                              disabled
+                            />
+                          )
+                        }
+                      })()}
                     </td>
                     <td className="py-3 pr-4">
                       <input type="number" value={item.months} onChange={e => handleUpdate(idx, 'months', e.target.value)} className="w-full border border-slate-300 rounded p-2 text-sm" />
