@@ -147,6 +147,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
   // Inline Edit State
   const [isAddingCustomer, setIsAddingCustomer] = useState(false)
   const [isSavingCustomer, setIsSavingCustomer] = useState(false)
+  const [isSavingVehicle, setIsSavingVehicle] = useState(false)
   const [createdNewCustomerId, setCreatedNewCustomerId] = useState<string | null>(null)
   const [isEditingCustomer, setIsEditingCustomer] = useState(false)
   const [isAddingVehicle, setIsAddingVehicle] = useState(false)
@@ -602,6 +603,9 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
   }
 
   const handleSaveVehicleChanges = async () => {
+    if (isSavingVehicle) return;
+    setIsSavingVehicle(true);
+    try {
     if (!selectedCustomerId) return
     setError(null)
 
@@ -652,6 +656,9 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
       setCustomerVehicles(prev => prev.map(v => v.id === updatedVeh.id ? updatedVeh : v))
       handleSelectVehicle(updatedVeh)
       setIsEditingVehicle(false)
+    }
+    } finally {
+      setIsSavingVehicle(false);
     }
   }
 
@@ -1968,7 +1975,7 @@ export function EstimateForm({ initialData }: { initialData?: any }) {
               <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
                 Cancel
               </button>
-              <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+              <button type="button" disabled={isSavingVehicle} onClick={handleSaveVehicleChanges} className="disabled:bg-blue-400 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
                 {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
               </button>
             </div>

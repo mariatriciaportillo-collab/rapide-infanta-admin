@@ -40,6 +40,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   const [vehicles, setVehicles] = useState<any[]>([])
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(initialData?.vehicle_id || null)
   const [isAddingVehicle, setIsAddingVehicle] = useState(false)
+  const [isSavingVehicle, setIsSavingVehicle] = useState(false)
   const [isEditingVehicle, setIsEditingVehicle] = useState(false)
   
   // Vehicle Modal Fields
@@ -272,6 +273,8 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
       setIsAddingCustomer(false)
     } catch (err: any) {
       alert(err.message)
+    } finally {
+      setIsSavingVehicle(false)
     }
   }
 
@@ -305,6 +308,8 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
   }
 
   const handleSaveVehicleChanges = async () => {
+    if (isSavingVehicle) return;
+    setIsSavingVehicle(true);
     try {
       if (!vehiclePlate || !vehicleMake || !vehicleModel || !vehicleYear) {
         throw new Error('Please fill all required fields')
@@ -735,7 +740,7 @@ export function QuickSaleForm({ initialData }: { initialData?: any }) {
               <button type="button" onClick={() => { setIsAddingVehicle(false); setIsEditingVehicle(false); }} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition">
                 Cancel
               </button>
-              <button type="button" onClick={handleSaveVehicleChanges} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
+              <button type="button" disabled={isSavingVehicle} onClick={handleSaveVehicleChanges} className="disabled:bg-blue-400 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition">
                 {isAddingVehicle ? 'Save New Vehicle' : 'Save Vehicle Changes'}
               </button>
             </div>

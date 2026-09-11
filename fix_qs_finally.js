@@ -1,0 +1,5 @@
+const fs = require('fs')
+let code = fs.readFileSync('src/components/quick-sale/QuickSaleForm.tsx', 'utf8')
+code = code.replace(/catch \(err: any\) \{\n\s*alert\(err.message\)\n\s*\}/, "catch (err: any) {\n      alert(err.message)\n    } finally {\n      setIsSavingVehicle(false)\n    }")
+fs.writeFileSync('src/components/quick-sale/QuickSaleForm.tsx', code)
+console.log("Fixed QS finally")
