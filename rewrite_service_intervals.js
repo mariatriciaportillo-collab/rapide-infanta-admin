@@ -1,4 +1,6 @@
-'use client'
+const fs = require('fs')
+
+const code = `'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
@@ -99,7 +101,7 @@ export default function ServiceIntervalsPage() {
     })
 
     if (isDup) {
-      setError(`Duplicate rule found for: ${type} - ${finalClassification || 'Default'}`)
+      setError(\`Duplicate rule found for: \${type} - \${finalClassification || 'Default'}\`)
       return
     }
 
@@ -297,3 +299,7 @@ export default function ServiceIntervalsPage() {
     </div>
   )
 }
+`
+
+fs.writeFileSync('src/app/(dashboard)/admin/service-intervals/page.tsx', code)
+console.log('Rewrote service intervals page.tsx')
